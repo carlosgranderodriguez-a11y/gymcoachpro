@@ -36,6 +36,33 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,san
 .btn-sm{padding:5px 10px;font-size:11px;}
 .btn-xs{padding:3px 8px;font-size:11px;}
 
+/* FILTROS Y CHIPS */
+.filter-group{margin-bottom:10px;}
+.filter-group:last-child{margin-bottom:0;}
+.filter-label{font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--text-muted);margin-bottom:6px;display:block;}
+.filter-chips{display:flex;gap:6px;flex-wrap:wrap;}
+.fchip{padding:5px 12px;border-radius:20px;border:1px solid var(--border);background:var(--surface2);color:var(--text-dim);font-size:12px;cursor:pointer;transition:all 0.15s;user-select:none;}
+.fchip:hover{border-color:var(--accent);}
+.fchip.active{background:var(--accent);color:#000;border-color:var(--accent);font-weight:600;}
+.fchip.cat.active{background:rgba(96,165,250,0.15);color:var(--blue);border-color:var(--blue);}
+.fchip.mat.active{background:rgba(251,146,60,0.15);color:var(--orange);border-color:var(--orange);}
+
+/* MULTISELECT (modal ejercicio) */
+.ms-wrap{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px;}
+.ms-chips{display:flex;flex-wrap:wrap;gap:5px;}
+.ms-chip{padding:4px 11px;border-radius:14px;border:1px solid var(--border);background:var(--bg);color:var(--text-dim);font-size:11px;cursor:pointer;transition:all 0.15s;user-select:none;}
+.ms-chip.selected{background:var(--accent);color:#000;border-color:var(--accent);font-weight:600;}
+
+/* AJUSTES */
+.cfg-chip-list{display:flex;flex-wrap:wrap;gap:6px;}
+.cfg-chip{display:flex;align-items:center;gap:6px;padding:5px 10px;border-radius:16px;background:var(--surface2);border:1px solid var(--border);font-size:12px;color:var(--text);}
+.cfg-chip-del{cursor:pointer;color:var(--text-muted);font-size:14px;line-height:1;transition:color 0.15s;}
+.cfg-chip-del:hover{color:var(--red);}
+
+/* Chips en card del ejercicio */
+.ex-card-tag.contr{color:var(--accent);}
+.ex-card-tag.mat{color:var(--orange);border-color:#5a3a1a;background:rgba(251,146,60,0.08);}
+
 /* GRID DE EJERCICIOS */
 .ex-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px;}
 .ex-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;cursor:pointer;transition:border-color 0.15s;}
@@ -177,6 +204,7 @@ td{padding:11px 14px;border-top:1px solid var(--border);font-size:13px;vertical-
   <div class="tab" onclick="switchTab('ejercicios',this)">💪 Ejercicios</div>
   <div class="tab" onclick="switchTab('templates',this)">📋 Templates</div>
   <div class="tab" onclick="switchTab('calendario',this)">📅 Calendario</div>
+  <div class="tab" onclick="switchTab('ajustes',this)">⚙️ Ajustes</div>
 </div>
 
 <div class="content">
@@ -204,7 +232,42 @@ td{padding:11px 14px;border-top:1px solid var(--border);font-size:13px;vertical-
         <button class="btn btn-primary" onclick="openEjercicio()">+ Nuevo ejercicio</button>
       </div>
     </div>
+
+    <!-- FILTROS -->
+    <div id="ex-filters" style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:16px;"></div>
+
     <div class="ex-grid" id="ejercicios-grid"></div>
+  </div>
+
+  <!-- AJUSTES -->
+  <div id="page-ajustes" class="page">
+    <div class="section-header">
+      <div class="section-title">Ajustes</div>
+    </div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:16px;">
+      <div style="font-size:14px;font-weight:600;margin-bottom:14px;">🏋️ Tipos de contracción</div>
+      <div id="cfg-contraccion" class="cfg-chip-list"></div>
+      <div style="display:flex;gap:8px;margin-top:10px;">
+        <input id="new-contraccion" type="text" placeholder="Añadir nuevo tipo..." style="flex:1;padding:8px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;outline:none;">
+        <button class="btn btn-primary btn-sm" onclick="addConfigItem('tipos_contraccion','new-contraccion')">Añadir</button>
+      </div>
+    </div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:16px;">
+      <div style="font-size:14px;font-weight:600;margin-bottom:14px;">🎒 Materiales</div>
+      <div id="cfg-materiales" class="cfg-chip-list"></div>
+      <div style="display:flex;gap:8px;margin-top:10px;">
+        <input id="new-material" type="text" placeholder="Añadir nuevo material..." style="flex:1;padding:8px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;outline:none;">
+        <button class="btn btn-primary btn-sm" onclick="addConfigItem('materiales','new-material')">Añadir</button>
+      </div>
+    </div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;">
+      <div style="font-size:14px;font-weight:600;margin-bottom:14px;">🏷 Categorías</div>
+      <div id="cfg-categorias" class="cfg-chip-list"></div>
+      <div style="display:flex;gap:8px;margin-top:10px;">
+        <input id="new-categoria" type="text" placeholder="Añadir nueva categoría..." style="flex:1;padding:8px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;outline:none;">
+        <button class="btn btn-primary btn-sm" onclick="addConfigItem('categorias','new-categoria')">Añadir</button>
+      </div>
+    </div>
   </div>
 
   <!-- TEMPLATES -->
@@ -295,6 +358,17 @@ td{padding:11px 14px;border-top:1px solid var(--border);font-size:13px;vertical-
       </select>
     </div>
     <div class="form-group"><label>Músculos implicados</label><input type="text" id="ej-musculos" placeholder="Cuádriceps, glúteos, core"></div>
+
+    <div class="form-group">
+      <label>Tipo de contracción</label>
+      <div class="ms-wrap"><div class="ms-chips" id="ms-contraccion"></div></div>
+    </div>
+
+    <div class="form-group">
+      <label>Material necesario</label>
+      <div class="ms-wrap"><div class="ms-chips" id="ms-material"></div></div>
+    </div>
+
     <div class="form-group"><label>Descripción / ejecución</label><textarea id="ej-desc"></textarea></div>
     <div class="form-group"><label>URL de vídeo (YouTube/Vimeo)</label><input type="text" id="ej-video" placeholder="https://www.youtube.com/watch?v=..."></div>
 
@@ -325,12 +399,14 @@ td{padding:11px 14px;border-top:1px solid var(--border);font-size:13px;vertical-
 <script>
 var API = 'https://script.google.com/macros/s/AKfycbzqXBcIAhrrXHXs2u1_jk8137QI17VxC_IKA3z15cm4ZKwlkTYFbB96zjKpoxk07B4yUA/exec';
 
-var DB = { atletas:[], ejercicios:{}, sesiones:[], templates:[] };
+var DB = { atletas:[], ejercicios:{}, sesiones:[], templates:[], config:{tipos_contraccion:[], materiales:[], categorias:[]} };
 var calYear, calMonth, selectedDate=null, selectedAtleta=null;
 var currentTemplate=null, isDirty=false, dragSrc=null;
 var editingEjId=null;
-var currentImageUrl=''; // URL de Drive de la imagen del ejercicio en edición
+var currentImageUrl='';
 var detailEjId=null;
+var selectedContr=[], selectedMat=[]; // multi-select del modal
+var filterContr=null, filterMat=null, filterCat=null; // filtros activos
 
 var BLOQUES = [
   {id:'activacion',    name:'Activación',         color:'#60a5fa'},
@@ -371,13 +447,14 @@ window.onload=async function(){
   var now=new Date();calYear=now.getFullYear();calMonth=now.getMonth();
   try{DB.templates=JSON.parse(localStorage.getItem('gc_templates')||'[]');}catch(e){}
   try{
-    var [rA,rE,rS]=await Promise.all([api({action:'getAtletas'}),api({action:'getEjercicios'}),api({action:'getAllSesiones'})]);
+    var [rA,rE,rS,rC]=await Promise.all([api({action:'getAtletas'}),api({action:'getEjercicios'}),api({action:'getAllSesiones'}),api({action:'getConfig'})]);
     if(rA.ok) DB.atletas=rA.atletas||[];
     if(rE.ok) DB.ejercicios=rE.ejercicios||{};
     if(rS.ok) DB.sesiones=rS.sesiones||[];
+    if(rC.ok) DB.config=Object.assign(DB.config,rC.config||{});
     setStatus('✅ Conectado','var(--green)');
   }catch(e){setStatus('❌ Sin conexión','var(--red)');}
-  renderAtletas();renderEjercicios();renderTemplateList();renderCalendar();
+  renderAtletas();renderEjercicios();renderTemplateList();renderCalendar();renderAjustes();
   document.addEventListener('click',function(e){if(!e.target.closest('.param-picker')&&!e.target.closest('.param-add-btn'))document.getElementById('param-picker').style.display='none';});
 };
 
@@ -409,35 +486,121 @@ async function saveAtleta(){
 // ── EJERCICIOS ──
 // ═══════════════════════════════════════════
 function renderEjercicios(){
+  // Renderizar filtros
+  renderFilters();
   var grid=document.getElementById('ejercicios-grid');
   var search=(document.getElementById('ex-search').value||'').toLowerCase();
   var keys=Object.keys(DB.ejercicios);
-  if(search) keys=keys.filter(function(id){var e=DB.ejercicios[id];return e.nombre.toLowerCase().includes(search)||e.musculos.toLowerCase().includes(search)||e.categoria.toLowerCase().includes(search);});
-  if(!keys.length){grid.innerHTML='<div class="ex-empty">'+(search?'Sin resultados':'Sin ejercicios todavía. Crea el primero.')+'</div>';return;}
+  // Filtro por búsqueda
+  if(search) keys=keys.filter(function(id){var e=DB.ejercicios[id];return e.nombre.toLowerCase().includes(search)||(e.musculos||'').toLowerCase().includes(search);});
+  // Filtro categoría
+  if(filterCat) keys=keys.filter(function(id){return DB.ejercicios[id].categoria===filterCat;});
+  // Filtro contracción
+  if(filterContr) keys=keys.filter(function(id){return (DB.ejercicios[id].tipo_contraccion||[]).includes(filterContr);});
+  // Filtro material
+  if(filterMat) keys=keys.filter(function(id){return (DB.ejercicios[id].material||[]).includes(filterMat);});
+
+  if(!keys.length){grid.innerHTML='<div class="ex-empty">'+(search||filterCat||filterContr||filterMat?'Sin resultados con esos filtros':'Sin ejercicios todavía. Crea el primero.')+'</div>';return;}
   grid.innerHTML=keys.map(function(id){
     var e=DB.ejercicios[id];
     var imgHtml=e.imagen?'<img src="'+e.imagen+'" referrerpolicy="no-referrer" loading="lazy">':'<div class="ex-card-img-placeholder">💪</div>';
+    var contrTag=(e.tipo_contraccion||[]).slice(0,1).map(function(c){return '<span class="ex-card-tag contr">'+c+'</span>';}).join('');
+    var matTag=(e.material||[]).slice(0,1).map(function(m){return '<span class="ex-card-tag mat">'+m+'</span>';}).join('');
     return '<div class="ex-card" onclick="showDetail(\''+id+'\')">'
       +'<div class="ex-card-img-wrap">'+imgHtml+'</div>'
       +'<div class="ex-card-body">'
       +'<div class="ex-card-name">'+e.nombre+'</div>'
       +'<div class="ex-card-meta">'+e.categoria+(e.musculos?' · '+e.musculos:'')+'</div>'
       +'<div class="ex-card-tags">'
-      +(e.video?'<span class="ex-card-tag video">▶ Vídeo</span>':'')
-      +(e.imagen?'<span class="ex-card-tag">🖼 Imagen</span>':'')
+      +contrTag+matTag
+      +(e.video?'<span class="ex-card-tag video">▶</span>':'')
       +'</div></div></div>';
   }).join('');
+}
+
+function renderFilters(){
+  var fwrap=document.getElementById('ex-filters');
+  var cats=DB.config.categorias||[];
+  var contrs=DB.config.tipos_contraccion||[];
+  var mats=DB.config.materiales||[];
+  fwrap.innerHTML=
+    '<div class="filter-group"><span class="filter-label">Categoría</span><div class="filter-chips">'
+      +'<div class="fchip cat'+(!filterCat?' active':'')+'" onclick="setFilter(\'cat\',null)">Todas</div>'
+      +cats.map(function(c){return '<div class="fchip cat'+(filterCat===c?' active':'')+'" onclick="setFilter(\'cat\',\''+c.replace(/'/g,"\\'")+'\')">'+c+'</div>';}).join('')
+    +'</div></div>'
+    +'<div class="filter-group"><span class="filter-label">Tipo de contracción</span><div class="filter-chips">'
+      +'<div class="fchip'+(!filterContr?' active':'')+'" onclick="setFilter(\'contr\',null)">Todas</div>'
+      +contrs.map(function(c){return '<div class="fchip'+(filterContr===c?' active':'')+'" onclick="setFilter(\'contr\',\''+c.replace(/'/g,"\\'")+'\')">'+c+'</div>';}).join('')
+    +'</div></div>'
+    +'<div class="filter-group"><span class="filter-label">Material</span><div class="filter-chips">'
+      +'<div class="fchip mat'+(!filterMat?' active':'')+'" onclick="setFilter(\'mat\',null)">Todos</div>'
+      +mats.map(function(m){return '<div class="fchip mat'+(filterMat===m?' active':'')+'" onclick="setFilter(\'mat\',\''+m.replace(/'/g,"\\'")+'\')">'+m+'</div>';}).join('')
+    +'</div></div>';
+}
+
+function setFilter(type,val){
+  if(type==='cat') filterCat=val;
+  if(type==='contr') filterContr=val;
+  if(type==='mat') filterMat=val;
+  renderEjercicios();
 }
 
 function openEjercicio(){
   editingEjId=null;
   currentImageUrl='';
+  selectedContr=[]; selectedMat=[];
   document.getElementById('modal-ej-title').textContent='Nuevo ejercicio';
   document.getElementById('btn-del-ej').style.display='none';
   ['ej-nombre','ej-musculos','ej-desc','ej-video'].forEach(function(f){document.getElementById(f).value='';});
-  document.getElementById('ej-cat').value='Fuerza';
+  // Llenar categorías desde config
+  var catSel=document.getElementById('ej-cat');
+  catSel.innerHTML=(DB.config.categorias||['Fuerza']).map(function(c){return '<option>'+c+'</option>';}).join('');
+  renderMultiSelects();
   resetImagePreview();
   openModal('ejercicio');
+}
+
+function renderMultiSelects(){
+  var contrEl=document.getElementById('ms-contraccion');
+  var matEl=document.getElementById('ms-material');
+  contrEl.innerHTML=(DB.config.tipos_contraccion||[]).map(function(c){return '<div class="ms-chip'+(selectedContr.includes(c)?' selected':'')+'" onclick="toggleMs(\'contr\',\''+c.replace(/'/g,"\\'")+'\')">'+c+'</div>';}).join('');
+  matEl.innerHTML=(DB.config.materiales||[]).map(function(m){return '<div class="ms-chip'+(selectedMat.includes(m)?' selected':'')+'" onclick="toggleMs(\'mat\',\''+m.replace(/'/g,"\\'")+'\')">'+m+'</div>';}).join('');
+}
+
+function toggleMs(type,val){
+  var arr=type==='contr'?selectedContr:selectedMat;
+  var idx=arr.indexOf(val);
+  if(idx>=0) arr.splice(idx,1); else arr.push(val);
+  renderMultiSelects();
+}
+
+async function saveEjercicio(){
+  var n=document.getElementById('ej-nombre').value.trim();
+  if(!n){toast('Nombre requerido','err');return;}
+  var id=editingEjId||n.toLowerCase().replace(/\s+/g,'-').replace(/[^a-z0-9-]/g,'');
+  var data={
+    id:id,
+    nombre:n,
+    categoria:document.getElementById('ej-cat').value,
+    musculos:document.getElementById('ej-musculos').value.trim(),
+    descripcion:document.getElementById('ej-desc').value.trim(),
+    video:document.getElementById('ej-video').value.trim(),
+    imagen:currentImageUrl,
+    tipo_contraccion:selectedContr.slice(),
+    material:selectedMat.slice()
+  };
+  var btn=document.getElementById('btn-save-ej');
+  btn.disabled=true; btn.innerHTML='<span class="loading-inline"></span> Guardando...';
+  var r=editingEjId
+    ? await apiPost(Object.assign({action:'updateEjercicio'},data))
+    : await apiPost(Object.assign({action:'addEjercicio'},data));
+  btn.disabled=false; btn.textContent='Guardar';
+  if(r.ok){
+    DB.ejercicios[id]=data;
+    renderEjercicios();
+    closeModal('ejercicio');
+    toast('✅ Ejercicio '+(editingEjId?'actualizado':'creado'));
+  } else toast('Error: '+r.error,'err');
 }
 
 function resetImagePreview(){
@@ -541,11 +704,15 @@ function showDetail(id){
     if(embed) videoHtml='<div class="detail-video"><iframe src="'+embed+'" allowfullscreen></iframe></div>';
     else videoHtml='<div class="detail-section"><a href="'+e.video+'" target="_blank" style="color:var(--accent);font-size:13px">▶ Abrir vídeo</a></div>';
   }
+  var contrHtml=(e.tipo_contraccion||[]).length?'<div class="detail-section"><div class="detail-label">Tipo de contracción</div><div class="detail-val">'+(e.tipo_contraccion||[]).map(function(c){return '<span class="ex-card-tag contr" style="margin-right:4px">'+c+'</span>';}).join('')+'</div></div>':'';
+  var matHtml=(e.material||[]).length?'<div class="detail-section"><div class="detail-label">Material</div><div class="detail-val">'+(e.material||[]).map(function(m){return '<span class="ex-card-tag mat" style="margin-right:4px">'+m+'</span>';}).join('')+'</div></div>':'';
   document.getElementById('detail-content').innerHTML=
     imgHtml
     +'<div style="font-size:18px;font-weight:700;margin-bottom:8px">'+e.nombre+'</div>'
     +'<div style="font-size:12px;color:var(--text-dim);margin-bottom:16px">'+e.categoria+(e.musculos?' · '+e.musculos:'')+'</div>'
     +videoHtml
+    +contrHtml
+    +matHtml
     +(e.descripcion?'<div class="detail-section"><div class="detail-label">Ejecución</div><div class="detail-val">'+e.descripcion+'</div></div>':'');
   openModal('detail');
 }
@@ -556,13 +723,18 @@ function editFromDetail(){
   if(!e) return;
   editingEjId=e.id;
   currentImageUrl=e.imagen||'';
+  selectedContr=(e.tipo_contraccion||[]).slice();
+  selectedMat=(e.material||[]).slice();
   document.getElementById('modal-ej-title').textContent='Editar ejercicio';
   document.getElementById('btn-del-ej').style.display='inline-block';
   document.getElementById('ej-nombre').value=e.nombre;
-  document.getElementById('ej-cat').value=e.categoria||'Fuerza';
+  // Llenar categorías
+  var catSel=document.getElementById('ej-cat');
+  catSel.innerHTML=(DB.config.categorias||['Fuerza']).map(function(c){return '<option'+(e.categoria===c?' selected':'')+'>'+c+'</option>';}).join('');
   document.getElementById('ej-musculos').value=e.musculos||'';
   document.getElementById('ej-desc').value=e.descripcion||'';
   document.getElementById('ej-video').value=e.video||'';
+  renderMultiSelects();
   var prev=document.getElementById('ej-img-preview');
   if(e.imagen){
     prev.src=e.imagen; prev.classList.add('has-img');
@@ -572,13 +744,60 @@ function editFromDetail(){
 }
 
 function toEmbedUrl(url){
-  // YouTube
   var yt=url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|v\/))([^&?\/\s]{11})/);
   if(yt) return 'https://www.youtube.com/embed/'+yt[1];
-  // Vimeo
   var vi=url.match(/vimeo\.com\/(\d+)/);
   if(vi) return 'https://player.vimeo.com/video/'+vi[1];
   return null;
+}
+
+// ═══════════════════════════════════════════
+// ── AJUSTES (config) ──
+// ═══════════════════════════════════════════
+function renderAjustes(){
+  renderConfigList('cfg-contraccion','tipos_contraccion');
+  renderConfigList('cfg-materiales','materiales');
+  renderConfigList('cfg-categorias','categorias');
+}
+
+function renderConfigList(elId, key){
+  var el=document.getElementById(elId);
+  if(!el) return;
+  var items=DB.config[key]||[];
+  if(!items.length){el.innerHTML='<div style="color:var(--text-muted);font-size:13px">Lista vacía</div>';return;}
+  el.innerHTML=items.map(function(item){
+    return '<div class="cfg-chip"><span>'+item+'</span><span class="cfg-chip-del" onclick="removeConfigItem(\''+key+'\',\''+item.replace(/'/g,"\\'")+'\')">✕</span></div>';
+  }).join('');
+}
+
+async function addConfigItem(key, inputId){
+  var input=document.getElementById(inputId);
+  var val=input.value.trim();
+  if(!val) return;
+  if(!DB.config[key]) DB.config[key]=[];
+  if(DB.config[key].includes(val)){toast('Ya existe','err');return;}
+  DB.config[key].push(val);
+  var r=await apiPost({action:'saveConfig',key:key,value:DB.config[key]});
+  if(r.ok){
+    input.value='';
+    renderAjustes();
+    renderEjercicios();
+    toast('✅ Añadido');
+  } else {
+    DB.config[key].pop();
+    toast('Error: '+r.error,'err');
+  }
+}
+
+async function removeConfigItem(key, val){
+  if(!confirm('¿Eliminar "'+val+'"?')) return;
+  DB.config[key]=DB.config[key].filter(function(v){return v!==val;});
+  var r=await apiPost({action:'saveConfig',key:key,value:DB.config[key]});
+  if(r.ok){
+    renderAjustes();
+    renderEjercicios();
+    toast('🗑 Eliminado');
+  } else toast('Error: '+r.error,'err');
 }
 
 // ═══════════════════════════════════════════
