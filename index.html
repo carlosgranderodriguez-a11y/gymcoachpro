@@ -312,7 +312,14 @@ td{padding:11px 14px;border-top:1px solid var(--border);font-size:13px;vertical-
 
   <!-- CALENDARIO -->
   <div id="page-calendario" class="page">
-    <div class="section-header"><div class="section-title">Asignar sesiones</div></div>
+    <div class="section-header">
+      <div class="section-title">Calendario de entrenamientos</div>
+      <div style="display:flex;gap:10px;align-items:center;">
+        <select id="cal-filter-atleta" onchange="renderCalendar()" style="padding:9px 12px;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;outline:none;">
+          <option value="">Todos los atletas</option>
+        </select>
+      </div>
+    </div>
     <div class="cal-layout">
       <div class="cal-wrap">
         <div class="cal-nav">
@@ -323,7 +330,7 @@ td{padding:11px 14px;border-top:1px solid var(--border);font-size:13px;vertical-
         <div class="cal-grid" id="cal-grid"></div>
       </div>
       <div class="assign-panel" id="assign-panel">
-        <div class="no-day">Pulsa un día para<br>asignar una sesión</div>
+        <div class="no-day">Pulsa un día para crear<br>o editar un entrenamiento</div>
       </div>
     </div>
   </div>
@@ -424,11 +431,12 @@ var selectedContr=[], selectedMat=[], selectedGrupos=[];
 var filterContr=null, filterMat=null, filterCat=null, filterGrupo=null;
 
 var BLOQUES = [
-  {id:'activacion',    name:'Activación',         color:'#60a5fa'},
+  {id:'activacion',    name:'Activación',          color:'#60a5fa'},
   {id:'fuerza',        name:'Fuerza',              color:'#ccff66'},
   {id:'potencia',      name:'Potencia',            color:'#fb923c'},
   {id:'pliometria',    name:'Pliometría',          color:'#f472b6'},
   {id:'pot-resistida', name:'Potencia Resistida',  color:'#a78bfa'},
+  {id:'resistencia',   name:'Resistencia',         color:'#06b6d4'},
   {id:'vuelta-calma',  name:'Vuelta a la Calma',   color:'#4ade80'}
 ];
 
@@ -948,6 +956,13 @@ function deleteTemplate(){
 // ── CALENDARIO ──
 // ═══════════════════════════════════════════
 function renderCalendar(){
+  // Selector de atleta
+  var filterSel=document.getElementById('cal-filter-atleta');
+  var currentVal=filterSel.value;
+  filterSel.innerHTML='<option value="">Todos los atletas</option>'+DB.atletas.map(function(a){return '<option'+(currentVal===a?' selected':'')+'>'+a+'</option>';}).join('');
+  filterSel.value=currentVal;
+  var filterAtleta=currentVal;
+
   var months=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
   document.getElementById('cal-month-title').textContent=months[calMonth]+' '+calYear;
   var grid=document.getElementById('cal-grid');grid.innerHTML='';
@@ -957,49 +972,335 @@ function renderCalendar(){
   var days=new Date(calYear,calMonth+1,0).getDate(),today=new Date().toISOString().slice(0,10);
   for(var d=1;d<=days;d++){
     var ds=calYear+'-'+String(calMonth+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
-    var hasSes=DB.sesiones.some(function(s){return s.fecha===ds;});
+    var sesDelDia=DB.sesiones.filter(function(s){return s.fecha===ds&&(!filterAtleta||s.atleta===filterAtleta);});
+    var hasSes=sesDelDia.length>0;
     var el=document.createElement('div');
     el.className='cal-day'+(hasSes?' has-session':'')+(ds===today?' today':'')+(ds===selectedDate?' selected':'');
     el.textContent=d;
+    if(hasSes){
+      var badge=document.createElement('div');
+      badge.style.cssText='position:absolute;top:2px;right:4px;font-size:9px;background:var(--accent);color:#000;border-radius:6px;padding:1px 5px;font-weight:700;';
+      badge.textContent=sesDelDia.length;
+      el.style.position='relative';
+      el.appendChild(badge);
+    }
     (function(date){el.onclick=function(){selectedDate=date;renderCalendar();renderAssignPanel();};})(ds);
     grid.appendChild(el);
   }
 }
+
 function calNav(dir){calMonth+=dir;if(calMonth>11){calMonth=0;calYear++;}if(calMonth<0){calMonth=11;calYear--;}renderCalendar();}
+
 function renderAssignPanel(){
   var panel=document.getElementById('assign-panel');
-  if(!selectedDate){panel.innerHTML='<div class="no-day">Pulsa un día para<br>asignar una sesión</div>';return;}
-  var sesDelDia=DB.sesiones.filter(function(s){return s.fecha===selectedDate;});
+  if(!selectedDate){panel.innerHTML='<div class="no-day">Pulsa un día para crear<br>o editar un entrenamiento</div>';return;}
+  var filterAtleta=document.getElementById('cal-filter-atleta').value;
+  var sesDelDia=DB.sesiones.filter(function(s){return s.fecha===selectedDate&&(!filterAtleta||s.atleta===filterAtleta);});
   var fmtDate=new Date(selectedDate+'T12:00:00').toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'long'});
-  var sesHtml=sesDelDia.length?sesDelDia.map(function(s){return '<div class="existing-session"><div><strong>'+s.atleta.split(' ')[0]+'</strong> — '+s.nombre+'<div style="font-size:11px;color:var(--text-muted)">'+s.ejercicios.length+' ejercicios</div></div></div>';}).join(''):'';
-  var atlPills=DB.atletas.map(function(a){return '<div class="athlete-pill'+(selectedAtleta===a?' active':'')+'" onclick="selectAtleta(\''+a+'\')">'+a.split(' ')[0]+'</div>';}).join('');
-  var tplChips=DB.templates.length?DB.templates.map(function(t){return '<div class="template-chip" onclick="selectTemplateForDay(\''+t.id+'\',this)">'+t.name+'</div>';}).join(''):'<span style="font-size:12px;color:var(--text-muted)">Sin templates todavía</span>';
-  panel.innerHTML='<div class="ap-title">📅 '+fmtDate+'</div>'+(sesHtml?'<div style="margin-bottom:14px">'+sesHtml+'</div>':'')+'<span class="ap-label">Atleta</span><div class="athlete-pills">'+atlPills+'</div><span class="ap-label">Nombre de la sesión</span><input class="ap-input" id="ses-nombre" placeholder="Ej: Upper Body A"><span class="ap-label">Usar template</span><div class="template-chips">'+tplChips+'</div><button class="btn btn-primary" style="width:100%;margin-top:4px" onclick="asignarSesion()">Asignar sesión →</button>';
+
+  var sesHtml=sesDelDia.length?sesDelDia.map(function(s){
+    var bloquesUsados={};
+    (s.ejercicios||[]).forEach(function(ex){if(ex.bloque){bloquesUsados[ex.bloque]=(bloquesUsados[ex.bloque]||0)+1;}});
+    var bloquesTxt=Object.keys(bloquesUsados).map(function(b){var bl=BLOQUES.find(function(x){return x.id===b;});return bl?bl.name:b;}).join(' · ');
+    return '<div class="existing-session" style="flex-direction:column;align-items:stretch;cursor:pointer;" onclick="editSesion(\''+s.id+'\')">'
+      +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px"><div><strong>'+s.atleta.split(' ')[0]+'</strong> — '+s.nombre+'</div><span style="font-size:11px;color:var(--accent)">✏️ Editar</span></div>'
+      +'<div style="font-size:11px;color:var(--text-muted)">'+s.ejercicios.length+' ejercicios'+(bloquesTxt?' · '+bloquesTxt:'')+'</div>'
+      +'</div>';
+  }).join(''):'';
+
+  panel.innerHTML='<div class="ap-title">📅 '+fmtDate+'</div>'
+    +(sesHtml?'<div style="margin-bottom:14px">'+sesHtml+'</div>':'<div style="color:var(--text-muted);font-size:13px;margin-bottom:14px;text-align:center;padding:20px 0">Sin entrenamientos este día</div>')
+    +'<button class="btn btn-primary" style="width:100%" onclick="openNewSesion()">+ Crear entrenamiento</button>';
 }
-function selectAtleta(a){selectedAtleta=a;renderAssignPanel();}
-function selectTemplateForDay(tplId,el){
-  document.querySelectorAll('.template-chip').forEach(function(c){c.classList.remove('active');});
-  el.classList.add('active');
-  var tpl=DB.templates.find(function(t){return t.id===tplId;});
-  if(tpl) document.getElementById('ses-nombre').value=tpl.name;
-  el.dataset.tplid=tplId;
+
+// ═══════════════════════════════════════════
+// ── EDITOR DE SESIÓN (modal grande) ──
+// ═══════════════════════════════════════════
+var editingSesion=null; // { id?, atleta, fecha, nombre, bloques: {...} }
+
+function openNewSesion(){
+  if(!selectedDate){toast('Selecciona un día primero','err');return;}
+  editingSesion={
+    id:null,
+    atleta:DB.atletas[0]||'',
+    fecha:selectedDate,
+    nombre:'',
+    bloques:{}
+  };
+  // Inicializar bloques estándar vacíos
+  BLOQUES.forEach(function(b){editingSesion.bloques[b.id]=[];});
+  renderSesionEditor();
+  openModal('sesion');
 }
-async function asignarSesion(){
-  if(!selectedAtleta){toast('Selecciona un atleta','err');return;}
-  var nombre=document.getElementById('ses-nombre').value.trim();
-  if(!nombre){toast('Ponle nombre a la sesión','err');return;}
-  var activeTpl=document.querySelector('.template-chip.active');
-  var ejercicios=[];
-  if(activeTpl){
-    var tpl=DB.templates.find(function(t){return t.id===activeTpl.dataset.tplid;});
-    if(tpl) BLOQUES.forEach(function(b){(tpl.bloques[b.id]||[]).forEach(function(ex){ejercicios.push({id:ex.id,bloque:b.id,sets:getParamVal(ex,'series')||'3',reps:getParamVal(ex,'reps')||'10',load:getParamVal(ex,'kg')||'—',rest:getParamVal(ex,'descanso')||'90s',params:ex.params});});});
+
+function editSesion(sesId){
+  var s=DB.sesiones.find(function(x){return x.id===sesId;});
+  if(!s) return;
+  // Reconstruir bloques desde ejercicios
+  var bloques={};
+  BLOQUES.forEach(function(b){bloques[b.id]=[];});
+  (s.ejercicios||[]).forEach(function(ex){
+    var bid=ex.bloque||'fuerza';
+    if(!bloques[bid]) bloques[bid]=[];
+    bloques[bid].push({
+      id:ex.id,
+      params:ex.params||[
+        {id:'series',val:String(ex.sets||3)},
+        {id:'reps',val:ex.reps||'10'},
+        {id:'kg',val:ex.load||''},
+        {id:'descanso',val:ex.rest||'90s'}
+      ]
+    });
+  });
+  editingSesion={
+    id:s.id,
+    atleta:s.atleta,
+    fecha:s.fecha,
+    nombre:s.nombre,
+    bloques:bloques
+  };
+  renderSesionEditor();
+  openModal('sesion');
+}
+
+function renderSesionEditor(){
+  document.getElementById('sesion-modal-title').textContent=editingSesion.id?'Editar entrenamiento':'Nuevo entrenamiento';
+  document.getElementById('btn-del-sesion').style.display=editingSesion.id?'inline-block':'none';
+  document.getElementById('sesion-modal-date').textContent=new Date(editingSesion.fecha+'T12:00:00').toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+
+  // Atleta
+  var atSel=document.getElementById('sesion-atleta');
+  atSel.innerHTML=DB.atletas.map(function(a){return '<option'+(a===editingSesion.atleta?' selected':'')+'>'+a+'</option>';}).join('');
+
+  // Nombre
+  document.getElementById('sesion-nombre').value=editingSesion.nombre;
+
+  // Templates chips
+  var tplWrap=document.getElementById('sesion-template-chips');
+  tplWrap.innerHTML=DB.templates.length
+    ? DB.templates.map(function(t){return '<div class="template-chip" onclick="applyTemplateToSesion(\''+t.id+'\')">'+t.name+'</div>';}).join('')
+    : '<span style="font-size:12px;color:var(--text-muted)">Sin templates todavía</span>';
+
+  // Bloques
+  renderSesionBloques();
+}
+
+function renderSesionBloques(){
+  var c=document.getElementById('sesion-bloques-container');
+  c.innerHTML='';
+  Object.keys(editingSesion.bloques).forEach(function(bloqueId){
+    var bloqueDef=BLOQUES.find(function(b){return b.id===bloqueId;})||{name:bloqueId,color:'#888'};
+    var exs=editingSesion.bloques[bloqueId]||[];
+    var opts='<option value="">+ Añadir ejercicio...</option>'+Object.keys(DB.ejercicios).map(function(id){return '<option value="'+id+'">'+DB.ejercicios[id].nombre+'</option>';}).join('');
+    var div=document.createElement('div');
+    div.className='bloque';
+    div.innerHTML='<div class="bloque-header">'
+      +'<div class="bloque-color" style="background:'+bloqueDef.color+'"></div>'
+      +'<div class="bloque-name">'+bloqueDef.name+'</div>'
+      +'<div class="bloque-count">'+exs.length+' ej.</div>'
+      +'<button class="btn btn-danger btn-xs" onclick="removeBloqueFromSesion(\''+bloqueId+'\')" title="Eliminar bloque">✕</button>'
+      +'</div>'
+      +'<div class="bloque-body open">'
+      +'<div class="bloque-add"><select onchange="addExToSesionBloque(\''+bloqueId+'\',this)">'+opts+'</select></div>'
+      +'<div id="sblist-'+bloqueId+'"></div>'
+      +'</div>';
+    c.appendChild(div);
+    renderSesionBloqueExs(bloqueId);
+  });
+  if(!Object.keys(editingSesion.bloques).length){
+    c.innerHTML='<div style="text-align:center;padding:30px;color:var(--text-muted);font-size:13px">Sin bloques. Añade uno con el botón de abajo o aplica un template.</div>';
   }
-  var r=await apiPost({action:'addSesion',atleta:selectedAtleta,fecha:selectedDate,nombre:nombre,ejercicios:ejercicios});
+}
+
+function renderSesionBloqueExs(bloqueId){
+  var list=document.getElementById('sblist-'+bloqueId);
+  if(!list) return;
+  var exs=editingSesion.bloques[bloqueId]||[];
+  list.innerHTML='';
+  exs.forEach(function(ex,idx){
+    var db=DB.ejercicios[ex.id]||{nombre:ex.id};
+    var row=document.createElement('div');
+    row.className='ex-row';
+    row.draggable=true;
+    row.ondragstart=function(){dragSrc={bloque:bloqueId,idx:idx,context:'sesion'};row.classList.add('dragging');};
+    row.ondragend=function(){row.classList.remove('dragging');document.querySelectorAll('.ex-row').forEach(function(r){r.classList.remove('drag-over');});};
+    row.ondragover=function(e){e.preventDefault();row.classList.add('drag-over');};
+    row.ondrop=function(e){e.preventDefault();row.classList.remove('drag-over');dropExSesion(bloqueId,idx);};
+    var paramsHtml=ex.params.map(function(p,pi){return buildSesionParamChip(p,bloqueId,idx,pi);}).join('');
+    row.innerHTML='<div class="ex-drag-handle">⠿</div>'
+      +'<div class="ex-row-info"><div class="ex-row-name">'+db.nombre+'</div>'
+      +'<div class="ex-params">'+paramsHtml
+      +'<button class="param-add-btn" onclick="showSesionParamPicker(event,\''+bloqueId+'\','+idx+')">+ param</button>'
+      +'</div></div>'
+      +'<button class="btn btn-danger btn-xs" onclick="removeExFromSesion(\''+bloqueId+'\','+idx+')">✕</button>';
+    list.appendChild(row);
+  });
+}
+
+function buildSesionParamChip(p,bloqueId,exIdx,paramIdx){
+  var cat=PARAMS_CATALOG.find(function(c){return c.id===p.id;})||{label:p.id,type:'text'};
+  var input='';
+  if(cat.type==='select'){
+    var opts=(cat.options||[]).map(function(o){return '<option'+(p.val===o?' selected':'')+'>'+o+'</option>';}).join('');
+    input='<select onchange="updateSesionParam(\''+bloqueId+'\','+exIdx+','+paramIdx+',this.value)">'+opts+'</select>';
+  } else {
+    input='<input type="'+cat.type+'" value="'+(p.val||'')+'" oninput="updateSesionParam(\''+bloqueId+'\','+exIdx+','+paramIdx+',this.value)">';
+  }
+  return '<div class="param-chip"><label>'+cat.label+'</label>'+input+'</div>';
+}
+
+function updateSesionParam(b,ei,pi,v){
+  if(editingSesion.bloques[b]&&editingSesion.bloques[b][ei]&&editingSesion.bloques[b][ei].params[pi])
+    editingSesion.bloques[b][ei].params[pi].val=v;
+}
+
+function showSesionParamPicker(e,bloqueId,exIdx){
+  e.stopPropagation();
+  var picker=document.getElementById('param-picker');
+  var existing=(editingSesion.bloques[bloqueId][exIdx].params||[]).map(function(p){return p.id;});
+  var available=PARAMS_CATALOG.filter(function(p){return !existing.includes(p.id);});
+  if(!available.length){toast('Todos los parámetros añadidos');return;}
+  picker.innerHTML=available.map(function(p){return '<div class="param-picker-item" onclick="addSesionParam(\''+bloqueId+'\','+exIdx+',\''+p.id+'\')">'+p.label+'</div>';}).join('');
+  var rect=e.target.getBoundingClientRect();
+  picker.style.left=rect.left+'px';picker.style.top=(rect.bottom+6)+'px';picker.style.display='block';
+}
+
+function addSesionParam(b,ei,pid){
+  var cat=PARAMS_CATALOG.find(function(c){return c.id===pid;});
+  var val=cat&&cat.type==='select'&&cat.options?cat.options[0]:'';
+  editingSesion.bloques[b][ei].params.push({id:pid,val:val});
+  document.getElementById('param-picker').style.display='none';
+  renderSesionBloqueExs(b);
+}
+
+function addExToSesionBloque(bloqueId,sel){
+  var id=sel.value;if(!id)return;
+  if(!editingSesion.bloques[bloqueId])editingSesion.bloques[bloqueId]=[];
+  editingSesion.bloques[bloqueId].push({id:id,params:[{id:'series',val:'3'},{id:'reps',val:'10'},{id:'kg',val:''},{id:'descanso',val:'90s'}]});
+  sel.value='';
+  renderSesionBloques();
+}
+
+function removeExFromSesion(b,idx){editingSesion.bloques[b].splice(idx,1);renderSesionBloques();}
+
+function dropExSesion(targetBloque,targetIdx){
+  if(!dragSrc||dragSrc.context!=='sesion')return;
+  var srcEx=editingSesion.bloques[dragSrc.bloque].splice(dragSrc.idx,1)[0];
+  if(!editingSesion.bloques[targetBloque])editingSesion.bloques[targetBloque]=[];
+  editingSesion.bloques[targetBloque].splice(targetIdx,0,srcEx);
+  renderSesionBloques();
+  dragSrc=null;
+}
+
+function removeBloqueFromSesion(bloqueId){
+  var exs=editingSesion.bloques[bloqueId]||[];
+  if(exs.length&&!confirm('Este bloque tiene ejercicios. ¿Eliminarlo igualmente?'))return;
+  delete editingSesion.bloques[bloqueId];
+  renderSesionBloques();
+}
+
+function addBloqueToSesion(){
+  // Bloques predefinidos que no estén ya en la sesión
+  var disponibles=BLOQUES.filter(function(b){return !editingSesion.bloques.hasOwnProperty(b.id);});
+  var pre=document.getElementById('nb-predef');
+  pre.innerHTML='<option value="">— Selecciona predefinido —</option>'+disponibles.map(function(b){return '<option value="'+b.id+'">'+b.name+'</option>';}).join('');
+  document.getElementById('nb-name').value='';
+  openModal('newbloque');
+}
+
+function confirmAddBloque(){
+  var preSel=document.getElementById('nb-predef');
+  var name=document.getElementById('nb-name').value.trim();
+  var preId=preSel.value;
+  if(!name&&!preId){toast('Pon un nombre o elige predefinido','err');return;}
+  var bloqueId, bloqueName;
+  if(preId){
+    bloqueId=preId;
+    var def=BLOQUES.find(function(b){return b.id===preId;});
+    bloqueName=def?def.name:preId;
+  } else {
+    bloqueId='custom-'+Date.now();
+    bloqueName=name;
+    // Añadir a BLOQUES temporalmente para este uso
+    BLOQUES.push({id:bloqueId,name:bloqueName,color:'#888'});
+  }
+  if(!editingSesion.bloques[bloqueId]) editingSesion.bloques[bloqueId]=[];
+  closeModal('newbloque');
+  renderSesionBloques();
+}
+
+function applyTemplateToSesion(tplId){
+  var tpl=DB.templates.find(function(t){return t.id===tplId;});
+  if(!tpl) return;
+  if(Object.values(editingSesion.bloques).some(function(b){return b.length;})&&!confirm('Esto sobrescribirá los ejercicios actuales. ¿Continuar?'))return;
+  editingSesion.bloques={};
+  BLOQUES.forEach(function(b){editingSesion.bloques[b.id]=[];});
+  Object.keys(tpl.bloques).forEach(function(bId){
+    editingSesion.bloques[bId]=JSON.parse(JSON.stringify(tpl.bloques[bId]));
+  });
+  if(!editingSesion.nombre) editingSesion.nombre=tpl.name;
+  document.getElementById('sesion-nombre').value=editingSesion.nombre;
+  renderSesionBloques();
+  toast('Template aplicado');
+}
+
+async function saveSesion(){
+  editingSesion.atleta=document.getElementById('sesion-atleta').value;
+  editingSesion.nombre=document.getElementById('sesion-nombre').value.trim();
+  if(!editingSesion.atleta){toast('Selecciona un atleta','err');return;}
+  if(!editingSesion.nombre){toast('Ponle nombre a la sesión','err');return;}
+
+  // Aplanar bloques → array de ejercicios con bloque
+  var ejercicios=[];
+  Object.keys(editingSesion.bloques).forEach(function(bId){
+    (editingSesion.bloques[bId]||[]).forEach(function(ex){
+      ejercicios.push({
+        id:ex.id,
+        bloque:bId,
+        sets:getParamVal(ex,'series')||'3',
+        reps:getParamVal(ex,'reps')||'10',
+        load:getParamVal(ex,'kg')||'—',
+        rest:getParamVal(ex,'descanso')||'90s',
+        params:ex.params
+      });
+    });
+  });
+
+  var btn=document.getElementById('btn-save-sesion');
+  btn.disabled=true; btn.innerHTML='<span class="loading-inline"></span> Guardando...';
+
+  var action=editingSesion.id?'updateSesion':'addSesion';
+  var payload={action:action,atleta:editingSesion.atleta,fecha:editingSesion.fecha,nombre:editingSesion.nombre,ejercicios:ejercicios};
+  if(editingSesion.id) payload.id=editingSesion.id;
+
+  var r=await apiPost(payload);
+  btn.disabled=false; btn.textContent='💾 Guardar sesión';
+
   if(r.ok){
-    DB.sesiones.push({id:r.id,atleta:selectedAtleta,fecha:selectedDate,nombre:nombre,ejercicios:ejercicios});
-    renderCalendar();renderAssignPanel();toast('✅ Sesión asignada');
+    if(editingSesion.id){
+      var i=DB.sesiones.findIndex(function(s){return s.id===editingSesion.id;});
+      if(i>=0) DB.sesiones[i]={id:editingSesion.id,atleta:editingSesion.atleta,fecha:editingSesion.fecha,nombre:editingSesion.nombre,ejercicios:ejercicios};
+    } else {
+      DB.sesiones.push({id:r.id,atleta:editingSesion.atleta,fecha:editingSesion.fecha,nombre:editingSesion.nombre,ejercicios:ejercicios});
+    }
+    closeModal('sesion');
+    renderCalendar(); renderAssignPanel();
+    toast('✅ Entrenamiento '+(editingSesion.id?'actualizado':'creado'));
   } else toast('Error: '+r.error,'err');
 }
+
+async function deleteSesion(){
+  if(!editingSesion.id) return;
+  if(!confirm('¿Eliminar este entrenamiento? No se puede deshacer.')) return;
+  var r=await apiPost({action:'deleteSesion',id:editingSesion.id});
+  if(r.ok){
+    DB.sesiones=DB.sesiones.filter(function(s){return s.id!==editingSesion.id;});
+    closeModal('sesion');
+    renderCalendar(); renderAssignPanel();
+    toast('🗑 Entrenamiento eliminado');
+  } else toast('Error: '+r.error,'err');
+}
+
 function getParamVal(ex,pid){var p=(ex.params||[]).find(function(p){return p.id===pid;});return p?p.val:'';}
 </script>
 </body>
