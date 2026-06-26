@@ -713,13 +713,17 @@ async function loadImportDB(){
 }
 
 function filterImport(){
-  var q=(document.getElementById('imp-search').value||'').toLowerCase();
-  var bp=document.getElementById('imp-bodypart').value;
-  var eq=document.getElementById('imp-equip').value;
+  var searchEl=document.getElementById('imp-search');
+  var bpEl=document.getElementById('imp-bodypart');
+  var eqEl=document.getElementById('imp-equip');
+  if(!searchEl||!bpEl||!eqEl) return;
+  var q=(searchEl.value||'').toLowerCase();
+  var bp=bpEl.value;
+  var eq=eqEl.value;
   IMP.filtered=IMP.all.filter(function(e){
     var name=(e.name||'').toLowerCase();
-    var parts=e.bodyParts||[e.bodyPart]||[];
-    var equips=e.equipments||[e.equipment]||[];
+    var parts=e.bodyParts||(e.bodyPart?[e.bodyPart]:[]);
+    var equips=e.equipments||(e.equipment?[e.equipment]:[]);
     var matchQ=!q||name.includes(q);
     var matchBP=!bp||parts.includes(bp);
     var matchEQ=!eq||equips.includes(eq);
