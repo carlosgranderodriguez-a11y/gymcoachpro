@@ -676,7 +676,6 @@ async function loadImportDB(){
   IMP.loading=true;
   var loadingEl=document.getElementById('imp-loading');
   try{
-    // Paginación: la API limita a ~10 por página, pedimos varias páginas
     var all=[];
     var offset=0, limit=100;
     var maxPages=20;
@@ -691,16 +690,20 @@ async function loadImportDB(){
       offset+=limit;
     }
     IMP.all=all;
-    // Poblar filtros
+    // Poblar filtros (con comprobación de que existen los elementos)
     var partsSet=new Set(), equipsSet=new Set();
     IMP.all.forEach(function(e){
-      (e.bodyParts||[e.bodyPart]||[]).filter(Boolean).forEach(function(p){partsSet.add(p);});
-      (e.equipments||[e.equipment]||[]).filter(Boolean).forEach(function(eq){equipsSet.add(eq);});
+      (e.bodyParts||(e.bodyPart?[e.bodyPart]:[])).filter(Boolean).forEach(function(p){partsSet.add(p);});
+      (e.equipments||(e.equipment?[e.equipment]:[])).filter(Boolean).forEach(function(eq){equipsSet.add(eq);});
     });
     var bpSel=document.getElementById('imp-bodypart');
-    Array.from(partsSet).sort().forEach(function(p){var o=document.createElement('option');o.value=p;o.textContent=BODYPART_ES[p]||p;bpSel.appendChild(o);});
+    if(bpSel){
+      Array.from(partsSet).sort().forEach(function(p){var o=document.createElement('option');o.value=p;o.textContent=BODYPART_ES[p]||p;bpSel.appendChild(o);});
+    }
     var eqSel=document.getElementById('imp-equip');
-    Array.from(equipsSet).sort().forEach(function(eq){var o=document.createElement('option');o.value=eq;o.textContent=EQUIP_ES[eq]||eq;eqSel.appendChild(o);});
+    if(eqSel){
+      Array.from(equipsSet).sort().forEach(function(eq){var o=document.createElement('option');o.value=eq;o.textContent=EQUIP_ES[eq]||eq;eqSel.appendChild(o);});
+    }
     filterImport();
   }catch(err){
     if(loadingEl) loadingEl.innerHTML='<div style="color:var(--red)">Error: '+err.message+'</div>';
