@@ -195,6 +195,35 @@ td{padding:11px 14px;border-top:1px solid var(--border);font-size:13px;vertical-
 .foster-status.ok{background:#1a2b1e;color:var(--green);}
 .foster-status.warn{background:#3a2a1a;color:var(--orange);}
 .foster-status.high{background:#3a1a1a;color:var(--red);}
+
+/* RESISTENCIA */
+.res-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:10px;display:grid;grid-template-columns:auto 1fr auto;gap:14px;align-items:center;cursor:pointer;transition:border-color 0.15s;}
+.res-card:hover{border-color:var(--accent);}
+.res-icon{width:44px;height:44px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;background:var(--surface2);border:1px solid var(--border);}
+.res-body{min-width:0;}
+.res-name{font-size:14px;font-weight:600;margin-bottom:2px;}
+.res-meta{font-size:11px;color:var(--text-muted);display:flex;flex-wrap:wrap;gap:8px;}
+.res-meta span{white-space:nowrap;}
+.res-actions{display:flex;gap:6px;align-items:center;font-size:11px;color:var(--text-dim);}
+.res-badge{padding:3px 8px;border-radius:12px;font-size:10px;font-weight:700;}
+.res-badge.plan{background:rgba(96,165,250,0.15);color:var(--blue);}
+.res-badge.done{background:#1a2b1e;color:var(--green);}
+.res-empty{text-align:center;padding:40px;color:var(--text-muted);font-size:14px;}
+
+.zona-row{display:grid;grid-template-columns:1fr 1fr 1fr 1fr auto;gap:6px;margin-bottom:6px;}
+.zona-row input{padding:6px 8px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:11px;outline:none;}
+
+.estr-step{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-bottom:8px;}
+.estr-step-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;}
+.estr-step-type{font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;}
+.estr-step-type.calentamiento{color:var(--blue);}
+.estr-step-type.serie{color:var(--accent);}
+.estr-step-type.recuperacion{color:var(--orange);}
+.estr-step-type.vuelta{color:var(--green);}
+.estr-fields{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;}
+.estr-fields input{padding:6px 8px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:11px;outline:none;}
+.estr-fields label{font-size:9px;color:var(--text-muted);letter-spacing:1px;text-transform:uppercase;display:block;margin-bottom:2px;}
+
 .toast{position:fixed;bottom:24px;right:24px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 20px;font-size:13px;z-index:999;display:none;}
 .toast.show{display:block;}
 .toast.ok{border-color:var(--green);color:var(--green);}
@@ -216,6 +245,7 @@ td{padding:11px 14px;border-top:1px solid var(--border);font-size:13px;vertical-
 <div class="tabs">
   <div class="tab active" onclick="switchTab('atletas',this)">👤 Atletas</div>
   <div class="tab" onclick="switchTab('ejercicios',this)">💪 Ejercicios</div>
+  <div class="tab" onclick="switchTab('resistencia',this)">🏃 Resistencia</div>
   <div class="tab" onclick="switchTab('templates',this)">📋 Templates</div>
   <div class="tab" onclick="switchTab('calendario',this)">📅 Calendario</div>
   <div class="tab" onclick="switchTab('ajustes',this)">⚙️ Ajustes</div>
@@ -248,6 +278,26 @@ td{padding:11px 14px;border-top:1px solid var(--border);font-size:13px;vertical-
     </div>
     <div id="ex-filters" style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:16px;"></div>
     <div class="ex-grid" id="ejercicios-grid"></div>
+  </div>
+
+  <!-- RESISTENCIA -->
+  <div id="page-resistencia" class="page">
+    <div class="section-header">
+      <div class="section-title">Entrenamientos de resistencia</div>
+      <div style="display:flex;gap:10px;align-items:center;">
+        <select id="res-filter-atleta" onchange="renderResistencia()" style="padding:9px 12px;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;outline:none;">
+          <option value="">Todos los atletas</option>
+        </select>
+        <button class="btn btn-secondary" onclick="openNewResistencia('plantilla')">📋 Plantilla</button>
+        <button class="btn btn-primary" onclick="openNewResistencia('sesion')">+ Sesión</button>
+      </div>
+    </div>
+    <div id="res-filters" style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:16px;"></div>
+    <div id="res-tabs" style="display:flex;gap:8px;margin-bottom:14px;">
+      <div class="fchip active" onclick="switchResTab('sesiones')" id="restab-sesiones">📅 Sesiones planificadas</div>
+      <div class="fchip" onclick="switchResTab('plantillas')" id="restab-plantillas">📋 Biblioteca de plantillas</div>
+    </div>
+    <div id="res-list"></div>
   </div>
 
   <!-- TEMPLATES -->
@@ -324,6 +374,14 @@ td{padding:11px 14px;border-top:1px solid var(--border);font-size:13px;vertical-
         <button class="btn btn-primary btn-sm" onclick="addConfigItem('grupos_musculares','new-grupo')">Añadir</button>
       </div>
     </div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:16px;">
+      <div style="font-size:14px;font-weight:600;margin-bottom:14px;">🏃 Disciplinas de resistencia</div>
+      <div id="cfg-disciplinas" class="cfg-chip-list"></div>
+      <div style="display:flex;gap:8px;margin-top:10px;">
+        <input id="new-disciplina" type="text" placeholder="Añadir disciplina..." style="flex:1;padding:8px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;outline:none;">
+        <button class="btn btn-primary btn-sm" onclick="addConfigItem('disciplinas_resistencia','new-disciplina')">Añadir</button>
+      </div>
+    </div>
     <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;">
       <div style="font-size:14px;font-weight:600;margin-bottom:14px;">🏷 Categorías</div>
       <div id="cfg-categorias" class="cfg-chip-list"></div>
@@ -386,6 +444,88 @@ td{padding:11px 14px;border-top:1px solid var(--border);font-size:13px;vertical-
     <div class="modal-actions">
       <button class="btn btn-secondary" onclick="closeModal('detail')">Cerrar</button>
       <button class="btn btn-primary" onclick="editFromDetail()">✏️ Editar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL RESISTENCIA -->
+<div class="modal-overlay" id="modal-resistencia">
+  <div class="modal" style="max-width:820px;padding:0;display:flex;flex-direction:column;height:92vh;">
+    <div style="padding:18px 22px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+      <div>
+        <div class="modal-title" id="res-modal-title" style="margin-bottom:4px;">Nueva sesión de resistencia</div>
+        <div style="font-size:12px;color:var(--text-dim)" id="res-modal-sub"></div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="btn btn-danger btn-sm" id="btn-del-res" onclick="deleteResistencia()" style="display:none">🗑</button>
+        <button class="btn btn-secondary btn-sm" onclick="closeModal('resistencia')">Cancelar</button>
+        <button class="btn btn-primary btn-sm" onclick="saveResistencia()">💾 Guardar</button>
+      </div>
+    </div>
+
+    <div style="flex:1;overflow-y:auto;padding:18px 22px;">
+      <!-- INFO PRINCIPAL -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;">
+        <div class="form-group" id="res-atleta-wrap"><label>Atleta</label><select id="res-atleta"></select></div>
+        <div class="form-group" id="res-fecha-wrap"><label>Fecha</label><input type="date" id="res-fecha"></div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;">
+        <div class="form-group"><label>Disciplina</label><select id="res-disciplina"></select></div>
+        <div class="form-group"><label>Nombre de la sesión</label><input type="text" id="res-nombre" placeholder="Ej: Rodaje Z2 con series"></div>
+      </div>
+
+      <!-- MÉTRICAS PREVISTAS -->
+      <div style="font-size:11px;color:var(--text-muted);letter-spacing:1px;text-transform:uppercase;margin:16px 0 10px;">📊 Previsto</div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px;">
+        <div class="form-group"><label>Duración (min)</label><input type="number" id="res-duracion" placeholder="60"></div>
+        <div class="form-group"><label>Distancia (km)</label><input type="number" step="0.1" id="res-distancia" placeholder="10"></div>
+        <div class="form-group"><label>RPE objetivo</label><input type="number" min="1" max="10" id="res-rpe" placeholder="6"></div>
+        <div class="form-group"><label>TSS estimado</label><input type="number" id="res-tss" placeholder="60"></div>
+      </div>
+
+      <!-- ZONAS -->
+      <div style="font-size:11px;color:var(--text-muted);letter-spacing:1px;text-transform:uppercase;margin:16px 0 10px;">🎯 Zonas objetivo (opcional)</div>
+      <div id="res-zonas" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px;margin-bottom:14px;"></div>
+      <button class="btn btn-secondary btn-sm" onclick="addZonaRow()">+ Añadir zona</button>
+
+      <!-- ESTRUCTURA -->
+      <div style="font-size:11px;color:var(--text-muted);letter-spacing:1px;text-transform:uppercase;margin:20px 0 10px;">🧱 Estructura de la sesión</div>
+      <div id="res-estructura"></div>
+      <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">
+        <button class="btn btn-secondary btn-sm" onclick="addEstructuraStep('calentamiento')">+ Calentamiento</button>
+        <button class="btn btn-secondary btn-sm" onclick="addEstructuraStep('serie')">+ Serie principal</button>
+        <button class="btn btn-secondary btn-sm" onclick="addEstructuraStep('recuperacion')">+ Recuperación</button>
+        <button class="btn btn-secondary btn-sm" onclick="addEstructuraStep('vuelta')">+ Vuelta a la calma</button>
+      </div>
+
+      <!-- DESCRIPCIÓN -->
+      <div class="form-group" style="margin-top:20px;">
+        <label>Descripción para el atleta (opcional)</label>
+        <textarea id="res-descripcion" rows="4" placeholder="Instrucciones detalladas: ritmos, sensaciones, técnica, etc."></textarea>
+      </div>
+
+      <!-- EJECUCIÓN REAL (solo edit) -->
+      <div id="res-real-wrap" style="display:none;">
+        <div style="font-size:11px;color:var(--accent);letter-spacing:1px;text-transform:uppercase;margin:20px 0 10px;">✅ Ejecución real</div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;">
+          <div class="form-group"><label>Duración real (min)</label><input type="number" id="res-dur-real"></div>
+          <div class="form-group"><label>Distancia real (km)</label><input type="number" step="0.1" id="res-dist-real"></div>
+          <div class="form-group"><label>RPE real</label><input type="number" min="1" max="10" id="res-rpe-real"></div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <div class="form-group"><label>FC media (bpm)</label><input type="number" id="res-fc-media"></div>
+          <div class="form-group"><label>FC máx (bpm)</label><input type="number" id="res-fc-max"></div>
+        </div>
+        <div class="form-group">
+          <label>Notas del atleta</label>
+          <textarea id="res-notas-atleta" rows="3"></textarea>
+        </div>
+        <div style="background:var(--surface2);border:1px dashed var(--border);border-radius:8px;padding:10px;font-size:12px;color:var(--text-muted);text-align:center;">
+          🔗 Próximamente: importar automáticamente desde Garmin / Strava
+        </div>
+      </div>
+
     </div>
   </div>
 </div>
@@ -454,7 +594,7 @@ td{padding:11px 14px;border-top:1px solid var(--border);font-size:13px;vertical-
 <script>
 var API = 'https://script.google.com/macros/s/AKfycbzqXBcIAhrrXHXs2u1_jk8137QI17VxC_IKA3z15cm4ZKwlkTYFbB96zjKpoxk07B4yUA/exec';
 
-var DB = { atletas:[], ejercicios:{}, sesiones:[], templates:[], config:{tipos_contraccion:[], materiales:[], categorias:[], grupos_musculares:[]} };
+var DB = { atletas:[], ejercicios:{}, sesiones:[], templates:[], resistencia:[], config:{tipos_contraccion:[], materiales:[], categorias:[], grupos_musculares:[], disciplinas_resistencia:[]} };
 var calYear, calMonth, selectedDate=null;
 var currentTemplate=null, isDirty=false, dragSrc=null;
 var editingEjId=null, currentImageUrl='', detailEjId=null;
@@ -502,14 +642,15 @@ window.onload=async function(){
   var now=new Date();calYear=now.getFullYear();calMonth=now.getMonth();
   try{DB.templates=JSON.parse(localStorage.getItem('gc_templates')||'[]');}catch(e){}
   try{
-    var [rA,rE,rS,rC]=await Promise.all([api({action:'getAtletas'}),api({action:'getEjercicios'}),api({action:'getAllSesiones'}),api({action:'getConfig'})]);
+    var [rA,rE,rS,rC,rR]=await Promise.all([api({action:'getAtletas'}),api({action:'getEjercicios'}),api({action:'getAllSesiones'}),api({action:'getConfig'}),api({action:'getResistencia'})]);
     if(rA.ok) DB.atletas=rA.atletas||[];
     if(rE.ok) DB.ejercicios=rE.ejercicios||{};
     if(rS.ok) DB.sesiones=rS.sesiones||[];
     if(rC.ok) DB.config=Object.assign(DB.config,rC.config||{});
+    if(rR&&rR.ok) DB.resistencia=rR.items||[];
     setStatus('✅ Conectado','var(--green)');
   }catch(e){setStatus('❌ Sin conexión','var(--red)');}
-  renderAtletas();renderEjercicios();renderTemplateList();renderCalendar();renderAjustes();
+  renderAtletas();renderEjercicios();renderTemplateList();renderCalendar();renderAjustes();renderResistencia();
   document.addEventListener('click',function(e){if(!e.target.closest('.param-picker')&&!e.target.closest('.param-add-btn'))document.getElementById('param-picker').style.display='none';});
 };
 
@@ -662,7 +803,7 @@ function editFromDetail(){
 function toEmbedUrl(url){var yt=url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|v\/))([^&?\/\s]{11})/);if(yt)return 'https://www.youtube.com/embed/'+yt[1];var vi=url.match(/vimeo\.com\/(\d+)/);if(vi)return 'https://player.vimeo.com/video/'+vi[1];return null;}
 
 // ── AJUSTES ──
-function renderAjustes(){renderConfigList('cfg-contraccion','tipos_contraccion');renderConfigList('cfg-materiales','materiales');renderConfigList('cfg-grupos','grupos_musculares');renderConfigList('cfg-categorias','categorias');}
+function renderAjustes(){renderConfigList('cfg-contraccion','tipos_contraccion');renderConfigList('cfg-materiales','materiales');renderConfigList('cfg-grupos','grupos_musculares');renderConfigList('cfg-disciplinas','disciplinas_resistencia');renderConfigList('cfg-categorias','categorias');}
 function renderConfigList(elId,key){var el=document.getElementById(elId);if(!el)return;var items=DB.config[key]||[];if(!items.length){el.innerHTML='<div style="color:var(--text-muted);font-size:13px">Lista vacía</div>';return;}el.innerHTML=items.map(function(item){return '<div class="cfg-chip"><span>'+item+'</span><span class="cfg-chip-del" onclick="removeConfigItem(\''+key+'\',\''+item.replace(/'/g,"\\'")+'\')">✕</span></div>';}).join('');}
 async function addConfigItem(key,inputId){var input=document.getElementById(inputId);var val=input.value.trim();if(!val)return;if(!DB.config[key])DB.config[key]=[];if(DB.config[key].includes(val)){toast('Ya existe','err');return;}DB.config[key].push(val);var r=await apiPost({action:'saveConfig',key:key,value:DB.config[key]});if(r.ok){input.value='';renderAjustes();renderEjercicios();toast('✅ Añadido');}else{DB.config[key].pop();toast('Error: '+r.error,'err');}}
 async function removeConfigItem(key,val){if(!confirm('¿Eliminar "'+val+'"?'))return;DB.config[key]=DB.config[key].filter(function(v){return v!==val;});var r=await apiPost({action:'saveConfig',key:key,value:DB.config[key]});if(r.ok){renderAjustes();renderEjercicios();toast('🗑 Eliminado');}else toast('Error: '+r.error,'err');}
@@ -754,16 +895,17 @@ function renderCalMes(){
   for(var d=1;d<=days;d++){
     var ds=calYear+'-'+String(calMonth+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
     var sesDelDia=DB.sesiones.filter(function(s){return s.fecha===ds&&(!filterAtleta||s.atleta===filterAtleta);});
-    var hasSes=sesDelDia.length>0;
+    var resDelDia=(DB.resistencia||[]).filter(function(r){return r.tipo==='sesion'&&r.fecha===ds&&(!filterAtleta||r.atleta===filterAtleta);});
+    var total=sesDelDia.length+resDelDia.length;
+    var hasSes=total>0;
     var el=document.createElement('div');
     el.className='cal-day'+(hasSes?' has-session':'')+(ds===today?' today':'')+(ds===selectedDate?' selected':'');
     el.textContent=d;
-    if(hasSes){var b=document.createElement('div');b.style.cssText='position:absolute;top:2px;right:4px;font-size:9px;background:var(--accent);color:#000;border-radius:6px;padding:1px 5px;font-weight:700;';b.textContent=sesDelDia.length;el.appendChild(b);}
-    // Drop target
+    if(hasSes){var b=document.createElement('div');b.style.cssText='position:absolute;top:2px;right:4px;font-size:9px;background:var(--accent);color:#000;border-radius:6px;padding:1px 5px;font-weight:700;';b.textContent=total;el.appendChild(b);}
     (function(date){
-      el.ondragover=function(e){if(dragSesId){e.preventDefault();el.style.background='rgba(204,255,102,0.15)';}};
+      el.ondragover=function(e){if(dragSesId||dragResId){e.preventDefault();el.style.background='rgba(204,255,102,0.15)';}};
       el.ondragleave=function(){el.style.background='';};
-      el.ondrop=function(e){if(dragSesId){e.preventDefault();el.style.background='';moveSesionToDate(dragSesId,date);}};
+      el.ondrop=function(e){el.style.background='';if(dragSesId){e.preventDefault();moveSesionToDate(dragSesId,date);}else if(dragResId){e.preventDefault();moveResistenciaToDate(dragResId,date);}};
       el.onclick=function(){selectedDate=date;renderCalendar();renderAssignPanel();};
     })(ds);
     grid.appendChild(el);
@@ -794,25 +936,35 @@ function renderCalSemana(){
   var today=new Date().toISOString().slice(0,10);
   var dayNames=['LUN','MAR','MIÉ','JUE','VIE','SÁB','DOM'];
 
-  // Cargar sesiones por día
+  // Cargar sesiones por día (fuerza + resistencia)
   var sesPorDia=days.map(function(d){
     var ds=d.toISOString().slice(0,10);
-    return DB.sesiones.filter(function(s){return s.fecha===ds&&(!filterAtleta||s.atleta===filterAtleta);});
+    var fuerza=DB.sesiones.filter(function(s){return s.fecha===ds&&(!filterAtleta||s.atleta===filterAtleta);}).map(function(s){return {tipo:'fuerza',s:s};});
+    var resis=(DB.resistencia||[]).filter(function(r){return r.tipo==='sesion'&&r.fecha===ds&&(!filterAtleta||r.atleta===filterAtleta);}).map(function(r){return {tipo:'resistencia',r:r};});
+    return fuerza.concat(resis);
   });
 
-  var loadsPorDia=sesPorDia.map(function(sesArr){return sesArr.reduce(function(acc,s){return acc+calcSessionLoad(s);},0);});
+  var loadsPorDia=sesPorDia.map(function(arr){return arr.reduce(function(acc,it){return acc+(it.tipo==='fuerza'?calcSessionLoad(it.s):calcResistenciaLoad(it.r));},0);});
 
   var colsHtml=days.map(function(d,i){
     var ds=d.toISOString().slice(0,10);
     var isToday=ds===today;
-    var sesHtml=sesPorDia[i].map(function(s){
-      var load=calcSessionLoad(s);
-      var dur=calcSessionDuration(s);
-      return '<div class="sem-ses" draggable="true" ondragstart="dragSesStart(\''+s.id+'\',this)" ondragend="dragSesEnd(this)" onclick="editSesion(\''+s.id+'\')">'
-        +'<div class="sem-ses-atleta">'+s.atleta.split(' ')[0]+'</div>'
-        +'<div class="sem-ses-name">'+s.nombre+'</div>'
-        +'<div class="sem-ses-meta"><span>⏱ '+dur+'min</span><span class="sem-ses-load">'+load+' AU</span></div>'
-        +'</div>';
+    var sesHtml=sesPorDia[i].map(function(it){
+      if(it.tipo==='fuerza'){
+        var s=it.s;var load=calcSessionLoad(s);var dur=calcSessionDuration(s);
+        return '<div class="sem-ses" draggable="true" ondragstart="dragSesStart(\''+s.id+'\',this)" ondragend="dragSesEnd(this)" onclick="editSesion(\''+s.id+'\')">'
+          +'<div class="sem-ses-atleta">💪 '+s.atleta.split(' ')[0]+'</div>'
+          +'<div class="sem-ses-name">'+s.nombre+'</div>'
+          +'<div class="sem-ses-meta"><span>⏱ '+dur+'min</span><span class="sem-ses-load">'+load+' AU</span></div>'
+          +'</div>';
+      } else {
+        var r=it.r;var load=calcResistenciaLoad(r);
+        return '<div class="sem-ses" style="background:rgba(96,165,250,0.15);border-color:#3b6c9c;" draggable="true" ondragstart="dragResStart(\''+r.id+'\',this)" ondragend="dragSesEnd(this)" onclick="editResistencia(\''+r.id+'\')">'
+          +'<div class="sem-ses-atleta" style="color:#60a5fa">'+iconForDisc(r.disciplina)+' '+r.atleta.split(' ')[0]+'</div>'
+          +'<div class="sem-ses-name">'+r.nombre+'</div>'
+          +'<div class="sem-ses-meta"><span>⏱ '+(r.duracion_min||'—')+'min</span><span class="sem-ses-load">'+load+' AU</span></div>'
+          +'</div>';
+      }
     }).join('');
     var addBtn='<button class="sem-add-btn" onclick="quickCreateOn(\''+ds+'\')">+</button>';
     return '<div class="sem-col'+(isToday?' today':'')+'" ondragover="semDragOver(event,this)" ondragleave="semDragLeave(this)" ondrop="semDrop(event,this,\''+ds+'\')">'
@@ -874,6 +1026,11 @@ function calcSessionLoad(s){
   var rpe=rpes.length?rpes.reduce(function(a,b){return a+b;},0)/rpes.length:6;
   return Math.round(dur*rpe);
 }
+function calcResistenciaLoad(r){
+  var dur=parseFloat(r.duracion_real||r.duracion_min)||0;
+  var rpe=parseFloat(r.rpe_real||r.rpe_objetivo)||6;
+  return Math.round(dur*rpe);
+}
 function calcFoster(loads){
   var total=loads.reduce(function(a,b){return a+b;},0);
   var days=7;
@@ -892,21 +1049,33 @@ function strainStatus(s){if(s<5000)return 'ok';if(s<7000)return 'warn';return 'h
 function strainLabel(s){if(s<3000)return '✓ Baja';if(s<5000)return '✓ Moderada';if(s<7000)return '⚠ Alta';return '🚨 Muy alta (riesgo)';}
 
 // ── DRAG & DROP ──
-function dragSesStart(id,el){dragSesId=id;el.classList.add('dragging');}
-function dragSesEnd(el){el.classList.remove('dragging');dragSesId=null;document.querySelectorAll('.sem-col').forEach(function(c){c.classList.remove('drag-over');});}
-function semDragOver(e,el){if(dragSesId){e.preventDefault();el.classList.add('drag-over');}}
+var dragResId=null;
+function dragSesStart(id,el){dragSesId=id;dragResId=null;el.classList.add('dragging');}
+function dragResStart(id,el){dragResId=id;dragSesId=null;el.classList.add('dragging');}
+function dragSesEnd(el){el.classList.remove('dragging');dragSesId=null;dragResId=null;document.querySelectorAll('.sem-col').forEach(function(c){c.classList.remove('drag-over');});}
+function semDragOver(e,el){if(dragSesId||dragResId){e.preventDefault();el.classList.add('drag-over');}}
 function semDragLeave(el){el.classList.remove('drag-over');}
-function semDrop(e,el,ds){if(!dragSesId)return;e.preventDefault();el.classList.remove('drag-over');moveSesionToDate(dragSesId,ds);}
+function semDrop(e,el,ds){
+  if(dragSesId){e.preventDefault();el.classList.remove('drag-over');moveSesionToDate(dragSesId,ds);}
+  else if(dragResId){e.preventDefault();el.classList.remove('drag-over');moveResistenciaToDate(dragResId,ds);}
+}
 
 async function moveSesionToDate(sesId,newDate){
   var s=DB.sesiones.find(function(x){return x.id===sesId;});
   if(!s||s.fecha===newDate)return;
-  var oldDate=s.fecha;
-  s.fecha=newDate; // optimista
-  renderCalendar();
+  var oldDate=s.fecha;s.fecha=newDate;renderCalendar();
   var r=await apiPost({action:'updateSesion',id:s.id,atleta:s.atleta,fecha:newDate,nombre:s.nombre,ejercicios:s.ejercicios});
   if(r.ok){toast('✅ Movido a '+new Date(newDate+'T12:00:00').toLocaleDateString('es-ES',{weekday:'short',day:'numeric',month:'short'}));}
-  else{s.fecha=oldDate;renderCalendar();toast('Error moviendo: '+r.error,'err');}
+  else{s.fecha=oldDate;renderCalendar();toast('Error: '+r.error,'err');}
+}
+
+async function moveResistenciaToDate(resId,newDate){
+  var r=DB.resistencia.find(function(x){return x.id===resId;});
+  if(!r||r.fecha===newDate)return;
+  var oldDate=r.fecha;r.fecha=newDate;renderCalendar();
+  var res=await apiPost(Object.assign({action:'updateResistencia'},r));
+  if(res.ok){toast('✅ Movido a '+new Date(newDate+'T12:00:00').toLocaleDateString('es-ES',{weekday:'short',day:'numeric',month:'short'}));}
+  else{r.fecha=oldDate;renderCalendar();toast('Error: '+res.error,'err');}
 }
 
 function quickCreateOn(ds){selectedDate=ds;openNewSesion();}
@@ -917,12 +1086,30 @@ function renderAssignPanel(){
   if(!selectedDate){panel.innerHTML='<div class="no-day">Pulsa un día para crear<br>o editar un entrenamiento</div>';return;}
   var filterAtleta=document.getElementById('cal-filter-atleta').value;
   var sesDelDia=DB.sesiones.filter(function(s){return s.fecha===selectedDate&&(!filterAtleta||s.atleta===filterAtleta);});
+  var resDelDia=(DB.resistencia||[]).filter(function(r){return r.tipo==='sesion'&&r.fecha===selectedDate&&(!filterAtleta||r.atleta===filterAtleta);});
   var fmtDate=new Date(selectedDate+'T12:00:00').toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'long'});
-  var sesHtml=sesDelDia.length?sesDelDia.map(function(s){
+  var html='<div class="ap-title">📅 '+fmtDate+'</div>';
+  var listHtml='';
+  sesDelDia.forEach(function(s){
     var load=calcSessionLoad(s);
-    return '<div class="existing-session" style="cursor:pointer" draggable="true" ondragstart="dragSesStart(\''+s.id+'\',this)" ondragend="dragSesEnd(this)" onclick="editSesion(\''+s.id+'\')"><div><strong>'+s.atleta.split(' ')[0]+'</strong> — '+s.nombre+'<div style="font-size:11px;color:var(--text-muted)">'+s.ejercicios.length+' ej. · '+load+' AU</div></div><span style="font-size:11px;color:var(--accent)">✏️</span></div>';
-  }).join(''):'<div style="color:var(--text-muted);font-size:13px;text-align:center;padding:20px 0">Sin entrenamientos</div>';
-  panel.innerHTML='<div class="ap-title">📅 '+fmtDate+'</div><div style="margin-bottom:14px">'+sesHtml+'</div><button class="btn btn-primary" style="width:100%" onclick="openNewSesion()">+ Crear entrenamiento</button>';
+    listHtml+='<div class="existing-session" style="cursor:pointer" draggable="true" ondragstart="dragSesStart(\''+s.id+'\',this)" ondragend="dragSesEnd(this)" onclick="editSesion(\''+s.id+'\')"><div><strong>💪 '+s.atleta.split(' ')[0]+'</strong> — '+s.nombre+'<div style="font-size:11px;color:var(--text-muted)">'+s.ejercicios.length+' ej. · '+load+' AU</div></div><span style="font-size:11px;color:var(--accent)">✏️</span></div>';
+  });
+  resDelDia.forEach(function(r){
+    var load=calcResistenciaLoad(r);
+    listHtml+='<div class="existing-session" style="cursor:pointer;background:rgba(96,165,250,0.1);border-color:#3b6c9c;" draggable="true" ondragstart="dragResStart(\''+r.id+'\',this)" ondragend="dragSesEnd(this)" onclick="editResistencia(\''+r.id+'\')"><div><strong>'+iconForDisc(r.disciplina)+' '+r.atleta.split(' ')[0]+'</strong> — '+r.nombre+'<div style="font-size:11px;color:var(--text-muted)">'+(r.duracion_min||'?')+'min · '+load+' AU</div></div><span style="font-size:11px;color:var(--accent)">✏️</span></div>';
+  });
+  if(!listHtml) listHtml='<div style="color:var(--text-muted);font-size:13px;text-align:center;padding:20px 0">Sin entrenamientos</div>';
+  html+='<div style="margin-bottom:14px">'+listHtml+'</div>';
+  html+='<button class="btn btn-primary" style="width:100%;margin-bottom:6px" onclick="openNewSesion()">💪 + Fuerza</button>';
+  html+='<button class="btn btn-secondary" style="width:100%" onclick="openNewResistenciaWithDate()">🏃 + Resistencia</button>';
+  panel.innerHTML=html;
+}
+
+function openNewResistenciaWithDate(){
+  if(!DB.atletas.length){toast('Crea un atleta primero','err');return;}
+  openNewResistencia('sesion');
+  editingRes.fecha=selectedDate;
+  document.getElementById('res-fecha').value=selectedDate;
 }
 
 // ── EDITOR SESIÓN ──
@@ -1198,6 +1385,208 @@ async function exportSesionPDF(){
 function hexToRgb(hex){
   var m=hex.replace('#','').match(/.{1,2}/g);
   return {r:parseInt(m[0],16),g:parseInt(m[1],16),b:parseInt(m[2],16)};
+}
+
+// ═══════════════════════════════════════════
+// ── RESISTENCIA ──
+// ═══════════════════════════════════════════
+var resTab='sesiones'; // 'sesiones' | 'plantillas'
+var editingRes=null;
+var resFilterDisc=null;
+
+var DISC_ICONS = {
+  'Natación':'🏊','Ciclismo ruta':'🚴','Ciclismo rodillo':'🎯','MTB':'⛰️','Carrera':'🏃',
+  'Remo':'🚣','Fútbol':'⚽','Esgrima':'🤺','Trail':'🥾','Aguas abiertas':'🌊'
+};
+
+function iconForDisc(disc){return DISC_ICONS[disc]||'🏋️';}
+
+function switchResTab(tab){
+  resTab=tab;
+  document.getElementById('restab-sesiones').classList.toggle('active',tab==='sesiones');
+  document.getElementById('restab-plantillas').classList.toggle('active',tab==='plantillas');
+  renderResistencia();
+}
+
+function renderResistencia(){
+  var sel=document.getElementById('res-filter-atleta');
+  if(sel){
+    var cur=sel.value;
+    sel.innerHTML='<option value="">Todos los atletas</option>'+DB.atletas.map(function(a){return '<option'+(cur===a?' selected':'')+'>'+a+'</option>';}).join('');
+    sel.value=cur;
+  }
+  // Filtros de disciplina
+  var fwrap=document.getElementById('res-filters');
+  var discs=DB.config.disciplinas_resistencia||[];
+  fwrap.innerHTML='<div class="filter-group"><span class="filter-label">Disciplina</span><div class="filter-chips">'
+    +'<div class="fchip'+(!resFilterDisc?' active':'')+'" onclick="setResFilter(null)">Todas</div>'
+    +discs.map(function(d){return '<div class="fchip'+(resFilterDisc===d?' active':'')+'" onclick="setResFilter(\''+d.replace(/'/g,"\\'")+'\')">'+iconForDisc(d)+' '+d+'</div>';}).join('')
+  +'</div></div>';
+
+  var filterAtleta=sel?sel.value:'';
+  var items=(DB.resistencia||[]).filter(function(r){
+    if(resTab==='sesiones'&&r.tipo!=='sesion') return false;
+    if(resTab==='plantillas'&&r.tipo!=='plantilla') return false;
+    if(filterAtleta&&r.tipo==='sesion'&&r.atleta!==filterAtleta) return false;
+    if(resFilterDisc&&r.disciplina!==resFilterDisc) return false;
+    return true;
+  }).sort(function(a,b){
+    if(a.tipo==='sesion'&&b.tipo==='sesion') return b.fecha.localeCompare(a.fecha);
+    return (a.nombre||'').localeCompare(b.nombre||'');
+  });
+
+  var list=document.getElementById('res-list');
+  if(!items.length){list.innerHTML='<div class="res-empty">No hay '+(resTab==='sesiones'?'sesiones planificadas':'plantillas')+' aún.<br>Crea la primera con el botón de arriba.</div>';return;}
+
+  list.innerHTML=items.map(function(r){
+    var meta=[];
+    if(r.tipo==='sesion'&&r.atleta) meta.push('👤 '+r.atleta.split(' ')[0]);
+    if(r.tipo==='sesion'&&r.fecha) meta.push('📅 '+new Date(r.fecha+'T12:00:00').toLocaleDateString('es-ES',{day:'numeric',month:'short'}));
+    if(r.duracion_min) meta.push('⏱ '+r.duracion_min+'min');
+    if(r.distancia_km) meta.push('📏 '+r.distancia_km+'km');
+    if(r.rpe_objetivo) meta.push('RPE '+r.rpe_objetivo);
+    if(r.tss) meta.push('TSS '+r.tss);
+    var badge=r.rpe_real?'<span class="res-badge done">✓ Completada</span>':(r.tipo==='sesion'?'<span class="res-badge plan">Planificada</span>':'');
+    return '<div class="res-card" onclick="editResistencia(\''+r.id+'\')">'
+      +'<div class="res-icon">'+iconForDisc(r.disciplina)+'</div>'
+      +'<div class="res-body"><div class="res-name">'+(r.nombre||'(sin nombre)')+'</div><div class="res-meta">'+meta.map(function(m){return '<span>'+m+'</span>';}).join('')+'</div></div>'
+      +'<div class="res-actions">'+badge+' <span>›</span></div>'
+    +'</div>';
+  }).join('');
+}
+
+function setResFilter(disc){resFilterDisc=disc;renderResistencia();}
+
+function openNewResistencia(tipo){
+  editingRes={id:null,tipo:tipo,atleta:DB.atletas[0]||'',fecha:new Date().toISOString().slice(0,10),disciplina:(DB.config.disciplinas_resistencia||[])[0]||'Carrera',nombre:'',duracion_min:'',distancia_km:'',rpe_objetivo:'',tss:'',zonas:[],estructura:[],descripcion:'',fc_media:'',fc_max:'',duracion_real:'',distancia_real:'',rpe_real:'',notas_atleta:''};
+  renderResistenciaEditor();
+  openModal('resistencia');
+}
+
+function editResistencia(id){
+  var r=DB.resistencia.find(function(x){return x.id===id;});
+  if(!r) return;
+  editingRes=JSON.parse(JSON.stringify(r));
+  renderResistenciaEditor();
+  openModal('resistencia');
+}
+
+function renderResistenciaEditor(){
+  var isPlan=editingRes.tipo==='plantilla';
+  document.getElementById('res-modal-title').textContent=(editingRes.id?'Editar ':'Nueva ')+(isPlan?'plantilla':'sesión')+' de resistencia';
+  document.getElementById('res-modal-sub').textContent=isPlan?'Plantilla reutilizable':'Se asigna a un atleta y fecha concreta';
+  document.getElementById('btn-del-res').style.display=editingRes.id?'inline-block':'none';
+  // Ocultar atleta+fecha si es plantilla
+  document.getElementById('res-atleta-wrap').style.display=isPlan?'none':'';
+  document.getElementById('res-fecha-wrap').style.display=isPlan?'none':'';
+  document.getElementById('res-real-wrap').style.display=(editingRes.id&&!isPlan)?'block':'none';
+
+  // Atleta
+  document.getElementById('res-atleta').innerHTML=DB.atletas.map(function(a){return '<option'+(a===editingRes.atleta?' selected':'')+'>'+a+'</option>';}).join('');
+  document.getElementById('res-fecha').value=editingRes.fecha||new Date().toISOString().slice(0,10);
+  // Disciplina
+  var discs=DB.config.disciplinas_resistencia||[];
+  document.getElementById('res-disciplina').innerHTML=discs.map(function(d){return '<option'+(d===editingRes.disciplina?' selected':'')+'>'+d+'</option>';}).join('');
+  document.getElementById('res-nombre').value=editingRes.nombre||'';
+  document.getElementById('res-duracion').value=editingRes.duracion_min||'';
+  document.getElementById('res-distancia').value=editingRes.distancia_km||'';
+  document.getElementById('res-rpe').value=editingRes.rpe_objetivo||'';
+  document.getElementById('res-tss').value=editingRes.tss||'';
+  document.getElementById('res-descripcion').value=editingRes.descripcion||'';
+
+  document.getElementById('res-dur-real').value=editingRes.duracion_real||'';
+  document.getElementById('res-dist-real').value=editingRes.distancia_real||'';
+  document.getElementById('res-rpe-real').value=editingRes.rpe_real||'';
+  document.getElementById('res-fc-media').value=editingRes.fc_media||'';
+  document.getElementById('res-fc-max').value=editingRes.fc_max||'';
+  document.getElementById('res-notas-atleta').value=editingRes.notas_atleta||'';
+
+  renderZonas();renderEstructura();
+}
+
+function renderZonas(){
+  var wrap=document.getElementById('res-zonas');
+  var zonas=editingRes.zonas||[];
+  if(!zonas.length){wrap.innerHTML='<div style="text-align:center;color:var(--text-muted);font-size:12px">Sin zonas definidas</div>';return;}
+  wrap.innerHTML=zonas.map(function(z,i){
+    return '<div class="zona-row">'
+      +'<input type="text" placeholder="Zona (Z1)" value="'+(z.nombre||'')+'" oninput="editingRes.zonas['+i+'].nombre=this.value">'
+      +'<input type="text" placeholder="HR (bpm)" value="'+(z.hr||'')+'" oninput="editingRes.zonas['+i+'].hr=this.value">'
+      +'<input type="text" placeholder="Pace/Vel" value="'+(z.pace||'')+'" oninput="editingRes.zonas['+i+'].pace=this.value">'
+      +'<input type="text" placeholder="Watts" value="'+(z.watts||'')+'" oninput="editingRes.zonas['+i+'].watts=this.value">'
+      +'<button class="btn btn-danger btn-xs" onclick="editingRes.zonas.splice('+i+',1);renderZonas();">✕</button>'
+    +'</div>';
+  }).join('');
+}
+
+function addZonaRow(){if(!editingRes.zonas)editingRes.zonas=[];editingRes.zonas.push({nombre:'Z'+(editingRes.zonas.length+1),hr:'',pace:'',watts:''});renderZonas();}
+
+function renderEstructura(){
+  var wrap=document.getElementById('res-estructura');
+  var steps=editingRes.estructura||[];
+  if(!steps.length){wrap.innerHTML='<div style="text-align:center;color:var(--text-muted);font-size:12px;padding:14px;">Añade pasos con los botones de abajo</div>';return;}
+  var typeLabels={calentamiento:'CALENTAMIENTO',serie:'SERIE PRINCIPAL',recuperacion:'RECUPERACIÓN',vuelta:'VUELTA A LA CALMA'};
+  wrap.innerHTML=steps.map(function(st,i){
+    return '<div class="estr-step">'
+      +'<div class="estr-step-head">'
+        +'<div class="estr-step-type '+st.type+'">'+(typeLabels[st.type]||st.type)+'</div>'
+        +'<button class="btn btn-danger btn-xs" onclick="editingRes.estructura.splice('+i+',1);renderEstructura();">✕</button>'
+      +'</div>'
+      +'<div class="estr-fields">'
+        +'<div><label>Repeticiones</label><input type="number" value="'+(st.reps||'')+'" oninput="editingRes.estructura['+i+'].reps=this.value" placeholder="1"></div>'
+        +'<div><label>Duración/Distancia</label><input type="text" value="'+(st.dist||'')+'" oninput="editingRes.estructura['+i+'].dist=this.value" placeholder="10min o 400m"></div>'
+        +'<div><label>Intensidad/Zona</label><input type="text" value="'+(st.zona||'')+'" oninput="editingRes.estructura['+i+'].zona=this.value" placeholder="Z2 o RPE 6"></div>'
+        +'<div><label>Descanso</label><input type="text" value="'+(st.descanso||'')+'" oninput="editingRes.estructura['+i+'].descanso=this.value" placeholder="2min"></div>'
+      +'</div>'
+      +'<input type="text" style="width:100%;margin-top:6px;padding:6px 8px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:11px;outline:none;" placeholder="Notas del paso (opcional)" value="'+(st.notas||'')+'" oninput="editingRes.estructura['+i+'].notas=this.value">'
+    +'</div>';
+  }).join('');
+}
+
+function addEstructuraStep(type){if(!editingRes.estructura)editingRes.estructura=[];editingRes.estructura.push({type:type,reps:'1',dist:'',zona:'',descanso:'',notas:''});renderEstructura();}
+
+async function saveResistencia(){
+  editingRes.nombre=document.getElementById('res-nombre').value.trim();
+  if(!editingRes.nombre){toast('Ponle nombre','err');return;}
+  editingRes.atleta=document.getElementById('res-atleta').value;
+  editingRes.fecha=document.getElementById('res-fecha').value;
+  editingRes.disciplina=document.getElementById('res-disciplina').value;
+  editingRes.duracion_min=document.getElementById('res-duracion').value;
+  editingRes.distancia_km=document.getElementById('res-distancia').value;
+  editingRes.rpe_objetivo=document.getElementById('res-rpe').value;
+  editingRes.tss=document.getElementById('res-tss').value;
+  editingRes.descripcion=document.getElementById('res-descripcion').value;
+  editingRes.duracion_real=document.getElementById('res-dur-real').value;
+  editingRes.distancia_real=document.getElementById('res-dist-real').value;
+  editingRes.rpe_real=document.getElementById('res-rpe-real').value;
+  editingRes.fc_media=document.getElementById('res-fc-media').value;
+  editingRes.fc_max=document.getElementById('res-fc-max').value;
+  editingRes.notas_atleta=document.getElementById('res-notas-atleta').value;
+
+  var action=editingRes.id?'updateResistencia':'addResistencia';
+  var payload=Object.assign({action:action},editingRes);
+  var r=await apiPost(payload);
+  if(r.ok){
+    if(editingRes.id){
+      var idx=DB.resistencia.findIndex(function(x){return x.id===editingRes.id;});
+      if(idx>=0) DB.resistencia[idx]=Object.assign({},editingRes);
+    } else {
+      editingRes.id=r.id;
+      DB.resistencia.push(Object.assign({},editingRes));
+    }
+    closeModal('resistencia');
+    renderResistencia();
+    renderCalendar();
+    toast('✅ Guardado');
+  } else toast('Error: '+r.error,'err');
+}
+
+async function deleteResistencia(){
+  if(!editingRes.id) return;
+  if(!confirm('¿Eliminar este entrenamiento?')) return;
+  var r=await apiPost({action:'deleteResistencia',id:editingRes.id});
+  if(r.ok){DB.resistencia=DB.resistencia.filter(function(x){return x.id!==editingRes.id;});closeModal('resistencia');renderResistencia();renderCalendar();toast('🗑 Eliminado');}
+  else toast('Error: '+r.error,'err');
 }
 </script>
 </body>
