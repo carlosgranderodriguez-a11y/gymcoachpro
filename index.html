@@ -471,17 +471,22 @@ td{padding:11px 14px;border-top:1px solid var(--border);font-size:13px;vertical-
       </div>
 
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;">
-        <div class="form-group"><label>Disciplina</label><select id="res-disciplina"></select></div>
+        <div class="form-group"><label>Disciplina</label><select id="res-disciplina" onchange="onResDisciplinaChange()"></select></div>
         <div class="form-group"><label>Nombre de la sesión</label><input type="text" id="res-nombre" placeholder="Ej: Rodaje Z2 con series"></div>
       </div>
 
       <!-- MÉTRICAS PREVISTAS -->
       <div style="font-size:11px;color:var(--text-muted);letter-spacing:1px;text-transform:uppercase;margin:16px 0 10px;">📊 Previsto</div>
       <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px;">
-        <div class="form-group"><label>Duración (min)</label><input type="number" id="res-duracion" placeholder="60"></div>
-        <div class="form-group"><label>Distancia (km)</label><input type="number" step="0.1" id="res-distancia" placeholder="10"></div>
+        <div class="form-group" id="res-duracion-wrap"><label>Duración (min)</label><input type="number" id="res-duracion" placeholder="60"></div>
+        <div class="form-group" id="res-distancia-wrap"><label>Distancia (km)</label><input type="number" step="0.1" id="res-distancia" placeholder="10"></div>
         <div class="form-group"><label>RPE objetivo</label><input type="number" min="1" max="10" id="res-rpe" placeholder="6"></div>
         <div class="form-group"><label>TSS estimado</label><input type="number" id="res-tss" placeholder="60"></div>
+      </div>
+      <div id="res-carrera-wrap" style="display:none;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px;">
+        <div class="form-group"><label>Km</label><input type="number" step="0.01" id="res-km" placeholder="10" oninput="onRunningInput('km')"></div>
+        <div class="form-group"><label>Ritmo (min/km)</label><input type="text" id="res-ritmo" placeholder="5:30" oninput="onRunningInput('ritmo')"></div>
+        <div class="form-group"><label>Tiempo total</label><input type="text" id="res-tiempo" placeholder="55:00" oninput="onRunningInput('tiempo')"></div>
       </div>
 
       <!-- ZONAS -->
@@ -1503,6 +1508,86 @@ function renderResistenciaEditor(){
   document.getElementById('res-notas-atleta').value=editingRes.notas_atleta||'';
 
   renderZonas();renderEstructura();
+  onResDisciplinaChange();
+}
+
+// ── CARRERA: km / ritmo / tiempo total, autocalculados entre sí ──
+function isCarreraDisc(d){ return (d||'').trim().toLowerCase()==='carrera'; }
+
+function onResDisciplinaChange(){
+  var disc=document.getElementById('res-disciplina').value;
+  var showRun=isCarreraDisc(disc);
+  document.getElementById('res-carrera-wrap').style.display=showRun?'grid':'none';
+  document.getElementById('res-duracion-wrap').style.display=showRun?'none':'';
+  document.getElementById('res-distancia-wrap').style.display=showRun?'none':'';
+  if(showRun) syncRunningFromStored();
+}
+
+// "5:30" o "1:05:00" -> segundos. Un número sin ":" se interpreta como minutos.
+function parseClockToSec(str){
+  if(!str) return 0;
+  str=String(str).trim();
+  if(str.indexOf(':')===-1){
+    var n=parseFloat(str.replace(',','.'));
+    return isNaN(n)?0:Math.round(n*60);
+  }
+  var parts=str.split(':').map(function(p){return parseFloat(p.replace(',','.'))||0;});
+  var sec=0;
+  if(parts.length===3) sec=parts[0]*3600+parts[1]*60+parts[2];
+  else if(parts.length===2) sec=parts[0]*60+parts[1];
+  return Math.round(sec);
+}
+function secToClock(sec){
+  sec=Math.max(0,Math.round(sec));
+  var h=Math.floor(sec/3600); sec-=h*3600;
+  var m=Math.floor(sec/60); var s=sec-m*60;
+  if(h>0) return h+':'+(m<10?'0':'')+m+':'+(s<10?'0':'')+s;
+  return m+':'+(s<10?'0':'')+s;
+}
+
+// Se llama al escribir en Km, Ritmo o Tiempo total: rellena el tercer campo automáticamente.
+function onRunningInput(field){
+  var km=parseFloat(document.getElementById('res-km').value)||0;
+  var paceSec=parseClockToSec(document.getElementById('res-ritmo').value);
+  var totalSec=parseClockToSec(document.getElementById('res-tiempo').value);
+
+  if(field==='km'){
+    if(paceSec>0){
+      document.getElementById('res-tiempo').value=km>0?secToClock(paceSec*km):'';
+    } else if(totalSec>0 && km>0){
+      document.getElementById('res-ritmo').value=secToClock(totalSec/km);
+    }
+  } else if(field==='ritmo'){
+    if(km>0){
+      document.getElementById('res-tiempo').value=paceSec>0?secToClock(paceSec*km):'';
+    } else if(totalSec>0 && paceSec>0){
+      document.getElementById('res-km').value=Math.round((totalSec/paceSec)*100)/100;
+    }
+  } else if(field==='tiempo'){
+    if(km>0){
+      document.getElementById('res-ritmo').value=totalSec>0?secToClock(totalSec/km):'';
+    } else if(paceSec>0 && totalSec>0){
+      document.getElementById('res-km').value=Math.round((totalSec/paceSec)*100)/100;
+    }
+  }
+  syncStoredFromRunning();
+}
+
+// Mantiene res-duracion / res-distancia (los campos que se guardan de verdad) sincronizados
+function syncStoredFromRunning(){
+  var km=parseFloat(document.getElementById('res-km').value)||0;
+  var totalSec=parseClockToSec(document.getElementById('res-tiempo').value);
+  document.getElementById('res-distancia').value=km||'';
+  document.getElementById('res-duracion').value=totalSec?Math.round((totalSec/60)*10)/10:'';
+}
+
+// Al abrir/editar una sesión de Carrera, reconstruye km/ritmo/tiempo a partir de lo guardado
+function syncRunningFromStored(){
+  var km=parseFloat(document.getElementById('res-distancia').value)||0;
+  var durMin=parseFloat(document.getElementById('res-duracion').value)||0;
+  document.getElementById('res-km').value=km||'';
+  document.getElementById('res-tiempo').value=durMin>0?secToClock(durMin*60):'';
+  document.getElementById('res-ritmo').value=(km>0&&durMin>0)?secToClock((durMin*60)/km):'';
 }
 
 function renderZonas(){
