@@ -1610,7 +1610,7 @@ function addZonaRow(){if(!editingRes.zonas)editingRes.zonas=[];editingRes.zonas.
 function renderEstructura(){
   var wrap=document.getElementById('res-estructura');
   var steps=editingRes.estructura||[];
-  if(!steps.length){wrap.innerHTML='<div style="text-align:center;color:var(--text-muted);font-size:12px;padding:14px;">Añade pasos con los botones de abajo</div>';return;}
+  if(!steps.length){wrap.innerHTML='<div style="text-align:center;color:var(--text-muted);font-size:12px;padding:14px;">Añade pasos con los botones de abajo</div>';renderEstrSummary();return;}
   var typeLabels={calentamiento:'CALENTAMIENTO',serie:'SERIE PRINCIPAL',recuperacion:'RECUPERACIÓN',vuelta:'VUELTA A LA CALMA'};
   wrap.innerHTML=steps.map(function(st,i){
     return '<div class="estr-step">'
@@ -1618,18 +1618,75 @@ function renderEstructura(){
         +'<div class="estr-step-type '+st.type+'">'+(typeLabels[st.type]||st.type)+'</div>'
         +'<button class="btn btn-danger btn-xs" onclick="editingRes.estructura.splice('+i+',1);renderEstructura();">✕</button>'
       +'</div>'
-      +'<div class="estr-fields">'
-        +'<div><label>Repeticiones</label><input type="number" value="'+(st.reps||'')+'" oninput="editingRes.estructura['+i+'].reps=this.value" placeholder="1"></div>'
-        +'<div><label>Duración/Distancia</label><input type="text" value="'+(st.dist||'')+'" oninput="editingRes.estructura['+i+'].dist=this.value" placeholder="10min o 400m"></div>'
+      +'<div class="estr-fields" style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;">'
+        +'<div><label>Repeticiones</label><input type="number" value="'+(st.reps||'')+'" oninput="editingRes.estructura['+i+'].reps=this.value;renderEstrSummary();" placeholder="1"></div>'
+        +'<div><label>Km</label><input type="number" step="0.01" id="est-km-'+i+'" value="'+(st.dist_km||'')+'" oninput="onEstStepInput('+i+',\'km\')" placeholder="1"></div>'
+        +'<div><label>Ritmo (min/km)</label><input type="text" id="est-ritmo-'+i+'" value="'+(st.ritmo||'')+'" oninput="onEstStepInput('+i+',\'ritmo\')" placeholder="5:30"></div>'
+        +'<div><label>Tiempo total</label><input type="text" id="est-tiempo-'+i+'" value="'+(st.tiempo_total||'')+'" oninput="onEstStepInput('+i+',\'tiempo\')" placeholder="10:00"></div>'
+      +'</div>'
+      +'<div class="estr-fields" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:6px;">'
         +'<div><label>Intensidad/Zona</label><input type="text" value="'+(st.zona||'')+'" oninput="editingRes.estructura['+i+'].zona=this.value" placeholder="Z2 o RPE 6"></div>'
         +'<div><label>Descanso</label><input type="text" value="'+(st.descanso||'')+'" oninput="editingRes.estructura['+i+'].descanso=this.value" placeholder="2min"></div>'
       +'</div>'
       +'<input type="text" style="width:100%;margin-top:6px;padding:6px 8px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:11px;outline:none;" placeholder="Notas del paso (opcional)" value="'+(st.notas||'')+'" oninput="editingRes.estructura['+i+'].notas=this.value">'
     +'</div>';
   }).join('');
+  renderEstrSummary();
 }
 
-function addEstructuraStep(type){if(!editingRes.estructura)editingRes.estructura=[];editingRes.estructura.push({type:type,reps:'1',dist:'',zona:'',descanso:'',notas:''});renderEstructura();}
+function addEstructuraStep(type){if(!editingRes.estructura)editingRes.estructura=[];editingRes.estructura.push({type:type,reps:'1',dist_km:'',ritmo:'',tiempo_total:'',zona:'',descanso:'',notas:''});renderEstructura();}
+
+// Autorrelleno por paso: Km, Ritmo (min/km) y Tiempo total del paso, igual que en Previsto
+function onEstStepInput(i,field){
+  var st=editingRes.estructura[i];
+  var km=parseFloat(document.getElementById('est-km-'+i).value)||0;
+  var paceSec=parseClockToSec(document.getElementById('est-ritmo-'+i).value);
+  var totalSec=parseClockToSec(document.getElementById('est-tiempo-'+i).value);
+
+  if(field==='km'){
+    if(paceSec>0){
+      document.getElementById('est-tiempo-'+i).value=km>0?secToClock(paceSec*km):'';
+    } else if(totalSec>0 && km>0){
+      document.getElementById('est-ritmo-'+i).value=secToClock(totalSec/km);
+    }
+  } else if(field==='ritmo'){
+    if(km>0){
+      document.getElementById('est-tiempo-'+i).value=paceSec>0?secToClock(paceSec*km):'';
+    } else if(totalSec>0 && paceSec>0){
+      document.getElementById('est-km-'+i).value=Math.round((totalSec/paceSec)*100)/100;
+    }
+  } else if(field==='tiempo'){
+    if(km>0){
+      document.getElementById('est-ritmo-'+i).value=totalSec>0?secToClock(totalSec/km):'';
+    } else if(paceSec>0 && totalSec>0){
+      document.getElementById('est-km-'+i).value=Math.round((totalSec/paceSec)*100)/100;
+    }
+  }
+  st.dist_km=document.getElementById('est-km-'+i).value;
+  st.ritmo=document.getElementById('est-ritmo-'+i).value;
+  st.tiempo_total=document.getElementById('est-tiempo-'+i).value;
+  renderEstrSummary();
+}
+
+// Suma total de km y tiempo de todos los pasos (multiplicado por sus repeticiones)
+function renderEstrSummary(){
+  var box=document.getElementById('res-estr-summary');
+  if(!box) return;
+  var steps=editingRes.estructura||[];
+  var totalKm=0,totalSec=0;
+  steps.forEach(function(st){
+    var reps=parseFloat(st.reps)||1;
+    var km=parseFloat(st.dist_km)||0;
+    var sec=parseClockToSec(st.tiempo_total);
+    totalKm+=km*reps;
+    totalSec+=sec*reps;
+  });
+  if(!totalKm && !totalSec){box.innerHTML='';return;}
+  box.innerHTML='<div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-size:12px;display:flex;gap:18px;">'
+    +'<div><strong>Total distancia:</strong> '+(Math.round(totalKm*100)/100)+' km</div>'
+    +'<div><strong>Total tiempo:</strong> '+secToClock(totalSec)+'</div>'
+    +'</div>';
+}
 
 async function saveResistencia(){
   editingRes.nombre=document.getElementById('res-nombre').value.trim();
