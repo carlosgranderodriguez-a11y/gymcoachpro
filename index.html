@@ -457,6 +457,7 @@ td{padding:11px 14px;border-top:1px solid var(--border);font-size:13px;vertical-
         <div style="font-size:12px;color:var(--text-dim)" id="res-modal-sub"></div>
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="btn btn-secondary btn-sm" id="btn-pdf-res" onclick="exportResistenciaPDF()" style="display:none">📄 PDF</button>
         <button class="btn btn-danger btn-sm" id="btn-del-res" onclick="deleteResistencia()" style="display:none">🗑</button>
         <button class="btn btn-secondary btn-sm" onclick="closeModal('resistencia')">Cancelar</button>
         <button class="btn btn-primary btn-sm" onclick="saveResistencia()">💾 Guardar</button>
@@ -1388,6 +1389,191 @@ async function exportSesionPDF(){
   toast('✅ PDF descargado');
 }
 
+// ── EXPORTAR PDF DE SESIÓN DE RESISTENCIA ──
+var ESTR_TYPE_COLOR={calentamiento:'#60a5fa',serie:'#ccff66',recuperacion:'#fb923c',vuelta:'#4ade80'};
+var ESTR_TYPE_LABEL={calentamiento:'Calentamiento',serie:'Serie principal',recuperacion:'Recuperación',vuelta:'Vuelta a la calma'};
+
+function estStepIntensityLevel(st){
+  var z=(st.zona||'').toUpperCase();
+  var mZ=z.match(/Z\s*([1-5])/);
+  if(mZ) return parseInt(mZ[1],10);
+  var mR=z.match(/(\d{1,2})/);
+  if(mR){ var n=parseInt(mR[1],10); if(n>10) n=Math.round(n/10); return Math.max(1,Math.min(5,Math.round(n/2))); }
+  return 3;
+}
+
+function calcEstrTotals(estructura){
+  var totalKm=0,totalSec=0;
+  (estructura||[]).forEach(function(st){
+    var reps=parseFloat(st.reps)||1;
+    var km=parseFloat(st.dist_km)||0;
+    var sec=parseClockToSec(st.tiempo_total);
+    totalKm+=km*reps; totalSec+=sec*reps;
+  });
+  return {totalKm:totalKm,totalSec:totalSec};
+}
+
+async function exportResistenciaPDF(){
+  if(!editingRes||!editingRes.id){toast('Guarda antes de exportar','err');return;}
+  var r=DB.resistencia.find(function(x){return x.id===editingRes.id;});
+  if(!r){toast('Sesión no encontrada','err');return;}
+
+  await preloadLogo();
+  toast('Generando PDF...');
+
+  var jsPDF=window.jspdf.jsPDF;
+  var doc=new jsPDF({orientation:'p',unit:'mm',format:'a4'});
+  var W=210, H=297, M=15;
+
+  // ── CABECERA ──
+  if(LOGO_BASE64){ try{doc.addImage(LOGO_BASE64,'PNG',M,M-2,20,20);}catch(e){} }
+  doc.setFont('helvetica','bold');doc.setFontSize(16);doc.setTextColor(30,40,80);
+  doc.text(TRAINER_BRAND, M+25, M+6);
+  doc.setFont('helvetica','normal');doc.setFontSize(9);doc.setTextColor(120,120,120);
+  doc.text('Sesión de resistencia · '+(r.disciplina||''), M+25, M+11);
+
+  doc.setDrawColor(122,158,63); doc.setLineWidth(0.8);
+  doc.line(M, M+20, W-M, M+20);
+
+  var yInfo=M+27;
+  doc.setFont('helvetica','bold');doc.setFontSize(13);doc.setTextColor(30,30,30);
+  doc.text(r.nombre||'Sesión', M, yInfo);
+  doc.setFont('helvetica','normal');doc.setFontSize(10);doc.setTextColor(90,90,90);
+  var fmtDate=r.fecha?new Date(r.fecha+'T12:00:00').toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'long',year:'numeric'}):'';
+  doc.text('👤 '+(r.atleta||'')+'    📅 '+fmtDate, M, yInfo+6);
+
+  var y=yInfo+16;
+
+  // ── MÉTRICAS PREVISTAS ──
+  doc.setFillColor(26,43,30);
+  doc.rect(M,y,W-2*M,16,'F');
+  doc.setFont('helvetica','bold');doc.setFontSize(9);doc.setTextColor(204,255,102);
+  doc.text('PREVISTO', M+4, y+5.5);
+  doc.setFont('helvetica','normal');doc.setFontSize(9);doc.setTextColor(220,220,220);
+  var metrics=[];
+  if(r.duracion_min) metrics.push('Duración: '+r.duracion_min+' min');
+  if(r.distancia_km) metrics.push('Distancia: '+r.distancia_km+' km');
+  if(r.distancia_km&&r.duracion_min) metrics.push('Ritmo: '+secToClock((parseFloat(r.duracion_min)*60)/parseFloat(r.distancia_km))+'/km');
+  if(r.rpe_objetivo) metrics.push('RPE objetivo: '+r.rpe_objetivo);
+  if(r.tss) metrics.push('TSS: '+r.tss);
+  doc.text(metrics.join('    ')||'—', M+4, y+12);
+  y+=22;
+
+  // ── ZONAS OBJETIVO ──
+  if(r.zonas&&r.zonas.length){
+    if(y>250){doc.addPage();y=M;}
+    doc.autoTable({
+      head:[['Zona','HR (bpm)','Pace/Vel','Watts']],
+      body:r.zonas.map(function(z){return [z.nombre||'',z.hr||'—',z.pace||'—',z.watts||'—'];}),
+      startY:y, margin:{left:M,right:M},
+      styles:{fontSize:8,cellPadding:2.5,textColor:[40,40,40],lineColor:[220,220,220],lineWidth:0.15},
+      headStyles:{fillColor:[26,43,30],textColor:[204,255,102],fontStyle:'bold',fontSize:8}
+    });
+    y=doc.lastAutoTable.finalY+8;
+  }
+
+  // ── GRÁFICA: BARRAS DE INTENSIDAD (workout graph) ──
+  var steps=r.estructura||[];
+  if(steps.length){
+    if(y>230){doc.addPage();y=M;}
+    doc.setFont('helvetica','bold');doc.setFontSize(9);doc.setTextColor(30,30,30);
+    doc.text('ESTRUCTURA — GRÁFICA DE INTENSIDAD', M, y);
+    y+=5;
+    var chartX=M, chartW=W-2*M, chartH=28, baseY=y+chartH;
+    var durs=steps.map(function(st){var reps=parseFloat(st.reps)||1; var sec=parseClockToSec(st.tiempo_total); return sec*reps||30;});
+    var totalDur=durs.reduce(function(a,b){return a+b;},0)||1;
+    doc.setDrawColor(210,210,210); doc.setLineWidth(0.2);
+    doc.line(chartX,baseY,chartX+chartW,baseY);
+    var cx=chartX;
+    steps.forEach(function(st,i){
+      var w=(durs[i]/totalDur)*chartW;
+      var lvl=estStepIntensityLevel(st);
+      var h=(lvl/5)*chartH;
+      var col=hexToRgb(ESTR_TYPE_COLOR[st.type]||'#999');
+      doc.setFillColor(col.r,col.g,col.b);
+      doc.rect(cx, baseY-h, Math.max(w-0.6,0.8), h, 'F');
+      cx+=w;
+    });
+    y=baseY+6;
+
+    // ── GRÁFICA: LÍNEA DE TIEMPO POR BLOQUES ──
+    doc.setFont('helvetica','bold');doc.setFontSize(9);doc.setTextColor(30,30,30);
+    doc.text('ESTRUCTURA — LÍNEA DE TIEMPO', M, y+5);
+    y+=8;
+    var tlH=8; cx=chartX;
+    steps.forEach(function(st,i){
+      var w=(durs[i]/totalDur)*chartW;
+      var col=hexToRgb(ESTR_TYPE_COLOR[st.type]||'#999');
+      doc.setFillColor(col.r,col.g,col.b);
+      doc.rect(cx, y, Math.max(w-0.6,0.8), tlH, 'F');
+      cx+=w;
+    });
+    y+=tlH+6;
+
+    // Leyenda
+    doc.setFontSize(7.5);
+    var legX=M;
+    ['calentamiento','serie','recuperacion','vuelta'].forEach(function(t){
+      var col=hexToRgb(ESTR_TYPE_COLOR[t]);
+      doc.setFillColor(col.r,col.g,col.b);
+      doc.rect(legX,y,3,3,'F');
+      doc.setTextColor(90,90,90);
+      doc.text(ESTR_TYPE_LABEL[t], legX+4, y+2.8);
+      legX+=doc.getTextWidth(ESTR_TYPE_LABEL[t])+12;
+    });
+    y+=9;
+
+    // ── TABLA DE PASOS ──
+    if(y>250){doc.addPage();y=M;}
+    doc.autoTable({
+      head:[['Tipo','Rep','Km','Ritmo','Tiempo','Zona','Descanso','Notas']],
+      body:steps.map(function(st){return [ESTR_TYPE_LABEL[st.type]||st.type, st.reps||'1', st.dist_km||'—', st.ritmo||'—', st.tiempo_total||'—', st.zona||'—', st.descanso||'—', st.notas||''];}),
+      startY:y, margin:{left:M,right:M},
+      styles:{fontSize:8,cellPadding:2.2,textColor:[40,40,40],lineColor:[220,220,220],lineWidth:0.15},
+      headStyles:{fillColor:[26,43,30],textColor:[204,255,102],fontStyle:'bold',fontSize:8},
+      alternateRowStyles:{fillColor:[248,248,248]}
+    });
+    y=doc.lastAutoTable.finalY+8;
+
+    // ── TOTAL ──
+    var totals=calcEstrTotals(steps);
+    if(totals.totalKm||totals.totalSec){
+      if(y>265){doc.addPage();y=M;}
+      doc.setFillColor(240,240,240);
+      doc.rect(M,y,W-2*M,10,'F');
+      doc.setFont('helvetica','bold');doc.setFontSize(9);doc.setTextColor(50,50,50);
+      doc.text('Total: '+(Math.round(totals.totalKm*100)/100)+' km   ·   '+secToClock(totals.totalSec), M+4, y+6.5);
+      y+=16;
+    }
+  }
+
+  // ── DESCRIPCIÓN ──
+  if(r.descripcion){
+    if(y>255){doc.addPage();y=M;}
+    doc.setFont('helvetica','bold');doc.setFontSize(9);doc.setTextColor(30,30,30);
+    doc.text('DESCRIPCIÓN PARA EL ATLETA', M, y); y+=5;
+    doc.setFont('helvetica','normal');doc.setFontSize(9);doc.setTextColor(70,70,70);
+    var lines=doc.splitTextToSize(r.descripcion, W-2*M);
+    doc.text(lines, M, y);
+    y+=lines.length*4.5+4;
+  }
+
+  // ── PIE ──
+  var pageCount=doc.internal.getNumberOfPages();
+  for(var p=1;p<=pageCount;p++){
+    doc.setPage(p);
+    doc.setDrawColor(200,200,200); doc.setLineWidth(0.2);
+    doc.line(M, H-15, W-M, H-15);
+    doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(140,140,140);
+    doc.text(TRAINER_BRAND+'  ·  '+TRAINER_EMAIL, M, H-9);
+    doc.text('Página '+p+' / '+pageCount, W-M-doc.getTextWidth('Página '+p+' / '+pageCount), H-9);
+  }
+
+  var filename='Resistencia_'+(r.atleta||'').split(' ')[0]+'_'+r.fecha+'_'+(r.nombre||'').replace(/[^a-zA-Z0-9]/g,'_')+'.pdf';
+  doc.save(filename);
+  toast('✅ PDF descargado');
+}
+
 function hexToRgb(hex){
   var m=hex.replace('#','').match(/.{1,2}/g);
   return {r:parseInt(m[0],16),g:parseInt(m[1],16),b:parseInt(m[2],16)};
@@ -1482,6 +1668,7 @@ function renderResistenciaEditor(){
   document.getElementById('res-modal-title').textContent=(editingRes.id?'Editar ':'Nueva ')+(isPlan?'plantilla':'sesión')+' de resistencia';
   document.getElementById('res-modal-sub').textContent=isPlan?'Plantilla reutilizable':'Se asigna a un atleta y fecha concreta';
   document.getElementById('btn-del-res').style.display=editingRes.id?'inline-block':'none';
+  document.getElementById('btn-pdf-res').style.display=editingRes.id?'inline-block':'none';
   // Ocultar atleta+fecha si es plantilla
   document.getElementById('res-atleta-wrap').style.display=isPlan?'none':'';
   document.getElementById('res-fecha-wrap').style.display=isPlan?'none':'';
