@@ -1355,6 +1355,7 @@ async function exportSesionPDF(){
 
     exs.forEach(function(ex,i){
       var db=DB.ejercicios[ex.id]||{nombre:ex.id};
+      console.log('PDF debug ejercicio:', {ex_id:ex.id, encontrado_en_DB:!!DB.ejercicios[ex.id], nombre:db.nombre, imagen:db.imagen||'(vacío)'});
       var sets=getParamVal(ex,'series')||ex.sets||'—';
       var reps=getParamVal(ex,'reps')||ex.reps||'—';
       var kg=getParamVal(ex,'kg')||ex.load||'—';
