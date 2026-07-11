@@ -289,6 +289,7 @@ td{padding:11px 14px;border-top:1px solid var(--border);font-size:13px;vertical-
           <option value="">Todos los atletas</option>
         </select>
         <button class="btn btn-secondary" onclick="openNewResistencia('plantilla')">📋 Plantilla</button>
+        <button class="btn btn-secondary" onclick="importPlantillasFutbol()">⚽ Importar plan pretemporada</button>
         <button class="btn btn-primary" onclick="openNewResistencia('sesion')">+ Sesión</button>
       </div>
     </div>
@@ -609,6 +610,9 @@ var selectedContr=[], selectedMat=[], selectedGrupos=[];
 var filterContr=null, filterMat=null, filterCat=null, filterGrupo=null;
 var editingSesion=null;
 
+var FUERZA_COLOR='#ccff66';
+var RESISTENCIA_COLOR='#60a5fa';
+
 var BLOQUES = [
   {id:'activacion',    name:'Activación',          color:'#60a5fa'},
   {id:'fuerza',        name:'Fuerza',              color:'#ccff66'},
@@ -907,8 +911,21 @@ function renderCalMes(){
     var hasSes=total>0;
     var el=document.createElement('div');
     el.className='cal-day'+(hasSes?' has-session':'')+(ds===today?' today':'')+(ds===selectedDate?' selected':'');
+    el.style.position='relative';
     el.textContent=d;
-    if(hasSes){var b=document.createElement('div');b.style.cssText='position:absolute;top:2px;right:4px;font-size:9px;background:var(--accent);color:#000;border-radius:6px;padding:1px 5px;font-weight:700;';b.textContent=total;el.appendChild(b);}
+    if(hasSes){
+      var badges=document.createElement('div');
+      badges.style.cssText='position:absolute;top:2px;right:4px;display:flex;gap:2px;';
+      if(sesDelDia.length) badges.innerHTML+='<span title="Fuerza" style="background:'+FUERZA_COLOR+';color:#000;border-radius:6px;padding:1px 5px;font-weight:700;font-size:9px;">💪'+sesDelDia.length+'</span>';
+      if(resDelDia.length) badges.innerHTML+='<span title="Resistencia" style="background:'+RESISTENCIA_COLOR+';color:#000;border-radius:6px;padding:1px 5px;font-weight:700;font-size:9px;">🏃'+resDelDia.length+'</span>';
+      el.appendChild(badges);
+      // Franja inferior indicando la composición del día (fuerza/resistencia)
+      var stripe=document.createElement('div');
+      stripe.style.cssText='position:absolute;left:0;bottom:0;width:100%;height:3px;display:flex;border-radius:0 0 6px 6px;overflow:hidden;';
+      if(sesDelDia.length) stripe.innerHTML+='<div style="flex:'+sesDelDia.length+';background:'+FUERZA_COLOR+';"></div>';
+      if(resDelDia.length) stripe.innerHTML+='<div style="flex:'+resDelDia.length+';background:'+RESISTENCIA_COLOR+';"></div>';
+      el.appendChild(stripe);
+    }
     (function(date){
       el.ondragover=function(e){if(dragSesId||dragResId){e.preventDefault();el.style.background='rgba(204,255,102,0.15)';}};
       el.ondragleave=function(){el.style.background='';};
@@ -1696,7 +1713,126 @@ function hexToRgb(hex){
 // ═══════════════════════════════════════════
 // ── RESISTENCIA ──
 // ═══════════════════════════════════════════
-var resTab='sesiones'; // 'sesiones' | 'plantillas'
+// ── PLAN PRETEMPORADA FÚTBOL: 3 semanas × 4 sesiones (mixto: aeróbico + umbral + RSA) ──
+var FUTBOL_PRETEMPORADA_TEMPLATES=[
+// SEMANA 1 — Reactivación / base
+{nombre:'Pretemp. Fútbol S1-D1 · Aeróbico continuo Z2', duracion_min:45, distancia_km:7.5, rpe_objetivo:5, tss:55,
+ zonas:[{nombre:'Z1',hr:'60-70% FCmax',pace:'>5:30/km',watts:'—'},{nombre:'Z2',hr:'70-80% FCmax',pace:'4:45-5:15/km',watts:'—'}],
+ estructura:[
+   {type:'calentamiento',reps:'1',dist_km:'1.5',ritmo:'6:30',tiempo_total:'10:00',zona:'Z1',descanso:'—',notas:'Trote suave + movilidad articular'},
+   {type:'serie',reps:'1',dist_km:'6',ritmo:'5:00',tiempo_total:'30:00',zona:'Z2',descanso:'—',notas:'Continuo, ritmo estable'},
+   {type:'vuelta',reps:'1',dist_km:'0.7',ritmo:'7:00',tiempo_total:'05:00',zona:'Z1',descanso:'—',notas:'Trote suave + estiramientos'}
+ ], descripcion:'Sesión de reactivación aeróbica al inicio de la pretemporada. Ritmo cómodo, sensación de esfuerzo controlada (RPE 5).'},
+
+{nombre:'Pretemp. Fútbol S1-D2 · Series de umbral', duracion_min:45, distancia_km:6.2, rpe_objetivo:7, tss:75,
+ zonas:[{nombre:'Z1',hr:'60-70% FCmax',pace:'>5:30/km',watts:'—'},{nombre:'Z4',hr:'88-94% FCmax',pace:'3:40-3:50/km',watts:'—'}],
+ estructura:[
+   {type:'calentamiento',reps:'1',dist_km:'1.8',ritmo:'6:00',tiempo_total:'12:00',zona:'Z1',descanso:'—',notas:'Trote progresivo + 2-3 progresiones cortas'},
+   {type:'serie',reps:'5',dist_km:'0.8',ritmo:'3:45',tiempo_total:'03:00',zona:'Z4',descanso:'2 min trote Z1',notas:'5 repeticiones de 3 min a ritmo umbral'},
+   {type:'vuelta',reps:'1',dist_km:'1',ritmo:'8:00',tiempo_total:'08:00',zona:'Z1',descanso:'—',notas:'Trote suave de recuperación'}
+ ], descripcion:'Series de intensidad umbral para desarrollar capacidad aeróbica-anaeróbica. Foco en mantener el ritmo constante en cada repetición.'},
+
+{nombre:'Pretemp. Fútbol S1-D3 · RSA (sprints repetidos)', duracion_min:38, distancia_km:1.9, rpe_objetivo:8, tss:50,
+ zonas:[{nombre:'Z1',hr:'60-70% FCmax',pace:'—',watts:'—'},{nombre:'Z5',hr:'95-100% FCmax / esfuerzo máx',pace:'Sprint máximo',watts:'—'}],
+ estructura:[
+   {type:'calentamiento',reps:'1',dist_km:'1.2',ritmo:'6:30',tiempo_total:'15:00',zona:'Z1',descanso:'—',notas:'Activación, movilidad + 3 arrancadas submáximas progresivas'},
+   {type:'serie',reps:'2',dist_km:'',ritmo:'',tiempo_total:'',zona:'Z5',descanso:'20s caminando entre sprints · 3 min entre bloques',notas:'2 bloques de 6 sprints de 20m a máxima velocidad'},
+   {type:'vuelta',reps:'1',dist_km:'0.7',ritmo:'7:00',tiempo_total:'10:00',zona:'Z1',descanso:'—',notas:'Trote suave de recuperación'}
+ ], descripcion:'Capacidad de repetir esfuerzos máximos de corta duración (RSA), clave para las demandas de un partido. Recuperación incompleta entre sprints, completa entre bloques.'},
+
+{nombre:'Pretemp. Fútbol S1-D4 · Fartlek aeróbico', duracion_min:38, distancia_km:5.8, rpe_objetivo:6, tss:60,
+ zonas:[{nombre:'Z1',hr:'60-70% FCmax',pace:'>5:30/km',watts:'—'},{nombre:'Z3',hr:'80-88% FCmax',pace:'4:00-4:20/km',watts:'—'}],
+ estructura:[
+   {type:'calentamiento',reps:'1',dist_km:'1.5',ritmo:'6:30',tiempo_total:'10:00',zona:'Z1',descanso:'—',notas:'Trote suave'},
+   {type:'serie',reps:'7',dist_km:'0.5',ritmo:'4:10',tiempo_total:'02:00',zona:'Z3',descanso:'1 min trote Z1',notas:'Fartlek: 2 min Z3 / 1 min Z1, 7 repeticiones'},
+   {type:'vuelta',reps:'1',dist_km:'0.8',ritmo:'6:30',tiempo_total:'08:00',zona:'Z1',descanso:'—',notas:'Trote suave'}
+ ], descripcion:'Cambios de ritmo controlados para introducir variabilidad de intensidad, similar a las exigencias de un partido, sin llegar a máxima intensidad.'},
+
+// SEMANA 2 — Carga (pico de la pretemporada)
+{nombre:'Pretemp. Fútbol S2-D1 · Aeróbico continuo progresivo', duracion_min:53, distancia_km:9, rpe_objetivo:6, tss:70,
+ zonas:[{nombre:'Z1',hr:'60-70% FCmax',pace:'>5:30/km',watts:'—'},{nombre:'Z2',hr:'70-80% FCmax',pace:'4:45-5:15/km',watts:'—'},{nombre:'Z3',hr:'80-88% FCmax',pace:'4:00-4:20/km',watts:'—'}],
+ estructura:[
+   {type:'calentamiento',reps:'1',dist_km:'1.5',ritmo:'6:30',tiempo_total:'10:00',zona:'Z1',descanso:'—',notas:'Trote suave + movilidad'},
+   {type:'serie',reps:'1',dist_km:'8',ritmo:'4:45',tiempo_total:'38:00',zona:'Z2-Z3',descanso:'—',notas:'Continuo progresivo: primeros 20 min Z2, últimos 18 min Z3'},
+   {type:'vuelta',reps:'1',dist_km:'0.7',ritmo:'7:00',tiempo_total:'05:00',zona:'Z1',descanso:'—',notas:'Trote suave + estiramientos'}
+ ], descripcion:'Sesión aeróbica de mayor volumen con progresión de intensidad en la segunda mitad. Semana de pico de carga.'},
+
+{nombre:'Pretemp. Fútbol S2-D2 · Intervalos umbral exigentes', duracion_min:50, distancia_km:7.8, rpe_objetivo:8, tss:90,
+ zonas:[{nombre:'Z1',hr:'60-70% FCmax',pace:'>5:30/km',watts:'—'},{nombre:'Z4',hr:'88-94% FCmax',pace:'3:40-3:50/km',watts:'—'}],
+ estructura:[
+   {type:'calentamiento',reps:'1',dist_km:'1.8',ritmo:'6:00',tiempo_total:'12:00',zona:'Z1',descanso:'—',notas:'Trote progresivo + progresiones'},
+   {type:'serie',reps:'6',dist_km:'1.05',ritmo:'3:48',tiempo_total:'04:00',zona:'Z4',descanso:'90s trote Z1',notas:'6 repeticiones de 4 min a ritmo umbral, recuperación corta'},
+   {type:'vuelta',reps:'1',dist_km:'1',ritmo:'8:00',tiempo_total:'08:00',zona:'Z1',descanso:'—',notas:'Trote suave de recuperación'}
+ ], descripcion:'Semana de mayor exigencia: más repeticiones y menor recuperación que en la S1 para seguir desarrollando la capacidad de sostener ritmo alto.'},
+
+{nombre:'Pretemp. Fútbol S2-D3 · RSA exigente', duracion_min:40, distancia_km:2.4, rpe_objetivo:9, tss:65,
+ zonas:[{nombre:'Z1',hr:'60-70% FCmax',pace:'—',watts:'—'},{nombre:'Z5',hr:'95-100% FCmax / esfuerzo máx',pace:'Sprint máximo',watts:'—'}],
+ estructura:[
+   {type:'calentamiento',reps:'1',dist_km:'1.2',ritmo:'6:30',tiempo_total:'15:00',zona:'Z1',descanso:'—',notas:'Activación, movilidad + progresiones'},
+   {type:'serie',reps:'3',dist_km:'',ritmo:'',tiempo_total:'',zona:'Z5',descanso:'20s caminando entre sprints · 3 min entre bloques',notas:'3 bloques de 6 sprints de 30m a máxima velocidad'},
+   {type:'vuelta',reps:'1',dist_km:'0.7',ritmo:'7:00',tiempo_total:'10:00',zona:'Z1',descanso:'—',notas:'Trote suave de recuperación'}
+ ], descripcion:'Más volumen de sprints que en la S1 (3 bloques en vez de 2, distancia algo mayor). Vigilar técnica de carrera ante la fatiga acumulada.'},
+
+{nombre:'Pretemp. Fútbol S2-D4 · HIIT intermitente 15/15', duracion_min:42, distancia_km:6.5, rpe_objetivo:8, tss:85,
+ zonas:[{nombre:'Z1',hr:'60-70% FCmax',pace:'>5:30/km',watts:'—'},{nombre:'Z5',hr:'92-100% FCmax',pace:'Alta intensidad',watts:'—'}],
+ estructura:[
+   {type:'calentamiento',reps:'1',dist_km:'1.5',ritmo:'6:30',tiempo_total:'10:00',zona:'Z1',descanso:'—',notas:'Trote suave + progresiones'},
+   {type:'serie',reps:'4',dist_km:'1',ritmo:'',tiempo_total:'06:00',zona:'Z5',descanso:'3 min entre bloques',notas:'4 bloques de 6 min: 15s alta intensidad / 15s trote suave, dentro de cada bloque'},
+   {type:'vuelta',reps:'1',dist_km:'1',ritmo:'8:00',tiempo_total:'08:00',zona:'Z1',descanso:'—',notas:'Trote suave de recuperación'}
+ ], descripcion:'Formato intermitente tipo test Yo-Yo, muy específico de las demandas intermitentes del fútbol. Es la sesión más exigente cardiovascularmente de la semana.'},
+
+// SEMANA 3 — Afinamiento (sharpening) previo al inicio de temporada
+{nombre:'Pretemp. Fútbol S3-D1 · Aeróbico mantenimiento', duracion_min:33, distancia_km:5.5, rpe_objetivo:5, tss:45,
+ zonas:[{nombre:'Z1',hr:'60-70% FCmax',pace:'>5:30/km',watts:'—'},{nombre:'Z2',hr:'70-80% FCmax',pace:'4:45-5:15/km',watts:'—'}],
+ estructura:[
+   {type:'calentamiento',reps:'1',dist_km:'1',ritmo:'6:30',tiempo_total:'08:00',zona:'Z1',descanso:'—',notas:'Trote suave'},
+   {type:'serie',reps:'1',dist_km:'4',ritmo:'5:00',tiempo_total:'20:00',zona:'Z2',descanso:'—',notas:'Continuo cómodo, mantener sensación fresca'},
+   {type:'vuelta',reps:'1',dist_km:'0.5',ritmo:'7:00',tiempo_total:'05:00',zona:'Z1',descanso:'—',notas:'Trote suave'}
+ ], descripcion:'Reducción de volumen para empezar a descargar de cara al inicio de temporada, manteniendo el estímulo aeróbico.'},
+
+{nombre:'Pretemp. Fútbol S3-D2 · Series cortas de calidad', duracion_min:38, distancia_km:5.4, rpe_objetivo:8, tss:65,
+ zonas:[{nombre:'Z1',hr:'60-70% FCmax',pace:'>5:30/km',watts:'—'},{nombre:'Z5',hr:'92-100% FCmax',pace:'3:15-3:30/km',watts:'—'}],
+ estructura:[
+   {type:'calentamiento',reps:'1',dist_km:'1.8',ritmo:'6:00',tiempo_total:'12:00',zona:'Z1',descanso:'—',notas:'Trote progresivo + progresiones cortas'},
+   {type:'serie',reps:'8',dist_km:'0.28',ritmo:'3:20',tiempo_total:'01:00',zona:'Z5',descanso:'1 min trote Z1',notas:'8 repeticiones de 1 min a alta intensidad'},
+   {type:'vuelta',reps:'1',dist_km:'1',ritmo:'8:00',tiempo_total:'08:00',zona:'Z1',descanso:'—',notas:'Trote suave de recuperación'}
+ ], descripcion:'Series cortas de mayor calidad e intensidad que en semanas previas, pero con menor volumen total: se busca "afilar" sin acumular fatiga.'},
+
+{nombre:'Pretemp. Fútbol S3-D3 · RSA específico', duracion_min:40, distancia_km:2.1, rpe_objetivo:8, tss:50,
+ zonas:[{nombre:'Z1',hr:'60-70% FCmax',pace:'—',watts:'—'},{nombre:'Z5',hr:'95-100% FCmax / esfuerzo máx',pace:'Sprint máximo',watts:'—'}],
+ estructura:[
+   {type:'calentamiento',reps:'1',dist_km:'1.2',ritmo:'6:30',tiempo_total:'15:00',zona:'Z1',descanso:'—',notas:'Activación, movilidad + progresiones'},
+   {type:'serie',reps:'2',dist_km:'',ritmo:'',tiempo_total:'',zona:'Z5',descanso:'15s caminando entre sprints · 3 min entre bloques',notas:'2 bloques de 8 sprints de 15-20m a máxima velocidad'},
+   {type:'vuelta',reps:'1',dist_km:'0.7',ritmo:'7:00',tiempo_total:'10:00',zona:'Z1',descanso:'—',notas:'Trote suave de recuperación'}
+ ], descripcion:'Sprints más cortos y explosivos, priorizando velocidad máxima y técnica sobre volumen, de cara al arranque de temporada.'},
+
+{nombre:'Pretemp. Fútbol S3-D4 · Simulación ritmo de partido', duracion_min:38, distancia_km:5.2, rpe_objetivo:7, tss:65,
+ zonas:[{nombre:'Z1',hr:'60-70% FCmax',pace:'>5:30/km',watts:'—'},{nombre:'Z3',hr:'80-88% FCmax',pace:'4:00-4:20/km',watts:'—'},{nombre:'Z5',hr:'92-100% FCmax',pace:'Alta intensidad',watts:'—'}],
+ estructura:[
+   {type:'calentamiento',reps:'1',dist_km:'1.5',ritmo:'6:30',tiempo_total:'10:00',zona:'Z1',descanso:'—',notas:'Trote suave + progresiones'},
+   {type:'serie',reps:'8',dist_km:'0.4',ritmo:'',tiempo_total:'02:00',zona:'Z3-Z5',descanso:'—',notas:'Fartlek variable: 30s alta intensidad / 30s media / 1 min baja, repetido 8 veces, simulando exigencias de partido'},
+   {type:'vuelta',reps:'1',dist_km:'0.8',ritmo:'6:30',tiempo_total:'08:00',zona:'Z1',descanso:'—',notas:'Trote suave + estiramientos'}
+ ], descripcion:'Última sesión de la pretemporada: intensidad variable simulando las exigencias reales de un partido, como puente hacia la competición.'}
+];
+
+async function importPlantillasFutbol(){
+  if(!confirm('Se van a crear 12 plantillas nuevas (plan de pretemporada de fútbol, 3 semanas × 4 sesiones) en tu Biblioteca de plantillas. ¿Continuar?')) return;
+  toast('Importando plantillas...');
+  var okCount=0, errCount=0;
+  for(var i=0;i<FUTBOL_PRETEMPORADA_TEMPLATES.length;i++){
+    var t=FUTBOL_PRETEMPORADA_TEMPLATES[i];
+    try{
+      var r=await apiPost(Object.assign({action:'addResistencia',tipo:'plantilla',atleta:'',fecha:'',disciplina:'Carrera'},t));
+      if(r.ok) okCount++; else errCount++;
+    }catch(e){errCount++;}
+  }
+  var rR=await api({action:'getResistencia'});
+  if(rR&&rR.ok) DB.resistencia=rR.items||[];
+  renderResistencia();
+  toast(errCount?('⚠️ '+okCount+' importadas, '+errCount+' con error'):('✅ '+okCount+' plantillas importadas'), errCount?'err':'ok');
+}
+
+
 var editingRes=null;
 var resFilterDisc=null;
 
@@ -1706,6 +1842,8 @@ var DISC_ICONS = {
 };
 
 function iconForDisc(disc){return DISC_ICONS[disc]||'🏋️';}
+
+var resTab='sesiones'; // 'sesiones' | 'plantillas'
 
 function switchResTab(tab){
   resTab=tab;
