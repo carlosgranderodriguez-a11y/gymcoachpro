@@ -132,6 +132,12 @@ td{padding:11px 14px;border-top:1px solid var(--border);font-size:13px;vertical-
 .param-picker-item{padding:7px 12px;border-radius:6px;font-size:12px;cursor:pointer;}
 .param-picker-item:hover{background:var(--surface2);}
 .cal-layout{display:grid;grid-template-columns:1fr 360px;gap:20px;}
+.plantillas-shelf{display:flex;gap:8px;overflow-x:auto;padding:10px 2px 14px;margin-bottom:4px;}
+.plantilla-chip{flex:0 0 auto;display:flex;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:12px;cursor:grab;white-space:nowrap;user-select:none;}
+.plantilla-chip:hover{border-color:var(--accent);}
+.plantilla-chip.dragging{opacity:0.5;}
+.plantillas-shelf-empty{font-size:12px;color:var(--text-muted);padding:8px 2px;}
+.plantillas-shelf-hint{font-size:11px;color:var(--text-muted);margin-bottom:6px;}
 .cal-wrap{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;}
 .cal-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
 .cal-month{font-size:15px;font-weight:700;}
@@ -345,6 +351,7 @@ td{padding:11px 14px;border-top:1px solid var(--border);font-size:13px;vertical-
         </select>
       </div>
     </div>
+    <div id="cal-plantillas-shelf"></div>
     <div id="cal-content"></div>
   </div>
 
@@ -879,8 +886,26 @@ function renderCalendar(){
   var currentVal=filterSel.value;
   filterSel.innerHTML='<option value="">Todos los atletas</option>'+DB.atletas.map(function(a){return '<option'+(currentVal===a?' selected':'')+'>'+a+'</option>';}).join('');
   filterSel.value=currentVal;
+  renderPlantillasShelf();
   if(calView==='mes') renderCalMes();
   else renderCalSemana();
+}
+
+function renderPlantillasShelf(){
+  var wrap=document.getElementById('cal-plantillas-shelf');
+  if(!wrap) return;
+  var plantillas=(DB.resistencia||[]).filter(function(r){return r.tipo==='plantilla';});
+  if(!plantillas.length){wrap.innerHTML='';return;}
+  var atletaSel=document.getElementById('cal-filter-atleta').value;
+  var hint=atletaSel
+    ? 'Arrastra una plantilla a un día para asignarla a <strong>'+atletaSel.split(' ')[0]+'</strong>'
+    : '⚠️ Elige un atleta en el filtro de arriba para poder arrastrar plantillas al calendario';
+  wrap.innerHTML='<div class="plantillas-shelf-hint">📋 '+hint+'</div>'
+    +'<div class="plantillas-shelf">'+plantillas.map(function(t){
+      return '<div class="plantilla-chip" draggable="true" ondragstart="dragPlantillaStart(\''+t.id+'\',this)" ondragend="dragSesEnd(this)" title="'+(t.descripcion||'').replace(/"/g,'&quot;')+'">'
+        +iconForDisc(t.disciplina)+' '+t.nombre
+      +'</div>';
+    }).join('')+'</div>';
 }
 
 function renderCalMes(){
@@ -927,9 +952,9 @@ function renderCalMes(){
       el.appendChild(stripe);
     }
     (function(date){
-      el.ondragover=function(e){if(dragSesId||dragResId){e.preventDefault();el.style.background='rgba(204,255,102,0.15)';}};
+      el.ondragover=function(e){if(dragSesId||dragResId||dragPlantillaId){e.preventDefault();el.style.background='rgba(204,255,102,0.15)';}};
       el.ondragleave=function(){el.style.background='';};
-      el.ondrop=function(e){el.style.background='';if(dragSesId){e.preventDefault();moveSesionToDate(dragSesId,date);}else if(dragResId){e.preventDefault();moveResistenciaToDate(dragResId,date);}};
+      el.ondrop=function(e){el.style.background='';if(dragSesId){e.preventDefault();moveSesionToDate(dragSesId,date);}else if(dragResId){e.preventDefault();moveResistenciaToDate(dragResId,date);}else if(dragPlantillaId){e.preventDefault();assignPlantillaToDate(dragPlantillaId,date);}};
       el.onclick=function(){selectedDate=date;renderCalendar();renderAssignPanel();};
     })(ds);
     grid.appendChild(el);
@@ -1074,14 +1099,17 @@ function strainLabel(s){if(s<3000)return '✓ Baja';if(s<5000)return '✓ Modera
 
 // ── DRAG & DROP ──
 var dragResId=null;
-function dragSesStart(id,el){dragSesId=id;dragResId=null;el.classList.add('dragging');}
-function dragResStart(id,el){dragResId=id;dragSesId=null;el.classList.add('dragging');}
-function dragSesEnd(el){el.classList.remove('dragging');dragSesId=null;dragResId=null;document.querySelectorAll('.sem-col').forEach(function(c){c.classList.remove('drag-over');});}
-function semDragOver(e,el){if(dragSesId||dragResId){e.preventDefault();el.classList.add('drag-over');}}
+var dragPlantillaId=null;
+function dragSesStart(id,el){dragSesId=id;dragResId=null;dragPlantillaId=null;el.classList.add('dragging');}
+function dragResStart(id,el){dragResId=id;dragSesId=null;dragPlantillaId=null;el.classList.add('dragging');}
+function dragPlantillaStart(id,el){dragPlantillaId=id;dragSesId=null;dragResId=null;el.classList.add('dragging');}
+function dragSesEnd(el){el.classList.remove('dragging');dragSesId=null;dragResId=null;dragPlantillaId=null;document.querySelectorAll('.sem-col').forEach(function(c){c.classList.remove('drag-over');});}
+function semDragOver(e,el){if(dragSesId||dragResId||dragPlantillaId){e.preventDefault();el.classList.add('drag-over');}}
 function semDragLeave(el){el.classList.remove('drag-over');}
 function semDrop(e,el,ds){
   if(dragSesId){e.preventDefault();el.classList.remove('drag-over');moveSesionToDate(dragSesId,ds);}
   else if(dragResId){e.preventDefault();el.classList.remove('drag-over');moveResistenciaToDate(dragResId,ds);}
+  else if(dragPlantillaId){e.preventDefault();el.classList.remove('drag-over');assignPlantillaToDate(dragPlantillaId,ds);}
 }
 
 async function moveSesionToDate(sesId,newDate){
@@ -1100,6 +1128,28 @@ async function moveResistenciaToDate(resId,newDate){
   var res=await apiPost(Object.assign({action:'updateResistencia'},r));
   if(res.ok){toast('✅ Movido a '+new Date(newDate+'T12:00:00').toLocaleDateString('es-ES',{weekday:'short',day:'numeric',month:'short'}));}
   else{r.fecha=oldDate;renderCalendar();toast('Error: '+res.error,'err');}
+}
+
+async function assignPlantillaToDate(plantillaId,fecha){
+  var t=DB.resistencia.find(function(x){return x.id===plantillaId;});
+  if(!t){toast('Plantilla no encontrada','err');return;}
+  var atleta=document.getElementById('cal-filter-atleta').value;
+  if(!atleta){toast('Elige primero un atleta en el filtro del calendario para asignar la plantilla','err');return;}
+  var nueva={
+    tipo:'sesion', atleta:atleta, fecha:fecha, disciplina:t.disciplina, nombre:t.nombre,
+    duracion_min:t.duracion_min, distancia_km:t.distancia_km, rpe_objetivo:t.rpe_objetivo, tss:t.tss,
+    zonas:t.zonas||[], estructura:t.estructura||[], descripcion:t.descripcion||'',
+    fc_media:'', fc_max:'', duracion_real:'', distancia_real:'', rpe_real:'', notas_atleta:''
+  };
+  var r=await apiPost(Object.assign({action:'addResistencia'},nueva));
+  if(r.ok){
+    nueva.id=r.id;
+    DB.resistencia.push(nueva);
+    renderCalendar();
+    toast('✅ "'+t.nombre+'" asignada a '+atleta.split(' ')[0]+' el '+new Date(fecha+'T12:00:00').toLocaleDateString('es-ES',{day:'numeric',month:'short'}));
+  } else {
+    toast('Error: '+r.error,'err');
+  }
 }
 
 function quickCreateOn(ds){selectedDate=ds;openNewSesion();}
