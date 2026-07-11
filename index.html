@@ -1229,18 +1229,40 @@ async function preloadLogo(){
 
 async function preloadExerciseImages(ejercicios){
   var cache={};
+  var failed=[];
   var proms=(ejercicios||[]).map(async function(ex){
     var db=DB.ejercicios[ex.id];
     if(!db||!db.imagen||cache.hasOwnProperty(db.imagen)) return;
     cache[db.imagen]=null;
     try{
       var resp=await fetch(db.imagen,{referrerPolicy:'no-referrer'});
+      if(!resp.ok){ console.warn('PDF img HTTP '+resp.status+':',db.imagen); failed.push(db.nombre+' ('+resp.status+')'); return; }
       var blob=await resp.blob();
-      var b64=await new Promise(function(res){var r=new FileReader();r.onloadend=function(){res(r.result);};r.readAsDataURL(blob);});
-      cache[db.imagen]=b64;
-    }catch(e){cache[db.imagen]=null;}
+      var objUrl=URL.createObjectURL(blob);
+      var png=await new Promise(function(res,rej){
+        var img=new Image();
+        img.onload=function(){
+          try{
+            var canvas=document.createElement('canvas');
+            canvas.width=img.naturalWidth||img.width;
+            canvas.height=img.naturalHeight||img.height;
+            var ctx=canvas.getContext('2d');
+            ctx.drawImage(img,0,0);
+            res(canvas.toDataURL('image/png'));
+          }catch(err){rej(err);}
+          finally{URL.revokeObjectURL(objUrl);}
+        };
+        img.onerror=function(err){URL.revokeObjectURL(objUrl);rej(err);};
+        img.src=objUrl;
+      });
+      cache[db.imagen]=png;
+    }catch(e){
+      console.warn('PDF img error:',db.imagen,e);
+      failed.push(db.nombre+' (formato no compatible)');
+    }
   });
   await Promise.all(proms);
+  preloadExerciseImages.lastFailed=failed;
   return cache;
 }
 
@@ -1312,6 +1334,9 @@ async function exportSesionPDF(){
 
   // Precargar imágenes de todos los ejercicios de la sesión
   var imgCache=await preloadExerciseImages(ses.ejercicios||[]);
+  if(preloadExerciseImages.lastFailed&&preloadExerciseImages.lastFailed.length){
+    toast('⚠️ No se cargaron '+preloadExerciseImages.lastFailed.length+' imagen(es): '+preloadExerciseImages.lastFailed.join(', '),'err');
+  }
 
   ordered.forEach(function(bid){
     var bDef=BLOQUES.find(function(b){return b.id===bid;})||{name:bid,color:'#999'};
@@ -1367,6 +1392,7 @@ async function exportSesionPDF(){
 
       // Ilustración del ejercicio
       var b64=db.imagen?imgCache[db.imagen]:null;
+      var imgDrawn=false;
       if(b64){
         try{
           var props=doc.getImageProperties(b64);
@@ -1374,10 +1400,11 @@ async function exportSesionPDF(){
           var dw=imgW,dh=imgW/ratio;
           if(dh>imgH){dh=imgH;dw=imgH*ratio;}
           var ix=M+2+(imgW-dw)/2, iy=y+2+(imgH-dh)/2;
-          var fmt=b64.indexOf('image/png')>-1?'PNG':'JPEG';
-          doc.addImage(b64,fmt,ix,iy,dw,dh);
-        }catch(e){}
-      } else {
+          doc.addImage(b64,'PNG',ix,iy,dw,dh);
+          imgDrawn=true;
+        }catch(e){console.warn('PDF addImage error:',db.nombre,e);}
+      }
+      if(!imgDrawn){
         doc.setFillColor(235,235,235);
         doc.rect(M+2,y+2,imgW,imgH,'F');
         doc.setFont('helvetica','normal');doc.setFontSize(7);doc.setTextColor(160,160,160);
