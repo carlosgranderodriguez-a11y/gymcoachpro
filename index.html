@@ -1212,6 +1212,41 @@ function getParamVal(ex,pid){var p=(ex.params||[]).find(function(p){return p.id=
 // ── EXPORTAR PDF DE SESIÓN ──
 // ═══════════════════════════════════════════
 var LOGO_URL='https://drive.google.com/thumbnail?id=1x5U89Qu4b15qyzgeQiVwK10PAPUL_V4N&sz=w400';
+function extractDriveFileId(url){
+  var m=(url||'').match(/[?&]id=([^&]+)/);
+  return m?m[1]:null;
+}
+
+// Pide la imagen a tu propio Apps Script (no directamente a Drive) para evitar el bloqueo CORS del navegador
+async function fetchDriveImageBase64(url){
+  var fileId=extractDriveFileId(url);
+  if(!fileId) return null;
+  try{
+    var r=await api({action:'getImageBase64',fileId:fileId});
+    if(r&&r.ok) return 'data:'+(r.mimeType||'image/png')+';base64,'+r.base64;
+  }catch(e){console.warn('getImageBase64 error:',e);}
+  return null;
+}
+
+// Normaliza cualquier formato (GIF, WEBP...) a PNG vía canvas, para que jsPDF siempre lo acepte
+function dataUrlToPng(dataUrl){
+  return new Promise(function(res,rej){
+    var img=new Image();
+    img.onload=function(){
+      try{
+        var canvas=document.createElement('canvas');
+        canvas.width=img.naturalWidth||img.width;
+        canvas.height=img.naturalHeight||img.height;
+        var ctx=canvas.getContext('2d');
+        ctx.drawImage(img,0,0);
+        res(canvas.toDataURL('image/png'));
+      }catch(err){rej(err);}
+    };
+    img.onerror=function(err){rej(err);};
+    img.src=dataUrl;
+  });
+}
+
 var LOGO_BASE64=null;
 var TRAINER_EMAIL='carlos.grande.rodriguez@gmail.com';
 var TRAINER_BRAND='Carlos Grande Training';
@@ -1220,9 +1255,9 @@ var ACCENT='#7a9e3f'; // verde lima algo más oscuro (mejor contraste en papel)
 async function preloadLogo(){
   if(LOGO_BASE64) return LOGO_BASE64;
   try{
-    var resp=await fetch(LOGO_URL);
-    var blob=await resp.blob();
-    LOGO_BASE64=await new Promise(function(res){var r=new FileReader();r.onloadend=function(){res(r.result);};r.readAsDataURL(blob);});
+    var raw=await fetchDriveImageBase64(LOGO_URL);
+    if(!raw) return null;
+    LOGO_BASE64=await dataUrlToPng(raw);
     return LOGO_BASE64;
   }catch(e){console.warn('No se pudo cargar logo:',e);return null;}
 }
@@ -1235,27 +1270,9 @@ async function preloadExerciseImages(ejercicios){
     if(!db||!db.imagen||cache.hasOwnProperty(db.imagen)) return;
     cache[db.imagen]=null;
     try{
-      var resp=await fetch(db.imagen,{referrerPolicy:'no-referrer'});
-      if(!resp.ok){ console.warn('PDF img HTTP '+resp.status+':',db.imagen); failed.push(db.nombre+' ('+resp.status+')'); return; }
-      var blob=await resp.blob();
-      var objUrl=URL.createObjectURL(blob);
-      var png=await new Promise(function(res,rej){
-        var img=new Image();
-        img.onload=function(){
-          try{
-            var canvas=document.createElement('canvas');
-            canvas.width=img.naturalWidth||img.width;
-            canvas.height=img.naturalHeight||img.height;
-            var ctx=canvas.getContext('2d');
-            ctx.drawImage(img,0,0);
-            res(canvas.toDataURL('image/png'));
-          }catch(err){rej(err);}
-          finally{URL.revokeObjectURL(objUrl);}
-        };
-        img.onerror=function(err){URL.revokeObjectURL(objUrl);rej(err);};
-        img.src=objUrl;
-      });
-      cache[db.imagen]=png;
+      var raw=await fetchDriveImageBase64(db.imagen);
+      if(!raw){ failed.push(db.nombre+' (no se pudo descargar desde Drive)'); return; }
+      cache[db.imagen]=await dataUrlToPng(raw);
     }catch(e){
       console.warn('PDF img error:',db.imagen,e);
       failed.push(db.nombre+' (formato no compatible)');
@@ -1355,7 +1372,6 @@ async function exportSesionPDF(){
 
     exs.forEach(function(ex,i){
       var db=DB.ejercicios[ex.id]||{nombre:ex.id};
-      console.log('PDF debug ejercicio:', {ex_id:ex.id, encontrado_en_DB:!!DB.ejercicios[ex.id], nombre:db.nombre, imagen:db.imagen||'(vacío)'});
       var sets=getParamVal(ex,'series')||ex.sets||'—';
       var reps=getParamVal(ex,'reps')||ex.reps||'—';
       var kg=getParamVal(ex,'kg')||ex.load||'—';
