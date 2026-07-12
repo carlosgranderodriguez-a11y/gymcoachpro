@@ -30,6 +30,8 @@ input,select,textarea,button{font-family:inherit;}
 .l-sub{color:var(--text-dim);font-size:13px;margin-bottom:28px;letter-spacing:1px;}
 #pin{width:200px;text-align:center;letter-spacing:12px;font-size:26px;font-weight:700;padding:14px;background:var(--surface);border:1px solid var(--border);border-radius:12px;color:var(--text);outline:none;}
 #pin:focus{border-color:var(--accent);}
+#l-email{width:200px;text-align:center;font-size:15px;padding:12px;background:var(--surface);border:1px solid var(--border);border-radius:12px;color:var(--text);outline:none;margin-bottom:10px;}
+#l-email:focus{border-color:var(--accent);}
 .l-btn{margin-top:16px;width:200px;padding:14px;background:var(--accent);color:#000;border:none;border-radius:12px;font-weight:700;font-size:15px;cursor:pointer;}
 .l-btn:active{background:var(--accent-dim);}
 .l-err{color:var(--red);font-size:12px;margin-top:14px;height:16px;}
@@ -102,6 +104,7 @@ input[type=range]{width:100%;}
   <div class="logo">🔥</div>
   <div class="l-title cond">Resistencia</div>
   <div class="l-sub">GymCoach Pro</div>
+  <input id="l-email" type="email" placeholder="Tu email" autocomplete="username" inputmode="email">
   <input id="pin" type="tel" inputmode="numeric" maxlength="6" placeholder="••••" autocomplete="off">
   <button class="l-btn" onclick="doLogin()">Entrar</button>
   <div class="l-err" id="login-err"></div>
@@ -191,17 +194,19 @@ function toast(m,t){var el=document.getElementById('toast');el.textContent=m;el.
 
 /* LOGIN */
 async function doLogin(){
+  var email=document.getElementById('l-email').value.trim();
   var pin=document.getElementById('pin').value.trim();
   var err=document.getElementById('login-err');err.textContent='';
+  if(!email){err.textContent='Escribe tu email';return;}
   if(!pin){err.textContent='Escribe tu PIN';return;}
   var btn=document.querySelector('.l-btn');btn.disabled=true;btn.textContent='Entrando…';
   try{
-    var r=await api({action:'loginAtleta',pin:pin});
+    var r=await api({action:'loginAtleta',email:email,pin:pin});
     if(r&&r.ok&&r.nombre){
       ATLETA=r.nombre;
       try{localStorage.setItem('gc_atleta',ATLETA);}catch(e){}
       enterApp();
-    }else{err.textContent=(r&&r.error)||'PIN incorrecto';}
+    }else{err.textContent=(r&&r.error)||'Email o PIN incorrecto';}
   }catch(e){err.textContent='Sin conexión. Reintenta.';}
   btn.disabled=false;btn.textContent='Entrar';
 }
