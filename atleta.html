@@ -100,15 +100,6 @@ input[type=range]{width:100%;}
 .week-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
 .week-nav button{background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:8px 12px;font-size:13px;cursor:pointer;}
 .week-range{font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:700;}
-.day-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 14px;margin-bottom:10px;}
-.day-card.today{border-color:var(--accent);}
-.day-head{font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;display:flex;justify-content:space-between;}
-.day-head .dnum{color:var(--text);font-weight:700;}
-.ses-chip{display:flex;align-items:center;gap:10px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-bottom:6px;cursor:pointer;}
-.ses-chip:last-child{margin-bottom:0;}
-.ses-chip .dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;}
-.ses-chip .nm{flex:1;font-size:13px;font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-.ses-chip .ok{font-size:14px;}
 .day-empty{font-size:12px;color:var(--text-muted);}
 
 /* DETALLE SESIÓN */
@@ -137,6 +128,39 @@ input[type=range]{width:100%;}
 .summary-stat{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px;text-align:center;}
 .summary-stat b{display:block;font-family:'Barlow Condensed',sans-serif;font-size:22px;color:var(--accent);}
 .summary-stat span{font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;}
+
+/* PRÓXIMAS SESIONES */
+.next-card{background:linear-gradient(135deg,rgba(204,255,102,.08),transparent);border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:20px;}
+.next-h{font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;}
+.next-item{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);}
+.next-item:last-child{border-bottom:none;}
+.next-item .nd{width:42px;text-align:center;flex-shrink:0;}
+.next-item .nd b{display:block;font-family:'Barlow Condensed',sans-serif;font-size:19px;line-height:1;}
+.next-item .nd span{font-size:9px;color:var(--text-muted);text-transform:uppercase;}
+.next-item .nn{flex:1;font-size:13px;font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+
+/* DÍAS SEMANA v2 */
+.day-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:0;margin-bottom:10px;overflow:hidden;}
+.day-card.today{border-color:var(--accent);}
+.day-head{background:var(--surface2);padding:10px 14px;font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;display:flex;justify-content:space-between;align-items:center;}
+.day-card.today .day-head{background:rgba(204,255,102,.12);color:var(--accent);}
+.day-head .dnum{color:var(--text);font-weight:700;font-size:13px;}
+.day-card.today .day-head .dnum{color:var(--accent);}
+.day-body{padding:10px 12px;}
+.ses-chip{display:flex;align-items:center;gap:10px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-bottom:6px;cursor:pointer;}
+.ses-chip:last-child{margin-bottom:0;}
+.ses-chip .dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;}
+.ses-chip .nm{flex:1;font-size:13px;font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.ses-chip .ok{font-size:14px;}
+
+/* WELLNESS */
+.well-slider{margin-bottom:18px;}
+.well-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;}
+.well-top .wl{font-size:13px;font-weight:600;}
+.well-top .wv{font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:700;color:var(--accent);}
+.well-hint{display:flex;justify-content:space-between;font-size:9px;color:var(--text-muted);margin-top:3px;}
+.well-hist-row{display:flex;justify-content:space-between;font-size:12px;padding:7px 0;border-bottom:1px solid var(--border);}
+.well-hist-row:last-child{border-bottom:none;}
 </style>
 </head>
 <body>
@@ -165,6 +189,7 @@ input[type=range]{width:100%;}
   <!-- SEMANA -->
   <div id="page-semana" class="page active">
     <div class="wrap">
+      <div id="next-sessions"></div>
       <div class="week-nav">
         <button onclick="shiftWeek(-1)">‹</button>
         <div class="week-range cond" id="week-range">—</div>
@@ -238,8 +263,20 @@ input[type=range]{width:100%;}
     </div>
   </div>
 
+  <!-- PROGRESO -->
+  <div id="page-progreso" class="page">
+    <div class="wrap" id="progreso-content"></div>
+  </div>
+
+  <!-- WELLNESS -->
+  <div id="page-wellness" class="page">
+    <div class="wrap" id="wellness-content"></div>
+  </div>
+
   <div class="nav">
-    <button class="active" id="nav-semana" onclick="showPage('semana',this)"><span class="ni">📅</span>Mi semana</button>
+    <button class="active" id="nav-semana" onclick="showPage('semana',this)"><span class="ni">📅</span>Semana</button>
+    <button id="nav-wellness" onclick="showPage('wellness',this)"><span class="ni">❤️</span>Wellness</button>
+    <button id="nav-progreso" onclick="showPage('progreso',this)"><span class="ni">📈</span>Progreso</button>
     <button id="nav-reg" onclick="showPage('reg',this)"><span class="ni">➕</span>Registrar</button>
     <button id="nav-hist" onclick="showPage('hist',this)"><span class="ni">📋</span>Historial</button>
   </div>
@@ -260,6 +297,7 @@ var FUERZA_SESIONES=[];   // Sesiones (fuerza) del atleta
 var RES_SESIONES=[];      // Resistencia (tipo:'sesion') del atleta
 var REGISTROS=[];         // Registros de sesiones de fuerza ya completadas
 var EJERCICIOS_DB={};     // Catálogo de ejercicios (nombre + imagen)
+var WELLNESS=[];          // Wellness diario del atleta
 var weekOffset=0;
 var currentDetalle=null;  // {kind:'fuerza'|'resistencia', data}
 
@@ -307,16 +345,18 @@ function enterApp(){
 
 async function loadAsignadas(){
   try{
-    var [rS,rR,rReg,rEj]=await Promise.all([
+    var [rS,rR,rReg,rEj,rW]=await Promise.all([
       api({action:'getAllSesiones'}),
       api({action:'getResistencia'}),
       api({action:'getHistorial',atleta:ATLETA}),
-      api({action:'getEjercicios'})
+      api({action:'getEjercicios'}),
+      api({action:'getWellness',atleta:ATLETA})
     ]);
     if(rS&&rS.ok) FUERZA_SESIONES=(rS.sesiones||[]).filter(function(s){return s.atleta===ATLETA;});
     if(rR&&rR.ok) RES_SESIONES=(rR.items||[]).filter(function(r){return r.tipo==='sesion'&&r.atleta===ATLETA;});
     if(rReg&&rReg.ok) REGISTROS=rReg.registros||[];
     if(rEj&&rEj.ok) EJERCICIOS_DB=rEj.ejercicios||{};
+    if(rW&&rW.ok) WELLNESS=rW.items||[];
     renderSemana();
   }catch(e){toast('No se pudo cargar tu semana','err');}
 }
@@ -329,6 +369,8 @@ function showPage(p,el){
   if(el)el.classList.add('active');
   if(p==='hist')renderHist();
   if(p==='semana')renderSemana();
+  if(p==='progreso')renderProgreso();
+  if(p==='wellness')renderWellness();
   window.scrollTo(0,0);
 }
 
@@ -345,6 +387,13 @@ function sesionesDelDia(ds){
 function fuerzaCompletada(id){return REGISTROS.some(function(reg){return reg.sesion_id===id&&reg.completada;});}
 function resistenciaCompletada(r){return !!(r.duracion_real||r.distancia_real||r.rpe_real);}
 
+function proximasSesiones(n){
+  var todayISO=new Date().toISOString().slice(0,10);
+  var f=FUERZA_SESIONES.filter(function(s){return s.fecha>=todayISO;}).map(function(s){return {kind:'fuerza',fecha:s.fecha,nombre:s.nombre||'Sesión de fuerza'};});
+  var r=RES_SESIONES.filter(function(s){return s.fecha>=todayISO;}).map(function(s){return {kind:'resistencia',fecha:s.fecha,nombre:s.nombre||'Sesión de resistencia'};});
+  return f.concat(r).sort(function(a,b){return a.fecha.localeCompare(b.fecha);}).slice(0,n);
+}
+
 function renderSemana(){
   var monday=getMonday(new Date());
   monday.setDate(monday.getDate()+weekOffset*7);
@@ -353,16 +402,31 @@ function renderSemana(){
   var sunday=days[6];
   document.getElementById('week-range').textContent=monday.toLocaleDateString('es-ES',{day:'numeric',month:'short'})+' – '+sunday.toLocaleDateString('es-ES',{day:'numeric',month:'short'});
   var todayISO=new Date().toISOString().slice(0,10);
+
+  // Resumen de próximas sesiones (siempre visible, independiente de la semana que estés mirando)
+  var prox=proximasSesiones(3);
+  var proxBox=document.getElementById('next-sessions');
+  if(!prox.length){proxBox.innerHTML='';}
+  else{
+    proxBox.innerHTML='<div class="next-card"><div class="next-h">📌 Próximas sesiones</div>'
+      +prox.map(function(p){
+        var d=new Date(p.fecha+'T12:00:00');
+        var icon=p.kind==='fuerza'?'💪':'🏃';
+        return '<div class="next-item"><div class="nd"><b>'+d.getDate()+'</b><span>'+d.toLocaleDateString('es-ES',{month:'short'})+'</span></div><div class="nn">'+icon+' '+p.nombre+'</div></div>';
+      }).join('')
+    +'</div>';
+  }
+
   var wrap=document.getElementById('week-days');
   wrap.innerHTML=days.map(function(d){
     var ds=fmtISO(d);
     var ses=sesionesDelDia(ds);
     var isToday=ds===todayISO;
-    var head='<div class="day-head"><span>'+d.toLocaleDateString('es-ES',{weekday:'long'})+'</span><span class="dnum">'+d.getDate()+'</span></div>';
+    var head='<div class="day-head"><span>'+d.toLocaleDateString('es-ES',{weekday:'long'})+(isToday?' · hoy':'')+'</span><span class="dnum">'+d.getDate()+'</span></div>';
     var body;
-    if(!ses.length){body='<div class="day-empty">Sin sesiones</div>';}
+    if(!ses.length){body='<div class="day-body"><div class="day-empty">Sin sesiones</div></div>';}
     else{
-      body=ses.map(function(x){
+      body='<div class="day-body">'+ses.map(function(x){
         var done,nombre,color,icon;
         if(x.kind==='fuerza'){done=fuerzaCompletada(x.data.id);nombre=x.data.nombre||'Sesión de fuerza';color='#ccff66';icon='💪';}
         else{done=resistenciaCompletada(x.data);nombre=x.data.nombre||'Sesión de resistencia';color='#60a5fa';icon='🏃';}
@@ -371,7 +435,7 @@ function renderSemana(){
           +'<div class="nm">'+icon+' '+nombre+'</div>'
           +(done?'<div class="ok">✅</div>':'')
         +'</div>';
-      }).join('');
+      }).join('')+'</div>';
     }
     return '<div class="day-card'+(isToday?' today':'')+'">'+head+body+'</div>';
   }).join('');
@@ -387,7 +451,7 @@ function abrirDetalle(kind,id){
   showPage('detalle',null);
 }
 
-function renderDetalleFuerza(s){
+function renderDetalleFuerza(s,activo){
   var done=fuerzaCompletada(s.id);
   var fecha=new Date(s.fecha+'T12:00:00').toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'long'});
   var html='';
@@ -402,13 +466,37 @@ function renderDetalleFuerza(s){
     exs.forEach(function(ex){
       var db=EJERCICIOS_DB[ex.id]||{nombre:ex.id};
       var img=db.imagen?'<img src="'+db.imagen+'" referrerpolicy="no-referrer">':'<div class="ph">💪</div>';
-      html+='<div class="ex-card">'+img+'<div><div class="ex-name">'+db.nombre+'</div><div class="ex-meta">'
-        +(ex.sets||'—')+'×'+(ex.reps||'—')+(ex.load&&ex.load!=='—'?' · '+ex.load:'')+' · Descanso '+(ex.rest||'—')
-      +'</div></div></div>';
+      var globalIdx=s.ejercicios.indexOf(ex);
+      if(activo&&!done){
+        var setsCount=parseInt(ex.sets)||1;
+        var plannedReps=ex.reps||'';
+        var plannedKg=(ex.load&&ex.load!=='—')?ex.load:'';
+        var rows='';
+        for(var si=0;si<setsCount;si++){
+          rows+='<div style="display:flex;gap:6px;margin-top:5px;align-items:center;">'
+            +'<span style="font-size:10px;color:var(--text-muted);width:16px;">'+(si+1)+'</span>'
+            +'<input type="number" class="inp set-reps" value="'+plannedReps+'" placeholder="reps" style="flex:1;padding:7px;font-size:12px;">'
+            +'<input type="number" class="inp set-kg" value="'+plannedKg+'" placeholder="kg" style="flex:1;padding:7px;font-size:12px;">'
+          +'</div>';
+        }
+        html+='<div class="ex-card" style="align-items:flex-start;" id="exsets-'+globalIdx+'" data-exid="'+ex.id+'" data-exnombre="'+db.nombre.replace(/"/g,'&quot;')+'">'+img
+          +'<div style="flex:1;"><div class="ex-name">'+db.nombre+'</div><div class="ex-meta">Objetivo: '+plannedReps+' reps'+(plannedKg?' · '+plannedKg+'kg':'')+' · Descanso '+(ex.rest||'—')+'</div>'
+          +rows+'</div></div>';
+      } else {
+        html+='<div class="ex-card">'+img+'<div><div class="ex-name">'+db.nombre+'</div><div class="ex-meta">'
+          +(ex.sets||'—')+'×'+(ex.reps||'—')+(ex.load&&ex.load!=='—'?' · '+ex.load:'')+' · Descanso '+(ex.rest||'—')
+        +'</div></div></div>';
+      }
     });
   });
-  if(!done)html+='<button class="complete-btn" onclick="abrirCompletar()">✅ Marcar como completada</button>';
+  if(!done){
+    if(!activo)html+='<button class="complete-btn" onclick="empezarSesionFuerza()">▶️ Empezar sesión</button>';
+    else html+='<button class="complete-btn" onclick="abrirCompletar()">✅ Finalizar sesión</button>';
+  }
   document.getElementById('detalle-content').innerHTML=html;
+}
+function empezarSesionFuerza(){
+  renderDetalleFuerza(currentDetalle.data,true);
 }
 
 function renderDetalleResistencia(r){
@@ -438,11 +526,148 @@ function renderDetalleResistencia(r){
     });
   }
   if(r.descripcion)html+='<div class="bloque-h" style="background:var(--blue);color:#000;">Notas del entrenador</div><div class="card">'+r.descripcion+'</div>';
-  if(!done)html+='<button class="complete-btn" onclick="abrirCompletar()">✅ Marcar como completada</button>';
+  if(!done)html+='<button class="complete-btn" onclick="empezarSesionResistencia()">▶️ Empezar sesión</button>';
   document.getElementById('detalle-content').innerHTML=html;
 }
 
-/* ── COMPLETAR SESIÓN ── */
+var sesionStartTime=null,timerInterval=null;
+function empezarSesionResistencia(){
+  sesionStartTime=Date.now();
+  var btn=document.querySelector('.complete-btn');
+  btn.outerHTML='<div class="card" style="text-align:center;"><div class="lab">En curso</div><div id="timer-display" class="det-title cond" style="margin:6px 0;">0:00</div><button class="complete-btn" onclick="finalizarSesionResistencia()">⏹ Finalizar sesión</button></div>';
+  timerInterval=setInterval(function(){
+    var sec=Math.floor((Date.now()-sesionStartTime)/1000);
+    var el=document.getElementById('timer-display');if(el)el.textContent=fmt(sec);
+  },1000);
+}
+function finalizarSesionResistencia(){
+  clearInterval(timerInterval);
+  var sec=Math.floor((Date.now()-sesionStartTime)/1000);
+  abrirCompletar();
+  var tEl=document.getElementById('cp-tiempo');if(tEl)tEl.value=fmt(sec);
+}
+
+/* ── WELLNESS ── */
+var WELL_LABELS={sueno:'😴 Sueño',fatiga:'🔋 Fatiga',dolor:'🩹 Dolor muscular',estres:'🧠 Estrés',animo:'🙂 Ánimo'};
+function wellnessDeHoy(){
+  var todayISO=new Date().toISOString().slice(0,10);
+  return WELLNESS.find(function(w){return w.fecha===todayISO;});
+}
+function renderWellness(){
+  var hoy=wellnessDeHoy();
+  var html='<div class="sec-h cond">Wellness de hoy</div>';
+  if(hoy)html+='<div class="done-badge">✅ Ya has registrado tu wellness de hoy — puedes actualizarlo</div>';
+  html+='<div class="card">';
+  ['sueno','fatiga','dolor','estres','animo'].forEach(function(k){
+    var val=hoy?(hoy[k]||3):3;
+    html+='<div class="well-slider"><div class="well-top"><span class="wl">'+WELL_LABELS[k]+'</span><span class="wv" id="wv-'+k+'">'+val+'</span></div>'
+      +'<input type="range" min="1" max="5" value="'+val+'" id="w-'+k+'" oninput="document.getElementById(\'wv-'+k+'\').textContent=this.value">'
+      +'<div class="well-hint"><span>Bajo</span><span>Alto</span></div></div>';
+  });
+  html+='<div class="g"><label class="lab">Notas (opcional)</label><textarea id="w-notas" class="inp" rows="2" placeholder="Molestias, sensaciones...">'+(hoy?(hoy.notas||''):'')+'</textarea></div>';
+  html+='<button class="save" onclick="guardarWellnessHoy()">💾 Guardar wellness de hoy</button>';
+  html+='</div>';
+
+  var recientes=WELLNESS.slice().sort(function(a,b){return b.fecha.localeCompare(a.fecha);}).slice(0,7);
+  if(recientes.length){
+    html+='<div class="sec-h cond" style="font-size:17px;">Últimos días</div><div class="card">';
+    recientes.forEach(function(w){
+      var fecha=new Date(w.fecha+'T12:00:00').toLocaleDateString('es-ES',{weekday:'short',day:'numeric',month:'short'});
+      html+='<div class="well-hist-row"><span>'+fecha+'</span><span>😴'+w.sueno+' 🔋'+w.fatiga+' 🩹'+w.dolor+' 🧠'+w.estres+' 🙂'+w.animo+'</span></div>';
+    });
+    html+='</div>';
+  }
+  document.getElementById('wellness-content').innerHTML=html;
+}
+async function guardarWellnessHoy(){
+  var todayISO=new Date().toISOString().slice(0,10);
+  var body={action:'saveWellness',atleta:ATLETA,fecha:todayISO,
+    sueno:document.getElementById('w-sueno').value,
+    fatiga:document.getElementById('w-fatiga').value,
+    dolor:document.getElementById('w-dolor').value,
+    estres:document.getElementById('w-estres').value,
+    animo:document.getElementById('w-animo').value,
+    notas:document.getElementById('w-notas').value.trim()
+  };
+  try{
+    var r=await apiPost(body);
+    if(!r||!r.ok){toast('Error al guardar','err');return;}
+    var existente=wellnessDeHoy();
+    if(existente){Object.assign(existente,body);}
+    else{WELLNESS.push(Object.assign({id:r.id},body));}
+    toast('✅ Wellness guardado');
+    renderWellness();
+  }catch(e){toast('Sin conexión','err');}
+}
+
+/* ── PROGRESO ── */
+function calcExerciseStats(){
+  var stats={};
+  REGISTROS.forEach(function(reg){
+    if(!reg.completada||!reg.datos||!reg.datos.ejercicios) return;
+    reg.datos.ejercicios.forEach(function(exReg){
+      if(!exReg||!exReg.sets||!exReg.sets.length) return;
+      var id=exReg.id||exReg.nombre;
+      if(!stats[id])stats[id]={nombre:exReg.nombre||id,count:0,cargas:[],volumen:0};
+      stats[id].count++;
+      exReg.sets.forEach(function(st){
+        var kg=parseFloat(st.load)||0,reps=parseFloat(st.reps)||0;
+        if(kg>0)stats[id].cargas.push(kg);
+        stats[id].volumen+=kg*reps;
+      });
+    });
+  });
+  return stats;
+}
+
+function renderProgreso(){
+  var regsCompletados=REGISTROS.filter(function(r){return r.completada;});
+  var resCompletadas=RES_SESIONES.filter(resistenciaCompletada);
+  var totalSesiones=regsCompletados.length+resCompletadas.length;
+
+  var volumenFuerza=0;
+  regsCompletados.forEach(function(r){
+    if(r.datos&&r.datos.ejercicios){
+      r.datos.ejercicios.forEach(function(ex){
+        if(ex&&ex.sets)ex.sets.forEach(function(st){volumenFuerza+=(parseFloat(st.load)||0)*(parseFloat(st.reps)||0);});
+      });
+    }
+  });
+  var cargaResistencia=0;
+  resCompletadas.forEach(function(r){
+    var min=parseSec(r.duracion_real)/60||0;
+    var rpe=parseFloat(r.rpe_real)||0;
+    cargaResistencia+=Math.round(min*rpe);
+  });
+  var rpeVals=regsCompletados.map(function(r){return parseFloat(r.datos&&r.datos.rpe)||0;}).concat(resCompletadas.map(function(r){return parseFloat(r.rpe_real)||0;})).filter(function(v){return v>0;});
+  var rpeProm=rpeVals.length?(rpeVals.reduce(function(a,b){return a+b;},0)/rpeVals.length).toFixed(1):'—';
+
+  var html='<div class="sec-h cond">Mi progreso</div>';
+  html+='<div class="summary-stats">'
+    +'<div class="summary-stat"><b>'+totalSesiones+'</b><span>Sesiones completadas</span></div>'
+    +'<div class="summary-stat"><b>'+rpeProm+'</b><span>RPE medio</span></div>'
+    +'<div class="summary-stat"><b>'+Math.round(volumenFuerza)+' kg</b><span>Volumen total fuerza</span></div>'
+    +'<div class="summary-stat"><b>'+cargaResistencia+' UA</b><span>Carga total resistencia</span></div>'
+  +'</div>';
+
+  var stats=calcExerciseStats();
+  var top=Object.keys(stats).map(function(k){return stats[k];}).sort(function(a,b){return b.count-a.count;}).slice(0,8);
+  html+='<div class="sec-h cond" style="font-size:17px;">Ejercicios más entrenados</div>';
+  if(!top.length){
+    html+='<div class="empty">Todavía no has completado ninguna sesión de fuerza con datos registrados.<br>Empieza una sesión y registra tus series para ver aquí tu progresión.</div>';
+  } else {
+    html+=top.map(function(t){
+      var min=t.cargas.length?Math.min.apply(null,t.cargas):null;
+      var max=t.cargas.length?Math.max.apply(null,t.cargas):null;
+      var progresoTxt=(min!==null&&max!==null)?(min===max?max+' kg':min+' kg → '+max+' kg'):'Sin carga registrada';
+      var subiendo=(min!==null&&max!==null&&max>min);
+      return '<div class="ex-card"><div class="ph">'+(subiendo?'📈':'💪')+'</div><div><div class="ex-name">'+t.nombre+'</div><div class="ex-meta">'+t.count+' veces entrenado · '+progresoTxt+'</div></div></div>';
+    }).join('');
+  }
+  document.getElementById('progreso-content').innerHTML=html;
+}
+
+
 function abrirCompletar(){
   var isFuerza=currentDetalle.kind==='fuerza';
   var extra=isFuerza?'':(
@@ -469,9 +694,22 @@ async function guardarCompletar(){
   var s=currentDetalle.data;
   try{
     if(isFuerza){
-      var r=await apiPost({action:'guardarRegistro',atleta:ATLETA,fecha:s.fecha,sesion_id:s.id,datos:{rpe:rpe,notas:notas},completada:true});
+      var ejerciciosDatos=(s.ejercicios||[]).map(function(){return null;});
+      document.querySelectorAll('[id^="exsets-"]').forEach(function(card){
+        var idx=parseInt(card.id.replace('exsets-',''),10);
+        var exId=card.getAttribute('data-exid');
+        var exNombre=card.getAttribute('data-exnombre');
+        var sets=[];
+        var repsInputs=card.querySelectorAll('.set-reps');
+        var kgInputs=card.querySelectorAll('.set-kg');
+        for(var i=0;i<repsInputs.length;i++){
+          sets.push({reps:repsInputs[i].value,load:kgInputs[i].value});
+        }
+        ejerciciosDatos[idx]={id:exId,nombre:exNombre,sets:sets};
+      });
+      var r=await apiPost({action:'guardarRegistro',atleta:ATLETA,fecha:s.fecha,sesion_id:s.id,datos:{ejercicios:ejerciciosDatos,rpe:rpe,notas:notas},completada:true});
       if(!r||!r.ok){toast('Error al guardar','err');return;}
-      REGISTROS.push({id:r.id,atleta:ATLETA,fecha:s.fecha,sesion_id:s.id,datos:{rpe:rpe,notas:notas},completada:true});
+      REGISTROS.push({id:r.id,atleta:ATLETA,fecha:s.fecha,sesion_id:s.id,datos:{ejercicios:ejerciciosDatos,rpe:rpe,notas:notas},completada:true});
     } else {
       var km=document.getElementById('cp-km').value;
       var tiempo=document.getElementById('cp-tiempo').value;
@@ -492,9 +730,17 @@ function renderResumen(isFuerza,rpe,notas){
   var stats='';
   if(isFuerza){
     var totalEx=(s.ejercicios||[]).length;
+    var reg=REGISTROS[REGISTROS.length-1];
+    var volumen=0;
+    if(reg&&reg.datos&&reg.datos.ejercicios){
+      reg.datos.ejercicios.forEach(function(ex){
+        if(ex&&ex.sets)ex.sets.forEach(function(st){volumen+=(parseFloat(st.load)||0)*(parseFloat(st.reps)||0);});
+      });
+    }
     stats='<div class="summary-stats">'
       +'<div class="summary-stat"><b>'+totalEx+'</b><span>Ejercicios</span></div>'
       +'<div class="summary-stat"><b>'+rpe+'</b><span>RPE percibido</span></div>'
+      +'<div class="summary-stat" style="grid-column:1/-1;"><b>'+Math.round(volumen)+' kg</b><span>Volumen total movido</span></div>'
     +'</div>';
   } else {
     stats='<div class="summary-stats">'
