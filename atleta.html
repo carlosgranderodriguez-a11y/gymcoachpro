@@ -547,6 +547,40 @@ function finalizarSesionResistencia(){
   var tEl=document.getElementById('cp-tiempo');if(tEl)tEl.value=fmt(sec);
 }
 
+/* ── GRÁFICA DE TELARAÑA (radar) ── */
+function renderRadarSVG(values,labels,color){
+  var size=240,center=size/2,radius=size/2-42,n=values.length,maxVal=5;
+  color=color||'#ccff66';
+  function pt(i,val){var angle=(Math.PI*2*i/n)-Math.PI/2;var r=(val/maxVal)*radius;return [center+r*Math.cos(angle),center+r*Math.sin(angle)];}
+  var rings=[1,2,3,4,5].map(function(lvl){
+    var pts=[];for(var i=0;i<n;i++)pts.push(pt(i,lvl).join(','));
+    return '<polygon points="'+pts.join(' ')+'" fill="none" stroke="#2a2a2a" stroke-width="1"/>';
+  }).join('');
+  var axes='',labelsHtml='';
+  for(var i=0;i<n;i++){
+    var end=pt(i,maxVal);
+    axes+='<line x1="'+center+'" y1="'+center+'" x2="'+end[0]+'" y2="'+end[1]+'" stroke="#2a2a2a" stroke-width="1"/>';
+    var lp=pt(i,maxVal+0.85);
+    labelsHtml+='<text x="'+lp[0]+'" y="'+lp[1]+'" font-size="10" fill="#888" text-anchor="middle" dominant-baseline="middle">'+labels[i]+'</text>';
+  }
+  var dataPts=values.map(function(v,i){return pt(i,v).join(',');}).join(' ');
+  var dots=values.map(function(v,i){var p=pt(i,v);return '<circle cx="'+p[0]+'" cy="'+p[1]+'" r="3" fill="'+color+'"/>';}).join('');
+  return '<svg viewBox="0 0 '+size+' '+size+'" width="100%" style="max-width:270px;display:block;margin:0 auto;">'
+    +rings+axes+'<polygon points="'+dataPts+'" fill="'+color+'" fill-opacity="0.25" stroke="'+color+'" stroke-width="2"/>'+dots+labelsHtml
+  +'</svg>';
+}
+function wellnessPromedios(n){
+  var recientes=WELLNESS.slice().sort(function(a,b){return b.fecha.localeCompare(a.fecha);}).slice(0,n||7);
+  if(!recientes.length) return null;
+  var keys=['sueno','fatiga','dolor','estres','animo'];
+  var avg={};
+  keys.forEach(function(k){
+    var vals=recientes.map(function(r){return parseFloat(r[k])||0;}).filter(function(v){return v>0;});
+    avg[k]=vals.length?(vals.reduce(function(a,b){return a+b;},0)/vals.length):0;
+  });
+  return avg;
+}
+
 /* ── WELLNESS ── */
 var WELL_LABELS={sueno:'😴 Sueño',fatiga:'🔋 Fatiga',dolor:'🩹 Dolor muscular',estres:'🧠 Estrés',animo:'🙂 Ánimo'};
 function wellnessDeHoy(){
@@ -556,6 +590,14 @@ function wellnessDeHoy(){
 function renderWellness(){
   var hoy=wellnessDeHoy();
   var html='<div class="sec-h cond">Wellness de hoy</div>';
+
+  var prom=wellnessPromedios(7);
+  if(prom){
+    html+='<div class="card"><div class="lab" style="text-align:center;margin-bottom:6px;">Media últimos 7 días</div>'
+      +renderRadarSVG([prom.sueno,prom.fatiga,prom.dolor,prom.estres,prom.animo],['Sueño','Fatiga','Dolor','Estrés','Ánimo'])
+    +'</div>';
+  }
+
   if(hoy)html+='<div class="done-badge">✅ Ya has registrado tu wellness de hoy — puedes actualizarlo</div>';
   html+='<div class="card">';
   ['sueno','fatiga','dolor','estres','animo'].forEach(function(k){
@@ -601,6 +643,25 @@ async function guardarWellnessHoy(){
 }
 
 /* ── PROGRESO ── */
+var POSTERIOR_GROUPS=['Isquiotibiales','Glúteos','Gemelos/Sóleo','Lumbar/Erectores','Cadena posterior','Dorsal','Trapecio','Romboides','Cuadrado lumbar'];
+var ANTERIOR_GROUPS=['Cuádriceps','Recto abdominal','Pectoral','Deltoides','Tibial anterior','Cadena anterior','Oblicuos','Transverso'];
+var CADENA_INFO={
+  posterior:{label:'Cadena posterior',icon:'🔴',color:'#ff4466'},
+  anterior:{label:'Cadena anterior',icon:'🔵',color:'#60a5fa'},
+  multimuscular:{label:'Multimuscular',icon:'🟢',color:'#ccff66'},
+  otro:{label:'Otros',icon:'⚪',color:'#888'}
+};
+function clasificarCadena(grupos){
+  grupos=grupos||[];
+  if(!grupos.length) return 'otro';
+  var post=grupos.some(function(g){return POSTERIOR_GROUPS.indexOf(g)>-1;});
+  var ant=grupos.some(function(g){return ANTERIOR_GROUPS.indexOf(g)>-1;});
+  if(grupos.length>=3||(post&&ant)) return 'multimuscular';
+  if(post) return 'posterior';
+  if(ant) return 'anterior';
+  return 'otro';
+}
+
 function calcExerciseStats(){
   var stats={};
   REGISTROS.forEach(function(reg){
@@ -608,7 +669,10 @@ function calcExerciseStats(){
     reg.datos.ejercicios.forEach(function(exReg){
       if(!exReg||!exReg.sets||!exReg.sets.length) return;
       var id=exReg.id||exReg.nombre;
-      if(!stats[id])stats[id]={nombre:exReg.nombre||id,count:0,cargas:[],volumen:0};
+      if(!stats[id]){
+        var db=EJERCICIOS_DB[id];
+        stats[id]={nombre:exReg.nombre||id,count:0,cargas:[],volumen:0,cadena:clasificarCadena(db&&db.grupos_musculares)};
+      }
       stats[id].count++;
       exReg.sets.forEach(function(st){
         var kg=parseFloat(st.load)||0,reps=parseFloat(st.reps)||0;
@@ -651,7 +715,31 @@ function renderProgreso(){
   +'</div>';
 
   var stats=calcExerciseStats();
-  var top=Object.keys(stats).map(function(k){return stats[k];}).sort(function(a,b){return b.count-a.count;}).slice(0,8);
+  var lista=Object.keys(stats).map(function(k){return stats[k];});
+
+  // Resumen por cadena muscular
+  var porCadena={posterior:0,anterior:0,multimuscular:0,otro:0};
+  lista.forEach(function(t){porCadena[t.cadena]+=t.count;});
+  var totalVeces=porCadena.posterior+porCadena.anterior+porCadena.multimuscular+porCadena.otro;
+  html+='<div class="sec-h cond" style="font-size:17px;">Distribución por cadena muscular</div>';
+  if(!totalVeces){
+    html+='<div class="empty">Todavía no hay datos suficientes.</div>';
+  } else {
+    html+='<div class="card">';
+    ['posterior','anterior','multimuscular','otro'].forEach(function(k){
+      if(!porCadena[k])return;
+      var pct=Math.round((porCadena[k]/totalVeces)*100);
+      var info=CADENA_INFO[k];
+      html+='<div style="margin-bottom:10px;">'
+        +'<div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px;"><span>'+info.icon+' '+info.label+'</span><span style="color:var(--text-dim);">'+porCadena[k]+' series · '+pct+'%</span></div>'
+        +'<div style="background:var(--surface2);border-radius:6px;height:8px;overflow:hidden;"><div style="width:'+pct+'%;height:100%;background:'+info.color+';"></div></div>'
+      +'</div>';
+    });
+    html+='</div>';
+  }
+
+  // Ejercicios más entrenados, con etiqueta de cadena
+  var top=lista.sort(function(a,b){return b.count-a.count;}).slice(0,8);
   html+='<div class="sec-h cond" style="font-size:17px;">Ejercicios más entrenados</div>';
   if(!top.length){
     html+='<div class="empty">Todavía no has completado ninguna sesión de fuerza con datos registrados.<br>Empieza una sesión y registra tus series para ver aquí tu progresión.</div>';
@@ -660,8 +748,8 @@ function renderProgreso(){
       var min=t.cargas.length?Math.min.apply(null,t.cargas):null;
       var max=t.cargas.length?Math.max.apply(null,t.cargas):null;
       var progresoTxt=(min!==null&&max!==null)?(min===max?max+' kg':min+' kg → '+max+' kg'):'Sin carga registrada';
-      var subiendo=(min!==null&&max!==null&&max>min);
-      return '<div class="ex-card"><div class="ph">'+(subiendo?'📈':'💪')+'</div><div><div class="ex-name">'+t.nombre+'</div><div class="ex-meta">'+t.count+' veces entrenado · '+progresoTxt+'</div></div></div>';
+      var info=CADENA_INFO[t.cadena];
+      return '<div class="ex-card"><div class="ph">'+info.icon+'</div><div><div class="ex-name">'+t.nombre+'</div><div class="ex-meta">'+t.count+' veces · '+progresoTxt+' · <span style="color:'+info.color+'">'+info.label+'</span></div></div></div>';
     }).join('');
   }
   document.getElementById('progreso-content').innerHTML=html;
