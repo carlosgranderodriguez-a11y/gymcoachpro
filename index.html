@@ -58,7 +58,7 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,san
 .ex-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px;}
 .ex-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;cursor:pointer;transition:border-color 0.15s;}
 .ex-card:hover{border-color:var(--accent);}
-.ex-card-img-wrap{width:100%;aspect-ratio:16/10;background:var(--surface2);display:flex;align-items:center;justify-content:center;overflow:hidden;}
+.ex-card-img-wrap{width:100%;aspect-ratio:16/10;background:var(--surface2);display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative;}
 .ex-card-img-wrap img{width:100%;height:100%;object-fit:cover;}
 .ex-card-img-placeholder{font-size:36px;opacity:0.4;}
 .ex-card-body{padding:12px;}
@@ -434,6 +434,14 @@ td{padding:11px 14px;border-top:1px solid var(--border);font-size:13px;vertical-
         <button class="btn btn-primary btn-sm" onclick="addConfigItem('disciplinas_resistencia','new-disciplina')">Añadir</button>
       </div>
     </div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:16px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+        <div style="font-size:14px;font-weight:600;">🔢 Parámetros de ejercicios</div>
+        <button class="btn btn-primary btn-sm" onclick="openParamAjuste()">+ Nuevo parámetro</button>
+      </div>
+      <div style="font-size:12px;color:var(--text-muted);margin-bottom:10px;">Son los campos que puedes añadir a cada ejercicio dentro de una sesión o plantilla (Series, Reps, Kg, Descanso...).</div>
+      <div id="cfg-parametros"></div>
+    </div>
     <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;">
       <div style="font-size:14px;font-weight:600;margin-bottom:14px;">🏷 Categorías</div>
       <div id="cfg-categorias" class="cfg-chip-list"></div>
@@ -466,6 +474,29 @@ td{padding:11px 14px;border-top:1px solid var(--border);font-size:13px;vertical-
   </div>
 </div>
 
+<div class="modal-overlay" id="modal-param">
+  <div class="modal">
+    <div class="modal-title" id="param-modal-title">Nuevo parámetro</div>
+    <div class="form-group"><label>Nombre visible</label><input type="text" id="pm-label" placeholder="Ej: Cadencia"></div>
+    <div class="form-group"><label>Tipo de campo</label>
+      <select id="pm-type" onchange="document.getElementById('pm-options-wrap').style.display=this.value==='select'?'':'none';">
+        <option value="text">Texto libre</option>
+        <option value="number">Número</option>
+        <option value="select">Lista de opciones</option>
+      </select>
+    </div>
+    <div class="form-group" id="pm-options-wrap" style="display:none;">
+      <label>Opciones (separadas por coma)</label>
+      <input type="text" id="pm-options" placeholder="Ej: Baja, Media, Alta">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-danger btn-sm" id="btn-del-param" onclick="deleteParamAjuste()" style="display:none">🗑 Eliminar</button>
+      <button class="btn btn-secondary" onclick="closeModal('param')">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveParamAjuste()">Guardar</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="modal-equipo">
   <div class="modal">
     <div class="modal-title" id="equipo-modal-title">Nuevo equipo</div>
@@ -479,6 +510,30 @@ td{padding:11px 14px;border-top:1px solid var(--border);font-size:13px;vertical-
       <button class="btn btn-danger btn-sm" id="btn-del-equipo" onclick="deleteEquipoConfirm()" style="display:none">🗑 Eliminar</button>
       <button class="btn btn-secondary" onclick="closeModal('equipo')">Cancelar</button>
       <button class="btn btn-primary" onclick="saveEquipo()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-quickmedia">
+  <div class="modal" style="max-width:420px;">
+    <div class="modal-title" id="qm-title">Foto / vídeo</div>
+    <div class="img-uploader" onclick="document.getElementById('qm-img-file').click()">
+      <img id="qm-img-preview" class="img-uploader-preview">
+      <div class="img-uploader-text" id="qm-img-text">📁 Pulsa para subir una foto</div>
+      <div class="img-uploader-progress" id="qm-img-progress"></div>
+    </div>
+    <input id="qm-img-file" type="file" accept="image/*" style="display:none" onchange="handleQuickImageSelect(this)">
+    <div class="form-group" style="margin-top:14px;">
+      <div class="img-uploader" onclick="document.getElementById('qm-vid-file').click()">
+        <div class="img-uploader-text" id="qm-vid-text">🎥 Pulsa para subir un vídeo (máx. 20MB)</div>
+        <div class="img-uploader-progress" id="qm-vid-progress"></div>
+      </div>
+      <input id="qm-vid-file" type="file" accept="video/*" style="display:none" onchange="handleQuickVideoSelect(this)">
+      <input type="text" id="qm-video" placeholder="...o pega aquí una URL de YouTube/Vimeo" style="margin-top:8px;">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeModal('quickmedia')">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveQuickMedia()">💾 Guardar</button>
     </div>
   </div>
 </div>
@@ -514,7 +569,15 @@ td{padding:11px 14px;border-top:1px solid var(--border);font-size:13px;vertical-
     <div class="form-group"><label>Material necesario</label><div class="ms-wrap"><div class="ms-chips" id="ms-material"></div></div></div>
     <div class="form-group"><label>Grupos musculares</label><div class="ms-wrap"><div class="ms-chips" id="ms-grupos"></div></div></div>
     <div class="form-group"><label>Descripción / ejecución</label><textarea id="ej-desc"></textarea></div>
-    <div class="form-group"><label>URL de vídeo (YouTube/Vimeo)</label><input type="text" id="ej-video" placeholder="https://www.youtube.com/watch?v=..."></div>
+    <div class="form-group">
+      <label>Vídeo del ejercicio</label>
+      <div class="img-uploader" onclick="document.getElementById('ej-vid-file').click()">
+        <div class="img-uploader-text" id="ej-vid-text">🎥 Pulsa para subir un vídeo desde tu móvil (máx. 20MB)</div>
+        <div class="img-uploader-progress" id="ej-vid-progress"></div>
+      </div>
+      <input id="ej-vid-file" type="file" accept="video/*" style="display:none" onchange="handleVideoSelect(this)">
+      <input type="text" id="ej-video" placeholder="...o pega aquí una URL de YouTube/Vimeo" style="margin-top:8px;">
+    </div>
     <div class="modal-actions">
       <button class="btn btn-danger" id="btn-del-ej" onclick="deleteEjercicio()" style="display:none;margin-right:auto">Eliminar</button>
       <button class="btn btn-secondary" onclick="closeModal('ejercicio')">Cancelar</button>
@@ -690,6 +753,7 @@ var API = 'https://script.google.com/macros/s/AKfycbzqXBcIAhrrXHXs2u1_jk8137QI17
 var DB = { atletas:[], atletasFull:[], equipos:[], ejercicios:{}, sesiones:[], templates:[], resistencia:[], config:{tipos_contraccion:[], materiales:[], categorias:[], grupos_musculares:[], disciplinas_resistencia:[]} };
 var calYear, calMonth, selectedDate=null;
 var currentTemplate=null, isDirty=false, dragSrc=null;
+function getParamsCatalog(){return (DB.config.parametros_ejercicio&&DB.config.parametros_ejercicio.length)?DB.config.parametros_ejercicio:DEFAULT_PARAMS_CATALOG;}
 var editingEjId=null, currentImageUrl='', detailEjId=null;
 var selectedContr=[], selectedMat=[], selectedGrupos=[];
 var filterContr=null, filterMat=null, filterCat=null, filterGrupo=null;
@@ -708,7 +772,7 @@ var BLOQUES = [
   {id:'vuelta-calma',  name:'Vuelta a la Calma',   color:'#4ade80'}
 ];
 
-var PARAMS_CATALOG = [
+var DEFAULT_PARAMS_CATALOG = [
   {id:'series', label:'Series',   type:'number'},
   {id:'reps',   label:'Reps',     type:'text'},
   {id:'kg',     label:'kg',       type:'text'},
@@ -1024,7 +1088,7 @@ function renderEjercicios(){
     var contrTag=(e.tipo_contraccion||[]).slice(0,1).map(function(c){return '<span class="ex-card-tag contr">'+c+'</span>';}).join('');
     var matTag=(e.material||[]).slice(0,1).map(function(m){return '<span class="ex-card-tag mat">'+m+'</span>';}).join('');
     return '<div class="ex-card" onclick="showDetail(\''+id+'\')">'
-      +'<div class="ex-card-img-wrap">'+imgHtml+'</div>'
+      +'<div class="ex-card-img-wrap">'+imgHtml+'<button class="btn btn-secondary btn-xs" style="position:absolute;top:6px;right:6px;" onclick="event.stopPropagation();openQuickMedia(\''+id+'\')">📷 Foto/vídeo</button></div>'
       +'<div class="ex-card-body"><div class="ex-card-name">'+e.nombre+'</div>'
       +'<div class="ex-card-meta">'+e.categoria+'</div>'
       +'<div class="ex-card-tags">'+grupoTag+contrTag+matTag+(e.video?'<span class="ex-card-tag video">▶</span>':'')+'</div></div></div>';
@@ -1059,7 +1123,7 @@ function openEjercicio(){
   ['ej-nombre','ej-musculos','ej-desc','ej-video'].forEach(function(f){document.getElementById(f).value='';});
   var catSel=document.getElementById('ej-cat');
   catSel.innerHTML=(DB.config.categorias||['Fuerza']).map(function(c){return '<option>'+c+'</option>';}).join('');
-  renderMultiSelects();resetImagePreview();openModal('ejercicio');
+  renderMultiSelects();resetImagePreview();resetVideoUploader();openModal('ejercicio');
 }
 function renderMultiSelects(){
   document.getElementById('ms-contraccion').innerHTML=(DB.config.tipos_contraccion||[]).map(function(c){return '<div class="ms-chip'+(selectedContr.includes(c)?' selected':'')+'" onclick="toggleMs(\'contr\',\''+c.replace(/'/g,"\\'")+'\')">'+c+'</div>';}).join('');
@@ -1068,6 +1132,82 @@ function renderMultiSelects(){
 }
 function toggleMs(type,val){var arr=type==='contr'?selectedContr:(type==='mat'?selectedMat:selectedGrupos);var idx=arr.indexOf(val);if(idx>=0)arr.splice(idx,1);else arr.push(val);renderMultiSelects();}
 function resetImagePreview(){var prev=document.getElementById('ej-img-preview');prev.src='';prev.classList.remove('has-img');document.getElementById('ej-img-text').textContent='📁 Pulsa para subir una imagen';document.getElementById('ej-img-file').value='';}
+function resetVideoUploader(){document.getElementById('ej-vid-text').textContent='🎥 Pulsa para subir un vídeo desde tu móvil (máx. 20MB)';document.getElementById('ej-vid-file').value='';document.getElementById('ej-vid-progress').style.display='none';document.getElementById('ej-vid-progress').style.width='0';}
+
+// ── ACTUALIZAR FOTO/VÍDEO RÁPIDO (sin abrir el formulario completo) ──
+var quickMediaExId=null,quickMediaImgUrl='';
+function openQuickMedia(id){
+  var e=DB.ejercicios[id];if(!e)return;
+  quickMediaExId=id;quickMediaImgUrl=e.imagen||'';
+  document.getElementById('qm-title').textContent=e.nombre;
+  var prev=document.getElementById('qm-img-preview');
+  if(e.imagen){prev.src=e.imagen;prev.classList.add('has-img');document.getElementById('qm-img-text').textContent='Cambiar foto';}
+  else{prev.src='';prev.classList.remove('has-img');document.getElementById('qm-img-text').textContent='📁 Pulsa para subir una foto';}
+  document.getElementById('qm-img-file').value='';
+  document.getElementById('qm-img-progress').style.display='none';document.getElementById('qm-img-progress').style.width='0';
+  document.getElementById('qm-video').value=e.video||'';
+  document.getElementById('qm-vid-text').textContent='🎥 Pulsa para subir un vídeo (máx. 20MB)';
+  document.getElementById('qm-vid-file').value='';
+  document.getElementById('qm-vid-progress').style.display='none';document.getElementById('qm-vid-progress').style.width='0';
+  openModal('quickmedia');
+}
+async function handleQuickImageSelect(input){
+  if(!input.files||!input.files[0])return;
+  var file=input.files[0];
+  if(file.size>5*1024*1024){toast('Imagen >5MB, no permitida','err');return;}
+  var reader=new FileReader();reader.onload=function(e){var prev=document.getElementById('qm-img-preview');prev.src=e.target.result;prev.classList.add('has-img');document.getElementById('qm-img-text').textContent='⏳ Subiendo a Drive...';};reader.readAsDataURL(file);
+  var base64=await new Promise(function(res){var r=new FileReader();r.onload=function(){res(r.result.split(',')[1]);};r.readAsDataURL(file);});
+  var progress=document.getElementById('qm-img-progress');progress.style.display='block';progress.style.width='30%';
+  try{
+    var resp=await apiPost({action:'uploadImage',fileName:file.name,mimeType:file.type,base64:base64});
+    progress.style.width='100%';
+    if(resp.ok){quickMediaImgUrl=resp.url;document.getElementById('qm-img-preview').src=resp.url;document.getElementById('qm-img-text').textContent='✅ Subida correctamente';setTimeout(function(){progress.style.display='none';progress.style.width='0';},800);}
+    else{document.getElementById('qm-img-text').textContent='❌ '+resp.error;progress.style.display='none';}
+  }catch(err){document.getElementById('qm-img-text').textContent='❌ Error de conexión';progress.style.display='none';}
+}
+async function handleQuickVideoSelect(input){
+  if(!input.files||!input.files[0])return;
+  var file=input.files[0];
+  if(file.size>20*1024*1024){toast('Vídeo >20MB. Recórtalo o comprímelo antes de subirlo','err');return;}
+  var textEl=document.getElementById('qm-vid-text');
+  textEl.textContent='⏳ Subiendo a Drive...';
+  var base64=await new Promise(function(res){var r=new FileReader();r.onload=function(){res(r.result.split(',')[1]);};r.readAsDataURL(file);});
+  var progress=document.getElementById('qm-vid-progress');progress.style.display='block';progress.style.width='30%';
+  try{
+    var resp=await apiPost({action:'uploadVideo',fileName:file.name,mimeType:file.type,base64:base64});
+    progress.style.width='100%';
+    if(resp.ok){document.getElementById('qm-video').value=resp.url;textEl.textContent='✅ Vídeo subido correctamente';setTimeout(function(){progress.style.display='none';progress.style.width='0';},800);}
+    else{textEl.textContent='❌ '+resp.error;progress.style.display='none';}
+  }catch(err){textEl.textContent='❌ Error de conexión';progress.style.display='none';}
+}
+async function saveQuickMedia(){
+  var e=DB.ejercicios[quickMediaExId];if(!e)return;
+  var data=Object.assign({},e,{imagen:quickMediaImgUrl,video:document.getElementById('qm-video').value.trim()});
+  var r=await apiPost(Object.assign({action:'updateEjercicio'},data));
+  if(r.ok){DB.ejercicios[quickMediaExId]=data;renderEjercicios();closeModal('quickmedia');toast('✅ Foto/vídeo actualizados');}
+  else toast('Error: '+r.error,'err');
+}
+
+async function handleVideoSelect(input){
+  if(!input.files||!input.files[0])return;
+  var file=input.files[0];
+  if(file.size>20*1024*1024){toast('Vídeo >20MB. Recórtalo o comprímelo antes de subirlo (el editor de tu móvil suele tener opción de recortar)','err');return;}
+  var textEl=document.getElementById('ej-vid-text');
+  textEl.textContent='⏳ Subiendo a Drive... (puede tardar un poco en vídeos grandes)';
+  var base64=await new Promise(function(res){var r=new FileReader();r.onload=function(){res(r.result.split(',')[1]);};r.readAsDataURL(file);});
+  var progress=document.getElementById('ej-vid-progress');progress.style.display='block';progress.style.width='30%';
+  try{
+    var resp=await apiPost({action:'uploadVideo',fileName:file.name,mimeType:file.type,base64:base64});
+    progress.style.width='100%';
+    if(resp.ok){
+      document.getElementById('ej-video').value=resp.url;
+      textEl.textContent='✅ Vídeo subido correctamente';
+      setTimeout(function(){progress.style.display='none';progress.style.width='0';},800);
+    } else {
+      textEl.textContent='❌ '+resp.error;progress.style.display='none';
+    }
+  }catch(err){textEl.textContent='❌ Error de conexión';progress.style.display='none';}
+}
 
 async function handleImageSelect(input){
   if(!input.files||!input.files[0])return;
@@ -1122,15 +1262,91 @@ function editFromDetail(){
   document.getElementById('ej-musculos').value=e.musculos||'';
   document.getElementById('ej-desc').value=e.descripcion||'';
   document.getElementById('ej-video').value=e.video||'';
+  resetVideoUploader();
   renderMultiSelects();
   var prev=document.getElementById('ej-img-preview');
   if(e.imagen){prev.src=e.imagen;prev.classList.add('has-img');document.getElementById('ej-img-text').textContent='Cambiar imagen';}else resetImagePreview();
   openModal('ejercicio');
 }
-function toEmbedUrl(url){var yt=url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|v\/))([^&?\/\s]{11})/);if(yt)return 'https://www.youtube.com/embed/'+yt[1];var vi=url.match(/vimeo\.com\/(\d+)/);if(vi)return 'https://player.vimeo.com/video/'+vi[1];return null;}
+function toEmbedUrl(url){var yt=url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|v\/))([^&?\/\s]{11})/);if(yt)return 'https://www.youtube.com/embed/'+yt[1];var vi=url.match(/vimeo\.com\/(\d+)/);if(vi)return 'https://player.vimeo.com/video/'+vi[1];var dr=url.match(/drive\.google\.com\/file\/d\/([^\/]+)/);if(dr)return 'https://drive.google.com/file/d/'+dr[1]+'/preview';return null;}
 
 // ── AJUSTES ──
-function renderAjustes(){renderConfigList('cfg-contraccion','tipos_contraccion');renderConfigList('cfg-materiales','materiales');renderConfigList('cfg-grupos','grupos_musculares');renderConfigList('cfg-disciplinas','disciplinas_resistencia');renderConfigList('cfg-categorias','categorias');}
+function renderAjustes(){renderConfigList('cfg-contraccion','tipos_contraccion');renderConfigList('cfg-materiales','materiales');renderConfigList('cfg-grupos','grupos_musculares');renderConfigList('cfg-disciplinas','disciplinas_resistencia');renderConfigList('cfg-categorias','categorias');renderParamsConfig();}
+
+function renderParamsConfig(){
+  var wrap=document.getElementById('cfg-parametros');
+  if(!wrap) return;
+  var params=getParamsCatalog();
+  if(!params.length){wrap.innerHTML='<div style="color:var(--text-muted);font-size:13px;">Sin parámetros todavía.</div>';return;}
+  wrap.innerHTML='<div style="display:flex;flex-direction:column;gap:8px;">'+params.map(function(p){
+    var typeLabel=p.type==='select'?'Lista':(p.type==='number'?'Número':'Texto');
+    return '<div style="display:flex;justify-content:space-between;align-items:center;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;">'
+      +'<div><strong>'+p.label+'</strong> <span style="color:var(--text-muted);font-size:11px;">· '+typeLabel+(p.type==='select'&&p.options?' ('+p.options.join(', ')+')':'')+'</span></div>'
+      +'<div style="display:flex;gap:6px;">'
+        +'<button class="btn btn-secondary btn-xs" onclick="openEditParamAjuste(\''+p.id+'\')">✏️</button>'
+        +'<button class="btn btn-danger btn-xs" onclick="deleteParamAjusteDirecto(\''+p.id+'\')">✕</button>'
+      +'</div>'
+    +'</div>';
+  }).join('')+'</div>';
+}
+
+var editingParamId=null;
+function openParamAjuste(){
+  editingParamId=null;
+  document.getElementById('param-modal-title').textContent='Nuevo parámetro';
+  document.getElementById('btn-del-param').style.display='none';
+  document.getElementById('pm-label').value='';
+  document.getElementById('pm-type').value='text';
+  document.getElementById('pm-options').value='';
+  document.getElementById('pm-options-wrap').style.display='none';
+  openModal('param');
+}
+function openEditParamAjuste(id){
+  var p=getParamsCatalog().find(function(x){return x.id===id;});
+  if(!p) return;
+  editingParamId=id;
+  document.getElementById('param-modal-title').textContent='Editar parámetro';
+  document.getElementById('btn-del-param').style.display='inline-block';
+  document.getElementById('pm-label').value=p.label;
+  document.getElementById('pm-type').value=p.type;
+  document.getElementById('pm-options').value=(p.options||[]).join(', ');
+  document.getElementById('pm-options-wrap').style.display=p.type==='select'?'':'none';
+  openModal('param');
+}
+async function saveParamAjuste(){
+  var label=document.getElementById('pm-label').value.trim();
+  var type=document.getElementById('pm-type').value;
+  var optionsRaw=document.getElementById('pm-options').value.trim();
+  if(!label){toast('El nombre es obligatorio','err');return;}
+  if(type==='select'&&!optionsRaw){toast('Añade al menos una opción','err');return;}
+  var list=getParamsCatalog().slice();
+  var newParam={
+    id: editingParamId || label.toLowerCase().replace(/\s+/g,'_').replace(/[^a-z0-9_]/g,''),
+    label: label, type: type
+  };
+  if(type==='select') newParam.options=optionsRaw.split(',').map(function(s){return s.trim();}).filter(Boolean);
+  if(editingParamId){
+    list=list.map(function(p){return p.id===editingParamId?newParam:p;});
+  } else {
+    if(list.some(function(p){return p.id===newParam.id;})){toast('Ya existe un parámetro con ese nombre','err');return;}
+    list.push(newParam);
+  }
+  var r=await apiPost({action:'saveConfig',key:'parametros_ejercicio',value:list});
+  if(r.ok){DB.config.parametros_ejercicio=list;renderParamsConfig();closeModal('param');toast('✅ Guardado');}
+  else toast('Error: '+r.error,'err');
+}
+async function deleteParamAjuste(){
+  if(!editingParamId) return;
+  await deleteParamAjusteDirecto(editingParamId);
+  closeModal('param');
+}
+async function deleteParamAjusteDirecto(id){
+  if(!confirm('¿Eliminar este parámetro? Los ejercicios que ya lo tengan añadido no se verán afectados, pero no podrás añadirlo a otros nuevos.')) return;
+  var list=getParamsCatalog().filter(function(p){return p.id!==id;});
+  var r=await apiPost({action:'saveConfig',key:'parametros_ejercicio',value:list});
+  if(r.ok){DB.config.parametros_ejercicio=list;renderParamsConfig();toast('🗑 Eliminado');}
+  else toast('Error: '+r.error,'err');
+}
 function renderConfigList(elId,key){var el=document.getElementById(elId);if(!el)return;var items=DB.config[key]||[];if(!items.length){el.innerHTML='<div style="color:var(--text-muted);font-size:13px">Lista vacía</div>';return;}el.innerHTML=items.map(function(item){return '<div class="cfg-chip"><span>'+item+'</span><span class="cfg-chip-del" onclick="removeConfigItem(\''+key+'\',\''+item.replace(/'/g,"\\'")+'\')">✕</span></div>';}).join('');}
 async function addConfigItem(key,inputId){var input=document.getElementById(inputId);var val=input.value.trim();if(!val)return;if(!DB.config[key])DB.config[key]=[];if(DB.config[key].includes(val)){toast('Ya existe','err');return;}DB.config[key].push(val);var r=await apiPost({action:'saveConfig',key:key,value:DB.config[key]});if(r.ok){input.value='';renderAjustes();renderEjercicios();toast('✅ Añadido');}else{DB.config[key].pop();toast('Error: '+r.error,'err');}}
 async function removeConfigItem(key,val){if(!confirm('¿Eliminar "'+val+'"?'))return;DB.config[key]=DB.config[key].filter(function(v){return v!==val;});var r=await apiPost({action:'saveConfig',key:key,value:DB.config[key]});if(r.ok){renderAjustes();renderEjercicios();toast('🗑 Eliminado');}else toast('Error: '+r.error,'err');}
@@ -1218,10 +1434,10 @@ function renderBloqueExs(bloqueId){
     list.appendChild(row);
   });
 }
-function buildParamChip(p,bloqueId,exIdx,paramIdx){var cat=PARAMS_CATALOG.find(function(c){return c.id===p.id;})||{label:p.id,type:'text'};var input='';if(cat.type==='select'){var opts=(cat.options||[]).map(function(o){return '<option'+(p.val===o?' selected':'')+'>'+o+'</option>';}).join('');input='<select onchange="updateParam(\''+bloqueId+'\','+exIdx+','+paramIdx+',this.value)">'+opts+'</select>';}else{input='<input type="'+cat.type+'" value="'+(p.val||'')+'" oninput="updateParam(\''+bloqueId+'\','+exIdx+','+paramIdx+',this.value)">';}return '<div class="param-chip"><label>'+cat.label+'</label>'+input+'</div>';}
+function buildParamChip(p,bloqueId,exIdx,paramIdx){var cat=getParamsCatalog().find(function(c){return c.id===p.id;})||{label:p.id,type:'text'};var input='';if(cat.type==='select'){var opts=(cat.options||[]).map(function(o){return '<option'+(p.val===o?' selected':'')+'>'+o+'</option>';}).join('');input='<select onchange="updateParam(\''+bloqueId+'\','+exIdx+','+paramIdx+',this.value)">'+opts+'</select>';}else{input='<input type="'+cat.type+'" value="'+(p.val||'')+'" oninput="updateParam(\''+bloqueId+'\','+exIdx+','+paramIdx+',this.value)">';}return '<div class="param-chip"><label>'+cat.label+'</label>'+input+'</div>';}
 function updateParam(b,ei,pi,v){if(currentTemplate.bloques[b]&&currentTemplate.bloques[b][ei]&&currentTemplate.bloques[b][ei].params[pi])currentTemplate.bloques[b][ei].params[pi].val=v;markDirty();}
-function showParamPicker(e,bloqueId,exIdx){e.stopPropagation();var picker=document.getElementById('param-picker');var existing=(currentTemplate.bloques[bloqueId][exIdx].params||[]).map(function(p){return p.id;});var available=PARAMS_CATALOG.filter(function(p){return !existing.includes(p.id);});if(!available.length){toast('Todos los parámetros añadidos');return;}picker.innerHTML=available.map(function(p){return '<div class="param-picker-item" onclick="addParam(\''+bloqueId+'\','+exIdx+',\''+p.id+'\')">'+p.label+'</div>';}).join('');var rect=e.target.getBoundingClientRect();picker.style.left=rect.left+'px';picker.style.top=(rect.bottom+6)+'px';picker.style.display='block';}
-function addParam(b,ei,pid){var cat=PARAMS_CATALOG.find(function(c){return c.id===pid;});var val=cat&&cat.type==='select'&&cat.options?cat.options[0]:'';currentTemplate.bloques[b][ei].params.push({id:pid,val:val});markDirty();document.getElementById('param-picker').style.display='none';renderBloqueExs(b);}
+function showParamPicker(e,bloqueId,exIdx){e.stopPropagation();var picker=document.getElementById('param-picker');var existing=(currentTemplate.bloques[bloqueId][exIdx].params||[]).map(function(p){return p.id;});var available=getParamsCatalog().filter(function(p){return !existing.includes(p.id);});if(!available.length){toast('Todos los parámetros añadidos');return;}picker.innerHTML=available.map(function(p){return '<div class="param-picker-item" onclick="addParam(\''+bloqueId+'\','+exIdx+',\''+p.id+'\')">'+p.label+'</div>';}).join('');var rect=e.target.getBoundingClientRect();picker.style.left=rect.left+'px';picker.style.top=(rect.bottom+6)+'px';picker.style.display='block';}
+function addParam(b,ei,pid){var cat=getParamsCatalog().find(function(c){return c.id===pid;});var val=cat&&cat.type==='select'&&cat.options?cat.options[0]:'';currentTemplate.bloques[b][ei].params.push({id:pid,val:val});markDirty();document.getElementById('param-picker').style.display='none';renderBloqueExs(b);}
 function removeEx(b,idx){currentTemplate.bloques[b].splice(idx,1);markDirty();renderBloqueExs(b);}
 function dropEx(targetBloque,targetIdx){if(!dragSrc||dragSrc.context!=='template')return;var srcEx=currentTemplate.bloques[dragSrc.bloque].splice(dragSrc.idx,1)[0];if(!currentTemplate.bloques[targetBloque])currentTemplate.bloques[targetBloque]=[];currentTemplate.bloques[targetBloque].splice(targetIdx,0,srcEx);markDirty();renderBloqueExs(dragSrc.bloque);if(targetBloque!==dragSrc.bloque)renderBloqueExs(targetBloque);dragSrc=null;}
 async function saveTemplate(){var name=document.getElementById('te-name').value.trim();if(!name){toast('Ponle nombre','err');return;}currentTemplate.name=name;var idx=DB.templates.findIndex(function(t){return t.id===currentTemplate.id;});if(idx>=0)DB.templates[idx]=JSON.parse(JSON.stringify(currentTemplate));else DB.templates.push(JSON.parse(JSON.stringify(currentTemplate)));localStorage.setItem('gc_templates',JSON.stringify(DB.templates));try{await apiPost({action:'saveTemplate',template:currentTemplate});}catch(e){}isDirty=false;renderTemplateList();toast('✅ Guardado');}
@@ -1684,10 +1900,10 @@ function renderSesionBloqueExs(bloqueId){
     list.appendChild(row);
   });
 }
-function buildSesionParamChip(p,bloqueId,exIdx,paramIdx){var cat=PARAMS_CATALOG.find(function(c){return c.id===p.id;})||{label:p.id,type:'text'};var input='';if(cat.type==='select'){var opts=(cat.options||[]).map(function(o){return '<option'+(p.val===o?' selected':'')+'>'+o+'</option>';}).join('');input='<select onchange="updateSesionParam(\''+bloqueId+'\','+exIdx+','+paramIdx+',this.value)">'+opts+'</select>';}else{input='<input type="'+cat.type+'" value="'+(p.val||'')+'" oninput="updateSesionParam(\''+bloqueId+'\','+exIdx+','+paramIdx+',this.value)">';}return '<div class="param-chip"><label>'+cat.label+'</label>'+input+'</div>';}
+function buildSesionParamChip(p,bloqueId,exIdx,paramIdx){var cat=getParamsCatalog().find(function(c){return c.id===p.id;})||{label:p.id,type:'text'};var input='';if(cat.type==='select'){var opts=(cat.options||[]).map(function(o){return '<option'+(p.val===o?' selected':'')+'>'+o+'</option>';}).join('');input='<select onchange="updateSesionParam(\''+bloqueId+'\','+exIdx+','+paramIdx+',this.value)">'+opts+'</select>';}else{input='<input type="'+cat.type+'" value="'+(p.val||'')+'" oninput="updateSesionParam(\''+bloqueId+'\','+exIdx+','+paramIdx+',this.value)">';}return '<div class="param-chip"><label>'+cat.label+'</label>'+input+'</div>';}
 function updateSesionParam(b,ei,pi,v){if(editingSesion.bloques[b]&&editingSesion.bloques[b][ei]&&editingSesion.bloques[b][ei].params[pi])editingSesion.bloques[b][ei].params[pi].val=v;}
-function showSesionParamPicker(e,bloqueId,exIdx){e.stopPropagation();var picker=document.getElementById('param-picker');var existing=(editingSesion.bloques[bloqueId][exIdx].params||[]).map(function(p){return p.id;});var available=PARAMS_CATALOG.filter(function(p){return !existing.includes(p.id);});if(!available.length){toast('Todos los parámetros añadidos');return;}picker.innerHTML=available.map(function(p){return '<div class="param-picker-item" onclick="addSesionParam(\''+bloqueId+'\','+exIdx+',\''+p.id+'\')">'+p.label+'</div>';}).join('');var rect=e.target.getBoundingClientRect();picker.style.left=rect.left+'px';picker.style.top=(rect.bottom+6)+'px';picker.style.display='block';}
-function addSesionParam(b,ei,pid){var cat=PARAMS_CATALOG.find(function(c){return c.id===pid;});var val=cat&&cat.type==='select'&&cat.options?cat.options[0]:'';editingSesion.bloques[b][ei].params.push({id:pid,val:val});document.getElementById('param-picker').style.display='none';renderSesionBloqueExs(b);}
+function showSesionParamPicker(e,bloqueId,exIdx){e.stopPropagation();var picker=document.getElementById('param-picker');var existing=(editingSesion.bloques[bloqueId][exIdx].params||[]).map(function(p){return p.id;});var available=getParamsCatalog().filter(function(p){return !existing.includes(p.id);});if(!available.length){toast('Todos los parámetros añadidos');return;}picker.innerHTML=available.map(function(p){return '<div class="param-picker-item" onclick="addSesionParam(\''+bloqueId+'\','+exIdx+',\''+p.id+'\')">'+p.label+'</div>';}).join('');var rect=e.target.getBoundingClientRect();picker.style.left=rect.left+'px';picker.style.top=(rect.bottom+6)+'px';picker.style.display='block';}
+function addSesionParam(b,ei,pid){var cat=getParamsCatalog().find(function(c){return c.id===pid;});var val=cat&&cat.type==='select'&&cat.options?cat.options[0]:'';editingSesion.bloques[b][ei].params.push({id:pid,val:val});document.getElementById('param-picker').style.display='none';renderSesionBloqueExs(b);}
 function addExToSesionBloque(bloqueId,sel){var id=sel.value;if(!id)return;if(!editingSesion.bloques[bloqueId])editingSesion.bloques[bloqueId]=[];editingSesion.bloques[bloqueId].push({id:id,params:[{id:'series',val:'3'},{id:'reps',val:'10'},{id:'kg',val:''},{id:'descanso',val:'90s'}]});sel.value='';renderSesionBloques();}
 function removeExFromSesion(b,idx){editingSesion.bloques[b].splice(idx,1);renderSesionBloques();}
 function dropExSesion(targetBloque,targetIdx){if(!dragSrc||dragSrc.context!=='sesion')return;var srcEx=editingSesion.bloques[dragSrc.bloque].splice(dragSrc.idx,1)[0];if(!editingSesion.bloques[targetBloque])editingSesion.bloques[targetBloque]=[];editingSesion.bloques[targetBloque].splice(targetIdx,0,srcEx);renderSesionBloques();dragSrc=null;}
