@@ -774,6 +774,7 @@ var API = 'https://script.google.com/macros/s/AKfycbzqXBcIAhrrXHXs2u1_jk8137QI17
 var DB = { atletas:[], atletasFull:[], equipos:[], ejercicios:{}, sesiones:[], templates:[], resistencia:[], config:{tipos_contraccion:[], materiales:[], categorias:[], grupos_musculares:[], disciplinas_resistencia:[]} };
 var calYear, calMonth, selectedDate=null;
 var currentTemplate=null, isDirty=false, dragSrc=null;
+function tipoDeBloqueKey(key){return key.indexOf('::')>-1?key.split('::')[0]:key;}
 function getParamsCatalog(){return (DB.config.parametros_ejercicio&&DB.config.parametros_ejercicio.length)?DB.config.parametros_ejercicio:DEFAULT_PARAMS_CATALOG;}
 var editingEjId=null, currentImageUrl='', detailEjId=null;
 var selectedContr=[], selectedMat=[], selectedGrupos=[];
@@ -1506,7 +1507,7 @@ function renderBloques(){
     c.innerHTML='<div style="text-align:center;color:var(--text-muted);font-size:12px;padding:20px;">Añade tu primer bloque (Activación, Fuerza, Potencia... o uno propio).</div>';
   }
   idsUsados.forEach(function(bloqueId){
-    var bloque=getBloques().find(function(b){return b.id===bloqueId;})||{id:bloqueId,name:bloqueId,color:'#a3a3a3'};
+    var bloque=getBloques().find(function(b){return b.id===tipoDeBloqueKey(bloqueId);})||{id:bloqueId,name:tipoDeBloqueKey(bloqueId),color:'#a3a3a3'};
     var exs=currentTemplate.bloques[bloque.id]||[];
     var div=document.createElement('div');div.className='bloque';
     div.innerHTML='<div class="bloque-header"><div class="bloque-color" style="background:'+bloque.color+'"></div><div class="bloque-name">'+bloque.name+'</div><div class="bloque-count">'+exs.length+' ej.</div><button class="btn btn-danger btn-xs" onclick="removeBloqueFromTemplate(\''+bloque.id+'\')">✕</button></div><div class="bloque-body"><div class="bloque-add"><button class="btn btn-secondary btn-sm" onclick="openEjPicker(\'template\',\''+bloque.id+'\')">+ Añadir ejercicio</button></div><div id="blist-'+bloque.id+'"></div></div>';
@@ -1964,7 +1965,8 @@ function editSesion(sesId){
   var s=DB.sesiones.find(function(x){return x.id===sesId;});if(!s)return;
   var bloques={};getBloques().forEach(function(b){bloques[b.id]=[];});
   (s.ejercicios||[]).forEach(function(ex){
-    var bid=ex.bloque||'fuerza';if(!bloques[bid])bloques[bid]=[];
+    var bid=(ex.bloque||'fuerza')+(ex.bloqueInstancia?('::'+ex.bloqueInstancia):'');
+    if(!bloques[bid])bloques[bid]=[];
     bloques[bid].push({id:ex.id,params:ex.params||[{id:'series',val:String(ex.sets||3)},{id:'reps',val:ex.reps||'10'},{id:'kg',val:ex.load||''},{id:'descanso',val:ex.rest||'90s'}]});
   });
   editingSesion={id:s.id,atleta:s.atleta,fecha:s.fecha,nombre:s.nombre,bloques:bloques};
@@ -1984,7 +1986,7 @@ function renderSesionEditor(){
 function renderSesionBloques(){
   var c=document.getElementById('sesion-bloques-container');c.innerHTML='';
   Object.keys(editingSesion.bloques).forEach(function(bloqueId){
-    var bDef=getBloques().find(function(b){return b.id===bloqueId;})||{name:bloqueId,color:'#888'};
+    var bDef=getBloques().find(function(b){return b.id===tipoDeBloqueKey(bloqueId);})||{name:tipoDeBloqueKey(bloqueId),color:'#888'};
     var exs=editingSesion.bloques[bloqueId]||[];
     var div=document.createElement('div');div.className='bloque';
     div.innerHTML='<div class="bloque-header"><div class="bloque-color" style="background:'+bDef.color+'"></div><div class="bloque-name">'+bDef.name+'</div><div class="bloque-count">'+exs.length+' ej.</div><button class="btn btn-danger btn-xs" onclick="removeBloqueFromSesion(\''+bloqueId+'\')">✕</button></div><div class="bloque-body"><div class="bloque-add"><button class="btn btn-secondary btn-sm" onclick="openEjPicker(\'sesion\',\''+bloqueId+'\')">+ Añadir ejercicio</button></div><div id="sblist-'+bloqueId+'"></div></div>';
@@ -2018,10 +2020,8 @@ function removeBloqueFromSesion(bloqueId){var exs=editingSesion.bloques[bloqueId
 var nbTarget='sesion';
 function openNewBloque(target){
   nbTarget=target||'sesion';
-  var yaUsados=nbTarget==='template'?currentTemplate.bloques:editingSesion.bloques;
-  var disponibles=getBloques().filter(function(b){return !yaUsados.hasOwnProperty(b.id);});
   var pre=document.getElementById('nb-predef');
-  pre.innerHTML='<option value="">— Selecciona —</option>'+disponibles.map(function(b){return '<option value="'+b.id+'">'+b.name+'</option>';}).join('');
+  pre.innerHTML='<option value="">— Selecciona —</option>'+getBloques().map(function(b){return '<option value="'+b.id+'">'+b.name+'</option>';}).join('');
   document.getElementById('nb-name').value='';
   openModal('newbloque');
 }
@@ -2029,11 +2029,13 @@ async function confirmAddBloque(){
   var preId=document.getElementById('nb-predef').value;
   var name=document.getElementById('nb-name').value.trim();
   if(!name&&!preId){toast('Pon nombre o elige predefinido','err');return;}
+  var target=nbTarget==='template'?currentTemplate.bloques:editingSesion.bloques;
   var bloqueId,bloqueName;
   if(preId){
-    bloqueId=preId;
     var def=getBloques().find(function(b){return b.id===preId;});
     bloqueName=def?def.name:preId;
+    // Si ese tipo ya está en uso, se crea una instancia adicional con clave única (mismo tipo/color, otro bloque independiente)
+    bloqueId=target.hasOwnProperty(preId)?(preId+'::'+Date.now()):preId;
   } else {
     bloqueId='custom-'+Date.now();bloqueName=name;
     var nuevoBloque={id:bloqueId,name:bloqueName,color:'#a3a3a3'};
@@ -2059,7 +2061,7 @@ async function saveSesion(){
   if(!editingSesion.atleta){toast('Selecciona un atleta','err');return;}
   if(!editingSesion.nombre){toast('Ponle nombre','err');return;}
   var ejercicios=[];
-  Object.keys(editingSesion.bloques).forEach(function(bId){(editingSesion.bloques[bId]||[]).forEach(function(ex){ejercicios.push({id:ex.id,bloque:bId,sets:getParamVal(ex,'series')||'3',reps:getParamVal(ex,'reps')||'10',load:getParamVal(ex,'kg')||'—',rest:getParamVal(ex,'descanso')||'90s',params:ex.params});});});
+  Object.keys(editingSesion.bloques).forEach(function(bId){(editingSesion.bloques[bId]||[]).forEach(function(ex){ejercicios.push({id:ex.id,bloque:tipoDeBloqueKey(bId),bloqueInstancia:(bId.indexOf('::')>-1?bId.split('::')[1]:''),sets:getParamVal(ex,'series')||'3',reps:getParamVal(ex,'reps')||'10',load:getParamVal(ex,'kg')||'—',rest:getParamVal(ex,'descanso')||'90s',params:ex.params});});});
   var btn=document.getElementById('btn-save-sesion');btn.disabled=true;btn.innerHTML='<span class="loading-inline"></span>';
   var action=editingSesion.id?'updateSesion':'addSesion';
   var payload={action:action,atleta:editingSesion.atleta,fecha:editingSesion.fecha,nombre:editingSesion.nombre,ejercicios:ejercicios};
