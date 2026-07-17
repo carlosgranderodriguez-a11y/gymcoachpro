@@ -301,7 +301,7 @@ var WELLNESS=[];          // Wellness diario del atleta
 var weekOffset=0;
 var currentDetalle=null;  // {kind:'fuerza'|'resistencia', data}
 
-var BLOQUES=[
+var DEFAULT_BLOQUES=[
   {id:'activacion',    name:'Activación',          color:'#60a5fa'},
   {id:'fuerza',        name:'Fuerza',              color:'#ccff66'},
   {id:'potencia',      name:'Potencia',            color:'#fb923c'},
@@ -310,6 +310,7 @@ var BLOQUES=[
   {id:'resistencia',   name:'Resistencia',         color:'#06b6d4'},
   {id:'vuelta-calma',  name:'Vuelta a la Calma',   color:'#4ade80'}
 ];
+var BLOQUES=DEFAULT_BLOQUES;
 
 async function api(p){var qs=Object.keys(p).map(function(k){return k+'='+encodeURIComponent(p[k]);}).join('&');return(await fetch(API+'?'+qs)).json();}
 async function apiPost(b){return(await fetch(API,{method:'POST',body:JSON.stringify(b)})).json();}
@@ -345,18 +346,20 @@ function enterApp(){
 
 async function loadAsignadas(){
   try{
-    var [rS,rR,rReg,rEj,rW]=await Promise.all([
+    var [rS,rR,rReg,rEj,rW,rC]=await Promise.all([
       api({action:'getAllSesiones'}),
       api({action:'getResistencia'}),
       api({action:'getHistorial',atleta:ATLETA}),
       api({action:'getEjercicios'}),
-      api({action:'getWellness',atleta:ATLETA})
+      api({action:'getWellness',atleta:ATLETA}),
+      api({action:'getConfig'})
     ]);
     if(rS&&rS.ok) FUERZA_SESIONES=(rS.sesiones||[]).filter(function(s){return s.atleta===ATLETA;});
     if(rR&&rR.ok) RES_SESIONES=(rR.items||[]).filter(function(r){return r.tipo==='sesion'&&r.atleta===ATLETA;});
     if(rReg&&rReg.ok) REGISTROS=rReg.registros||[];
     if(rEj&&rEj.ok) EJERCICIOS_DB=rEj.ejercicios||{};
     if(rW&&rW.ok) WELLNESS=rW.items||[];
+    if(rC&&rC.ok&&rC.config.bloques_ejercicio&&rC.config.bloques_ejercicio.length) BLOQUES=rC.config.bloques_ejercicio;
     renderSemana();
   }catch(e){toast('No se pudo cargar tu semana','err');}
 }
@@ -460,7 +463,10 @@ function renderDetalleFuerza(s,activo){
   html+='<div class="det-sub">'+fecha+'</div>';
   var bloques={};
   (s.ejercicios||[]).forEach(function(ex){var b=ex.bloque||'otros';if(!bloques[b])bloques[b]=[];bloques[b].push(ex);});
-  BLOQUES.forEach(function(bDef){
+  var idsConocidos=BLOQUES.map(function(b){return b.id;});
+  var extraIds=Object.keys(bloques).filter(function(k){return idsConocidos.indexOf(k)<0;});
+  var listaBloques=BLOQUES.concat(extraIds.map(function(k){return {id:k,name:k,color:'#a3a3a3'};}));
+  listaBloques.forEach(function(bDef){
     var exs=bloques[bDef.id];if(!exs||!exs.length)return;
     html+='<div class="bloque-h" style="background:'+bDef.color+'">'+bDef.name+'</div>';
     exs.forEach(function(ex){
@@ -710,7 +716,7 @@ function renderProgreso(){
   html+='<div class="summary-stats">'
     +'<div class="summary-stat"><b>'+totalSesiones+'</b><span>Sesiones completadas</span></div>'
     +'<div class="summary-stat"><b>'+rpeProm+'</b><span>RPE medio</span></div>'
-    +'<div class="summary-stat"><b>'+Math.round(volumenFuerza)+' kg</b><span>Volumen total fuerza</span></div>'
+    +'<div class="summary-stat"><b>'+regsCompletados.length+'</b><span>Sesiones de fuerza</span></div>'
     +'<div class="summary-stat"><b>'+cargaResistencia+' UA</b><span>Carga total resistencia</span></div>'
   +'</div>';
 
@@ -812,24 +818,56 @@ async function guardarCompletar(){
   }catch(e){toast('Sin conexión','err');}
 }
 
+function getPreviousBestForExercise(exId,excludeRegId){
+  var best=null,bestFecha=null;
+  REGISTROS.forEach(function(reg){
+    if(reg.id===excludeRegId||!reg.completada||!reg.datos||!reg.datos.ejercicios) return;
+    reg.datos.ejercicios.forEach(function(exReg){
+      if(!exReg||exReg.id!==exId||!exReg.sets||!exReg.sets.length) return;
+      var kgs=exReg.sets.map(function(st){return parseFloat(st.load)||0;}).filter(function(v){return v>0;});
+      if(!kgs.length) return;
+      var maxKg=Math.max.apply(null,kgs);
+      if(!bestFecha||reg.fecha>bestFecha){bestFecha=reg.fecha;best=maxKg;}
+    });
+  });
+  return best;
+}
+
 function renderResumen(isFuerza,rpe,notas){
   var s=currentDetalle.data;
   var nombre=s.nombre||(isFuerza?'Sesión de fuerza':'Sesión de resistencia');
-  var stats='';
+  var stats='',compareBlock='';
   if(isFuerza){
     var totalEx=(s.ejercicios||[]).length;
     var reg=REGISTROS[REGISTROS.length-1];
-    var volumen=0;
-    if(reg&&reg.datos&&reg.datos.ejercicios){
-      reg.datos.ejercicios.forEach(function(ex){
-        if(ex&&ex.sets)ex.sets.forEach(function(st){volumen+=(parseFloat(st.load)||0)*(parseFloat(st.reps)||0);});
-      });
-    }
     stats='<div class="summary-stats">'
       +'<div class="summary-stat"><b>'+totalEx+'</b><span>Ejercicios</span></div>'
       +'<div class="summary-stat"><b>'+rpe+'</b><span>RPE percibido</span></div>'
-      +'<div class="summary-stat" style="grid-column:1/-1;"><b>'+Math.round(volumen)+' kg</b><span>Volumen total movido</span></div>'
     +'</div>';
+    var rows=(s.ejercicios||[]).map(function(ex,idx){
+      var db=EJERCICIOS_DB[ex.id]||{nombre:ex.id};
+      var exReg=reg&&reg.datos&&reg.datos.ejercicios?reg.datos.ejercicios[idx]:null;
+      var hoyMax=null;
+      if(exReg&&exReg.sets&&exReg.sets.length){
+        var kgs=exReg.sets.map(function(st){return parseFloat(st.load)||0;}).filter(function(v){return v>0;});
+        if(kgs.length)hoyMax=Math.max.apply(null,kgs);
+      }
+      var prevMax=getPreviousBestForExercise(ex.id,reg?reg.id:null);
+      var compareHtml;
+      if(hoyMax===null){
+        compareHtml='<span style="color:var(--text-muted);">Sin carga registrada</span>';
+      } else if(prevMax===null){
+        compareHtml='<b>'+hoyMax+' kg</b> <span style="color:var(--text-muted);font-size:11px;">· primera vez</span>';
+      } else {
+        var diff=Math.round((hoyMax-prevMax)*10)/10;
+        var arrow=diff>0?'📈':(diff<0?'📉':'➡️');
+        var diffTxt=diff>0?'+'+diff+'kg':(diff<0?diff+'kg':'igual');
+        var color=diff>0?'var(--green)':(diff<0?'var(--red)':'var(--text-dim)');
+        compareHtml='<b>'+hoyMax+' kg</b> <span style="color:var(--text-muted);font-size:11px;">(antes '+prevMax+'kg)</span><br><span style="color:'+color+';font-weight:700;font-size:12px;">'+arrow+' '+diffTxt+'</span>';
+      }
+      return '<div class="zone-row" style="align-items:flex-start;"><span>'+db.nombre+'</span><span style="text-align:right;">'+compareHtml+'</span></div>';
+    }).join('');
+    compareBlock='<div class="bloque-h" style="background:var(--accent);color:#000;">Comparativa por ejercicio</div><div class="card">'+rows+'</div>';
   } else {
     stats='<div class="summary-stats">'
       +'<div class="summary-stat"><b>'+(document.getElementById('cp-km')?document.getElementById('cp-km').value||'—':'—')+' km</b><span>Distancia real</span></div>'
@@ -841,6 +879,7 @@ function renderResumen(isFuerza,rpe,notas){
     +'<div class="summary-title cond">¡Sesión completada!</div>'
     +'<div class="summary-sub">'+nombre+'</div>'
     +stats
+    +compareBlock
     +(notas?'<div class="card"><div class="lab">Tus notas</div>'+notas+'</div>':'')
     +'<button class="save" onclick="showPage(\'semana\',document.getElementById(\'nav-semana\'))">Volver a mi semana</button>';
 }
