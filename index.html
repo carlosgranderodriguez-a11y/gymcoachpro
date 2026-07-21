@@ -255,6 +255,7 @@ td{padding:11px 14px;border-top:1px solid var(--border);font-size:13px;vertical-
   <div class="tab" onclick="switchTab('atletas',this)">👥 Atletas / Equipos</div>
   <div class="tab" onclick="switchTab('calendario',this)">📅 Calendario</div>
   <div class="tab" onclick="switchTab('biblioteca',this)">📚 Biblioteca</div>
+  <div class="tab" onclick="switchTab('programas',this)">🗓️ Programas</div>
   <div class="tab" onclick="switchTab('ajustes',this)">⚙️ Ajustes</div>
 </div>
 
@@ -395,6 +396,47 @@ td{padding:11px 14px;border-top:1px solid var(--border);font-size:13px;vertical-
         <div class="fchip" onclick="switchResTab('plantillas')" id="restab-plantillas">📋 Biblioteca de plantillas</div>
       </div>
       <div id="res-list"></div>
+    </div>
+  </div>
+
+
+  <!-- PROGRAMAS -->
+  <div id="page-programas" class="page">
+    <div class="section-header">
+      <div class="section-title">Programas (planes multi-semana)</div>
+      <button class="btn btn-primary" onclick="newPrograma()">+ Nuevo programa</button>
+    </div>
+    <div class="template-layout">
+      <div class="template-list-panel">
+        <div class="tlp-header"><span class="tlp-title">Mis programas</span></div>
+        <div id="programa-list"><div class="template-empty">Sin programas.<br>Crea el primero.</div></div>
+      </div>
+      <div class="template-editor" id="programa-editor">
+        <div class="te-no-selection" id="pe-placeholder">
+          <div style="font-size:32px">🗓️</div>
+          <div>Selecciona o crea un programa</div>
+        </div>
+        <div id="pe-content" style="display:none">
+          <div class="te-header">
+            <input class="te-name-input" id="pe-name" placeholder="Nombre del programa (ej: Fuerza 8 semanas)..." oninput="markDirtyPrograma()">
+            <div style="display:flex;gap:8px">
+              <button class="btn btn-secondary btn-sm" onclick="deletePrograma()">Eliminar</button>
+              <button class="btn btn-primary btn-sm" onclick="savePrograma()">Guardar</button>
+            </div>
+          </div>
+          <div id="pe-weeks-container"></div>
+          <button class="btn btn-secondary btn-sm" onclick="addSemana()" style="margin-top:10px">+ Añadir semana</button>
+          <div style="margin-top:22px;padding-top:16px;border-top:1px solid var(--border);">
+            <div style="font-size:10px;color:var(--text-dim);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;">Asignar a un atleta</div>
+            <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+              <select id="pe-assign-atleta" style="padding:9px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;outline:none;"></select>
+              <input id="pe-assign-fecha" type="date" style="padding:9px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;outline:none;">
+              <button class="btn btn-primary btn-sm" onclick="assignProgramaToAtleta()">📅 Asignar al calendario</button>
+            </div>
+            <div style="font-size:11px;color:var(--text-muted);margin-top:6px;">La fecha marca el lunes de la semana 1. Se crea una sesión por cada día con plantilla asignada.</div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -771,7 +813,7 @@ td{padding:11px 14px;border-top:1px solid var(--border);font-size:13px;vertical-
 <script>
 var API = 'https://script.google.com/macros/s/AKfycbzqXBcIAhrrXHXs2u1_jk8137QI17VxC_IKA3z15cm4ZKwlkTYFbB96zjKpoxk07B4yUA/exec';
 
-var DB = { atletas:[], atletasFull:[], equipos:[], ejercicios:{}, sesiones:[], templates:[], resistencia:[], config:{tipos_contraccion:[], materiales:[], categorias:[], grupos_musculares:[], disciplinas_resistencia:[]} };
+var DB = { atletas:[], atletasFull:[], equipos:[], ejercicios:{}, sesiones:[], templates:[], programas:[], resistencia:[], config:{tipos_contraccion:[], materiales:[], categorias:[], grupos_musculares:[], disciplinas_resistencia:[]} };
 var calYear, calMonth, selectedDate=null;
 var currentTemplate=null, isDirty=false, dragSrc=null;
 function tipoDeBloqueKey(key){return key.indexOf('::')>-1?key.split('::')[0]:key;}
@@ -833,6 +875,7 @@ function setStatus(t,c){var el=document.getElementById('status');el.textContent=
 window.onload=async function(){
   var now=new Date();calYear=now.getFullYear();calMonth=now.getMonth();
   try{DB.templates=JSON.parse(localStorage.getItem('gc_templates')||'[]');}catch(e){}
+  try{DB.programas=JSON.parse(localStorage.getItem('gc_programas')||'[]');}catch(e){}
   try{
     var [rA,rF,rEq,rE,rS,rC,rR]=await Promise.all([api({action:'getAtletas'}),api({action:'getAtletasFull'}),api({action:'getEquipos'}),api({action:'getEjercicios'}),api({action:'getAllSesiones'}),api({action:'getConfig'}),api({action:'getResistencia'})]);
     if(rA.ok) DB.atletas=rA.atletas||[];
@@ -844,7 +887,7 @@ window.onload=async function(){
     if(rR&&rR.ok) DB.resistencia=rR.items||[];
     setStatus('✅ Conectado','var(--green)');
   }catch(e){setStatus('❌ Sin conexión','var(--red)');}
-  renderAtletas();renderEjercicios();renderTemplateList();renderCalendar();renderAjustes();renderResistencia();renderEquipos();renderPanel();
+  renderAtletas();renderEjercicios();renderTemplateList();renderProgramaList();renderCalendar();renderAjustes();renderResistencia();renderEquipos();renderPanel();
   document.addEventListener('click',function(e){if(!e.target.closest('.param-picker')&&!e.target.closest('.param-add-btn'))document.getElementById('param-picker').style.display='none';});
 };
 
@@ -1504,6 +1547,12 @@ function newTemplate(){var t={id:'tpl_'+Date.now(),name:'',bloques:{}};DB.templa
 function selectTemplate(i){if(isDirty&&!confirm('Hay cambios sin guardar. ¿Continuar?'))return;currentTemplate=JSON.parse(JSON.stringify(DB.templates[i]));isDirty=false;renderTemplateList();showTemplateEditor();}
 function showTemplateEditor(){document.getElementById('te-placeholder').style.display='none';document.getElementById('te-content').style.display='block';document.getElementById('te-name').value=currentTemplate.name;renderBloques();}
 function markDirty(){isDirty=true;}
+function resolveBloqueMeta(bloqueId, container){
+  if(container&&container.bloqueMeta&&container.bloqueMeta[bloqueId])return container.bloqueMeta[bloqueId];
+  var found=getBloques().find(function(b){return b.id===tipoDeBloqueKey(bloqueId);});
+  if(found)return {name:found.name,color:found.color};
+  return {name:tipoDeBloqueKey(bloqueId),color:'#a3a3a3'};
+}
 function renderBloques(){
   var c=document.getElementById('bloques-container');c.innerHTML='';
   var idsUsados=Object.keys(currentTemplate.bloques);
@@ -1511,11 +1560,11 @@ function renderBloques(){
     c.innerHTML='<div style="text-align:center;color:var(--text-muted);font-size:12px;padding:20px;">Añade tu primer bloque (Activación, Fuerza, Potencia... o uno propio).</div>';
   }
   idsUsados.forEach(function(bloqueId){
-    var bloque=getBloques().find(function(b){return b.id===tipoDeBloqueKey(bloqueId);})||{id:bloqueId,name:tipoDeBloqueKey(bloqueId),color:'#a3a3a3'};
-    var exs=currentTemplate.bloques[bloque.id]||[];
+    var meta=resolveBloqueMeta(bloqueId,currentTemplate);
+    var exs=currentTemplate.bloques[bloqueId]||[];
     var div=document.createElement('div');div.className='bloque';
-    div.innerHTML='<div class="bloque-header"><div class="bloque-color" style="background:'+bloque.color+'"></div><div class="bloque-name">'+bloque.name+'</div><div class="bloque-count">'+exs.length+' ej.</div><button class="btn btn-danger btn-xs" onclick="removeBloqueFromTemplate(\''+bloque.id+'\')">✕</button></div><div class="bloque-body"><div class="bloque-add"><button class="btn btn-secondary btn-sm" onclick="openEjPicker(\'template\',\''+bloque.id+'\')">+ Añadir ejercicio</button></div><div id="blist-'+bloque.id+'"></div></div>';
-    c.appendChild(div);renderBloqueExs(bloque.id);
+    div.innerHTML='<div class="bloque-header"><div class="bloque-color" style="background:'+meta.color+'"></div><div class="bloque-name">'+meta.name+'</div><div class="bloque-count">'+exs.length+' ej.</div><button class="btn btn-danger btn-xs" onclick="removeBloqueFromTemplate(\''+bloqueId+'\')">✕</button></div><div class="bloque-body"><div class="bloque-add"><button class="btn btn-secondary btn-sm" onclick="openEjPicker(\'template\',\''+bloqueId+'\')">+ Añadir ejercicio</button></div><div id="blist-'+bloqueId+'"></div></div>';
+    c.appendChild(div);renderBloqueExs(bloqueId);
   });
   var addBtn=document.createElement('button');
   addBtn.className='btn btn-secondary btn-sm';
@@ -1554,6 +1603,130 @@ function removeEx(b,idx){currentTemplate.bloques[b].splice(idx,1);markDirty();re
 function dropEx(targetBloque,targetIdx){if(!dragSrc||dragSrc.context!=='template')return;var srcEx=currentTemplate.bloques[dragSrc.bloque].splice(dragSrc.idx,1)[0];if(!currentTemplate.bloques[targetBloque])currentTemplate.bloques[targetBloque]=[];currentTemplate.bloques[targetBloque].splice(targetIdx,0,srcEx);markDirty();renderBloqueExs(dragSrc.bloque);if(targetBloque!==dragSrc.bloque)renderBloqueExs(targetBloque);dragSrc=null;}
 async function saveTemplate(){var name=document.getElementById('te-name').value.trim();if(!name){toast('Ponle nombre','err');return;}currentTemplate.name=name;var idx=DB.templates.findIndex(function(t){return t.id===currentTemplate.id;});if(idx>=0)DB.templates[idx]=JSON.parse(JSON.stringify(currentTemplate));else DB.templates.push(JSON.parse(JSON.stringify(currentTemplate)));localStorage.setItem('gc_templates',JSON.stringify(DB.templates));try{await apiPost({action:'saveTemplate',template:currentTemplate});}catch(e){}isDirty=false;renderTemplateList();toast('✅ Guardado');}
 function deleteTemplate(){if(!confirm('¿Eliminar este template?'))return;DB.templates=DB.templates.filter(function(t){return t.id!==currentTemplate.id;});localStorage.setItem('gc_templates',JSON.stringify(DB.templates));currentTemplate=null;isDirty=false;document.getElementById('te-placeholder').style.display='flex';document.getElementById('te-content').style.display='none';renderTemplateList();toast('Eliminado');}
+
+// ── PROGRAMAS (planes multi-semana) ──
+var currentPrograma=null, isDirtyPrograma=false;
+var DIAS_SEMANA=['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'];
+
+function renderProgramaList(){
+  var list=document.getElementById('programa-list');if(!list)return;
+  if(!DB.programas.length){list.innerHTML='<div class="template-empty">Sin programas.<br>Crea el primero.</div>';return;}
+  list.innerHTML=DB.programas.map(function(p,i){
+    var totalSesiones=(p.weeks||[]).reduce(function(acc,w){return acc+Object.keys(w.dias||{}).length;},0);
+    return '<div class="template-item'+(currentPrograma&&currentPrograma.id===p.id?' active':'')+'" onclick="selectPrograma('+i+')"><div class="template-item-name">'+(p.name||'(sin nombre)')+'</div><div class="template-item-meta">'+(p.weeks||[]).length+' semanas · '+totalSesiones+' sesiones</div></div>';
+  }).join('');
+}
+function newPrograma(){
+  var p={id:'prog_'+Date.now(),name:'',weeks:[{dias:{}}]};
+  DB.programas.push(p);currentPrograma=p;isDirtyPrograma=true;
+  renderProgramaList();showProgramaEditor();
+}
+function selectPrograma(i){
+  if(isDirtyPrograma&&!confirm('Hay cambios sin guardar. ¿Continuar?'))return;
+  currentPrograma=JSON.parse(JSON.stringify(DB.programas[i]));isDirtyPrograma=false;
+  renderProgramaList();showProgramaEditor();
+}
+function showProgramaEditor(){
+  document.getElementById('pe-placeholder').style.display='none';
+  document.getElementById('pe-content').style.display='block';
+  document.getElementById('pe-name').value=currentPrograma.name;
+  renderProgramaWeeks();
+  var sel=document.getElementById('pe-assign-atleta');
+  sel.innerHTML=DB.atletas.map(function(a){return '<option>'+a+'</option>';}).join('');
+}
+function markDirtyPrograma(){isDirtyPrograma=true;}
+function addSemana(){currentPrograma.weeks.push({dias:{}});markDirtyPrograma();renderProgramaWeeks();renderProgramaList();}
+function removeSemana(wi){
+  if(currentPrograma.weeks.length<=1){toast('Debe quedar al menos una semana','err');return;}
+  if(!confirm('¿Quitar la semana '+(wi+1)+'?'))return;
+  currentPrograma.weeks.splice(wi,1);markDirtyPrograma();renderProgramaWeeks();renderProgramaList();
+}
+function setDiaPrograma(wi,dayKey,tplId){
+  if(!currentPrograma.weeks[wi].dias)currentPrograma.weeks[wi].dias={};
+  if(tplId)currentPrograma.weeks[wi].dias[dayKey]=tplId;else delete currentPrograma.weeks[wi].dias[dayKey];
+  markDirtyPrograma();renderProgramaList();
+}
+function renderProgramaWeeks(){
+  var c=document.getElementById('pe-weeks-container');c.innerHTML='';
+  currentPrograma.weeks.forEach(function(week,wi){
+    if(!week.dias)week.dias={};
+    var div=document.createElement('div');
+    div.style.cssText='background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:12px;';
+    var header='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;"><div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text-dim)">Semana '+(wi+1)+'</div><button class="btn btn-danger btn-xs" onclick="removeSemana('+wi+')">✕ Quitar semana</button></div>';
+    var days='<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:8px;">';
+    DIAS_SEMANA.forEach(function(dname,di){
+      var dayKey=di+1;
+      var tplId=week.dias[dayKey]||'';
+      var options='<option value="">— Descanso —</option>'+DB.templates.map(function(t){return '<option value="'+t.id+'"'+(t.id===tplId?' selected':'')+'>'+t.name+'</option>';}).join('');
+      days+='<div><label style="font-size:10px;color:var(--text-muted);display:block;margin-bottom:4px;">'+dname+'</label><select onchange="setDiaPrograma('+wi+','+dayKey+',this.value)" style="width:100%;padding:6px 8px;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:11px;outline:none;">'+options+'</select></div>';
+    });
+    days+='</div>';
+    div.innerHTML=header+days;
+    c.appendChild(div);
+  });
+}
+async function savePrograma(){
+  var name=document.getElementById('pe-name').value.trim();
+  if(!name){toast('Ponle nombre','err');return;}
+  currentPrograma.name=name;
+  var idx=DB.programas.findIndex(function(p){return p.id===currentPrograma.id;});
+  if(idx>=0)DB.programas[idx]=JSON.parse(JSON.stringify(currentPrograma));else DB.programas.push(JSON.parse(JSON.stringify(currentPrograma)));
+  localStorage.setItem('gc_programas',JSON.stringify(DB.programas));
+  isDirtyPrograma=false;renderProgramaList();
+  try{
+    var r=await apiPost({action:'saveProgram',program:currentPrograma});
+    if(r&&r.ok)toast('✅ Guardado');
+    else toast('⚠️ Guardado en este navegador. Aún no sincroniza con el servidor (falta soporte en el backend).','err');
+  }catch(e){toast('⚠️ Guardado en este navegador. Sin conexión con el servidor.','err');}
+}
+function deletePrograma(){
+  if(!currentPrograma||!confirm('¿Eliminar este programa?'))return;
+  DB.programas=DB.programas.filter(function(p){return p.id!==currentPrograma.id;});
+  localStorage.setItem('gc_programas',JSON.stringify(DB.programas));
+  apiPost({action:'deleteProgram',id:currentPrograma.id}).catch(function(){});
+  currentPrograma=null;isDirtyPrograma=false;
+  document.getElementById('pe-placeholder').style.display='flex';
+  document.getElementById('pe-content').style.display='none';
+  renderProgramaList();toast('🗑 Eliminado');
+}
+async function assignProgramaToAtleta(){
+  if(!currentPrograma)return;
+  var atleta=document.getElementById('pe-assign-atleta').value;
+  var fechaInicio=document.getElementById('pe-assign-fecha').value;
+  if(!atleta){toast('Selecciona un atleta','err');return;}
+  if(!fechaInicio){toast('Selecciona la fecha de inicio','err');return;}
+  var totalSesiones=currentPrograma.weeks.reduce(function(acc,w){return acc+Object.keys(w.dias||{}).length;},0);
+  if(!totalSesiones){toast('El programa no tiene ninguna sesión asignada','err');return;}
+  if(!confirm('Se crearán '+totalSesiones+' sesiones en el calendario de '+atleta+'. ¿Continuar?'))return;
+  var start=new Date(fechaInicio+'T12:00:00');
+  var dow=start.getDay();
+  var offsetToMonday=(dow===0)?-6:(1-dow);
+  var monday=new Date(start);monday.setDate(monday.getDate()+offsetToMonday);
+  var ok=0,fail=0;
+  for(var wi=0;wi<currentPrograma.weeks.length;wi++){
+    var dias=currentPrograma.weeks[wi].dias||{};
+    for(var dayKey in dias){
+      var tpl=DB.templates.find(function(t){return t.id===dias[dayKey];});
+      if(!tpl)continue;
+      var fecha=new Date(monday);fecha.setDate(fecha.getDate()+wi*7+(parseInt(dayKey,10)-1));
+      var fechaStr=fecha.getFullYear()+'-'+String(fecha.getMonth()+1).padStart(2,'0')+'-'+String(fecha.getDate()).padStart(2,'0');
+      var ejercicios=[];
+      Object.keys(tpl.bloques||{}).forEach(function(bId){
+        (tpl.bloques[bId]||[]).forEach(function(ex){
+          ejercicios.push({id:ex.id,bloque:tipoDeBloqueKey(bId),bloqueInstancia:(bId.indexOf('::')>-1?bId.split('::')[1]:''),sets:getParamVal(ex,'series')||'3',reps:getParamVal(ex,'reps')||'10',load:getParamVal(ex,'kg')||'—',rest:getParamVal(ex,'descanso')||'90s',params:ex.params});
+        });
+      });
+      var nombreSesion=currentPrograma.name+' · S'+(wi+1)+' · '+tpl.name;
+      try{
+        var r=await apiPost({action:'addSesion',atleta:atleta,fecha:fechaStr,nombre:nombreSesion,ejercicios:ejercicios});
+        if(r&&r.ok){ok++;DB.sesiones.push({id:r.id,atleta:atleta,fecha:fechaStr,nombre:nombreSesion,ejercicios:ejercicios});}
+        else fail++;
+      }catch(e){fail++;}
+    }
+  }
+  renderCalendar();renderAssignPanel();
+  toast(fail?('✅ '+ok+' creadas, ⚠️ '+fail+' fallaron'):('✅ '+ok+' sesiones creadas en el calendario'),fail?'err':'ok');
+}
 
 // ── CALENDARIO ──
 var calView='mes'; // 'mes' | 'sem'
@@ -1990,7 +2163,7 @@ function renderSesionEditor(){
 function renderSesionBloques(){
   var c=document.getElementById('sesion-bloques-container');c.innerHTML='';
   Object.keys(editingSesion.bloques).forEach(function(bloqueId){
-    var bDef=getBloques().find(function(b){return b.id===tipoDeBloqueKey(bloqueId);})||{name:tipoDeBloqueKey(bloqueId),color:'#888'};
+    var bDef=resolveBloqueMeta(bloqueId,editingSesion);
     var exs=editingSesion.bloques[bloqueId]||[];
     var div=document.createElement('div');div.className='bloque';
     div.innerHTML='<div class="bloque-header"><div class="bloque-color" style="background:'+bDef.color+'"></div><div class="bloque-name">'+bDef.name+'</div><div class="bloque-count">'+exs.length+' ej.</div><button class="btn btn-danger btn-xs" onclick="removeBloqueFromSesion(\''+bloqueId+'\')">✕</button></div><div class="bloque-body"><div class="bloque-add"><button class="btn btn-secondary btn-sm" onclick="openEjPicker(\'sesion\',\''+bloqueId+'\')">+ Añadir ejercicio</button></div><div id="sblist-'+bloqueId+'"></div></div>';
@@ -2034,15 +2207,16 @@ async function confirmAddBloque(){
   var name=document.getElementById('nb-name').value.trim();
   if(!name&&!preId){toast('Pon nombre o elige predefinido','err');return;}
   var target=nbTarget==='template'?currentTemplate.bloques:editingSesion.bloques;
-  var bloqueId,bloqueName;
+  var bloqueId,bloqueName,bloqueColor;
   if(preId){
     var def=getBloques().find(function(b){return b.id===preId;});
     bloqueName=def?def.name:preId;
+    bloqueColor=def?def.color:'#a3a3a3';
     // Si ese tipo ya está en uso, se crea una instancia adicional con clave única (mismo tipo/color, otro bloque independiente)
     bloqueId=target.hasOwnProperty(preId)?(preId+'::'+Date.now()):preId;
   } else {
-    bloqueId='custom-'+Date.now();bloqueName=name;
-    var nuevoBloque={id:bloqueId,name:bloqueName,color:'#a3a3a3'};
+    bloqueId='custom-'+Date.now();bloqueName=name;bloqueColor='#a3a3a3';
+    var nuevoBloque={id:bloqueId,name:bloqueName,color:bloqueColor};
     var list=getBloques().concat([nuevoBloque]);
     var r=await persistBloques(list);
     if(!r.ok){
@@ -2052,16 +2226,20 @@ async function confirmAddBloque(){
   }
   if(nbTarget==='template'){
     if(!currentTemplate.bloques[bloqueId])currentTemplate.bloques[bloqueId]=[];
+    if(!currentTemplate.bloqueMeta)currentTemplate.bloqueMeta={};
+    currentTemplate.bloqueMeta[bloqueId]={name:bloqueName,color:bloqueColor};
     markDirty();
     closeModal('newbloque');
     renderBloques();
   } else {
     if(!editingSesion.bloques[bloqueId])editingSesion.bloques[bloqueId]=[];
+    if(!editingSesion.bloqueMeta)editingSesion.bloqueMeta={};
+    editingSesion.bloqueMeta[bloqueId]={name:bloqueName,color:bloqueColor};
     closeModal('newbloque');
     renderSesionBloques();
   }
 }
-function applyTemplateToSesion(tplId){var tpl=DB.templates.find(function(t){return t.id===tplId;});if(!tpl)return;if(Object.values(editingSesion.bloques).some(function(b){return b.length;})&&!confirm('Esto sobreescribirá los ejercicios. ¿Continuar?'))return;editingSesion.bloques={};getBloques().forEach(function(b){editingSesion.bloques[b.id]=[];});Object.keys(tpl.bloques).forEach(function(bId){editingSesion.bloques[bId]=JSON.parse(JSON.stringify(tpl.bloques[bId]));});if(!editingSesion.nombre)editingSesion.nombre=tpl.name;document.getElementById('sesion-nombre').value=editingSesion.nombre;renderSesionBloques();toast('Template aplicado');}
+function applyTemplateToSesion(tplId){var tpl=DB.templates.find(function(t){return t.id===tplId;});if(!tpl)return;if(Object.values(editingSesion.bloques).some(function(b){return b.length;})&&!confirm('Esto sobreescribirá los ejercicios. ¿Continuar?'))return;editingSesion.bloques={};editingSesion.bloqueMeta=editingSesion.bloqueMeta||{};getBloques().forEach(function(b){editingSesion.bloques[b.id]=[];});Object.keys(tpl.bloques).forEach(function(bId){editingSesion.bloques[bId]=JSON.parse(JSON.stringify(tpl.bloques[bId]));if(tpl.bloqueMeta&&tpl.bloqueMeta[bId])editingSesion.bloqueMeta[bId]=JSON.parse(JSON.stringify(tpl.bloqueMeta[bId]));});if(!editingSesion.nombre)editingSesion.nombre=tpl.name;document.getElementById('sesion-nombre').value=editingSesion.nombre;renderSesionBloques();toast('Template aplicado');}
 async function saveSesion(){
   editingSesion.atleta=document.getElementById('sesion-atleta').value;
   editingSesion.nombre=document.getElementById('sesion-nombre').value.trim();
