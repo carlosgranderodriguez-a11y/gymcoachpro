@@ -795,9 +795,13 @@ var DEFAULT_BLOQUES = [
 ];
 function getBloques(){return (DB.config.bloques_ejercicio&&DB.config.bloques_ejercicio.length)?DB.config.bloques_ejercicio:DEFAULT_BLOQUES;}
 async function persistBloques(list){
-  var r=await apiPost({action:'saveConfig',key:'bloques_ejercicio',value:list});
-  if(r.ok) DB.config.bloques_ejercicio=list;
-  return r;
+  try{
+    var r=await apiPost({action:'saveConfig',key:'bloques_ejercicio',value:list});
+    if(r&&r.ok) DB.config.bloques_ejercicio=list;
+    return r||{ok:false,error:'Respuesta vacía del servidor'};
+  }catch(e){
+    return {ok:false,error:(e&&e.message)?e.message:'Error de red'};
+  }
 }
 
 var DEFAULT_PARAMS_CATALOG = [
@@ -2041,7 +2045,10 @@ async function confirmAddBloque(){
     var nuevoBloque={id:bloqueId,name:bloqueName,color:'#a3a3a3'};
     var list=getBloques().concat([nuevoBloque]);
     var r=await persistBloques(list);
-    if(!r.ok){toast('Error al guardar el bloque: '+r.error,'err');return;}
+    if(!r.ok){
+      DB.config.bloques_ejercicio=list;
+      toast('⚠️ Bloque creado pero no se sincronizó con el servidor ('+(r.error||'error de red')+'). Se reintentará al añadir el próximo bloque.','err');
+    }
   }
   if(nbTarget==='template'){
     if(!currentTemplate.bloques[bloqueId])currentTemplate.bloques[bloqueId]=[];
