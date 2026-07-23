@@ -782,6 +782,7 @@ td{padding:11px 14px;border-top:1px solid var(--border);font-size:13px;vertical-
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;">
         <button class="btn btn-secondary btn-sm" id="btn-pdf-sesion" onclick="openSesionPdfSettings()" style="display:none">👁️ Vista previa PDF</button>
+        <button class="btn btn-secondary btn-sm" id="btn-muscular-sesion" onclick="openMuscleReport()" style="display:none">💪 Informe muscular</button>
         <button class="btn btn-danger btn-sm" id="btn-del-sesion" onclick="deleteSesion()" style="display:none">🗑 Eliminar</button>
         <button class="btn btn-secondary btn-sm" onclick="closeModal('sesion')">Cancelar</button>
         <button class="btn btn-primary btn-sm" id="btn-save-sesion" onclick="saveSesion()">💾 Guardar</button>
@@ -890,6 +891,27 @@ td{padding:11px 14px;border-top:1px solid var(--border);font-size:13px;vertical-
     <div class="modal-actions">
       <button class="btn btn-secondary" onclick="closeModal('pdfsettings')">Cerrar</button>
       <button class="btn btn-primary" onclick="downloadPdfFromSettings()">⬇️ Descargar PDF</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-muscular">
+  <div class="modal" style="max-width:760px;">
+    <div class="modal-title">Informe de carga muscular</div>
+    <div style="display:flex;gap:8px;margin-bottom:14px;">
+      <div class="fchip active" id="msctab-tonelaje" onclick="switchMuscleMetodo('tonelaje')">Tonelaje (series×reps×kg)</div>
+      <div class="fchip" id="msctab-series" onclick="switchMuscleMetodo('series')">Series efectivas</div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 220px;gap:18px;align-items:start;">
+      <div id="muscle-body-illustration" style="text-align:center;background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:16px;"></div>
+      <div>
+        <div style="font-size:10px;color:var(--text-muted);letter-spacing:.05em;text-transform:uppercase;margin-bottom:8px;">Carga por grupo muscular</div>
+        <div id="muscle-legend" style="display:flex;flex-direction:column;gap:6px;max-height:60vh;overflow-y:auto;"></div>
+        <div id="muscle-empty-note" style="display:none;font-size:12px;color:var(--text-muted);margin-top:10px;">Ningún ejercicio de esta sesión tiene grupos musculares asignados en su ficha. Añádelos en Biblioteca → Ejercicios para que aparezcan aquí.</div>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeModal('muscular')">Cerrar</button>
     </div>
   </div>
 </div>
@@ -2277,6 +2299,7 @@ function renderSesionEditor(){
   document.getElementById('sesion-modal-title').textContent=editingSesion.id?'Editar entrenamiento':'Nuevo entrenamiento';
   document.getElementById('btn-del-sesion').style.display=editingSesion.id?'inline-block':'none';
   document.getElementById('btn-pdf-sesion').style.display=editingSesion.id?'inline-block':'none';
+  document.getElementById('btn-muscular-sesion').style.display=editingSesion.id?'inline-block':'none';
   document.getElementById('sesion-modal-date').textContent=new Date(editingSesion.fecha+'T12:00:00').toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
   document.getElementById('sesion-atleta').innerHTML=DB.atletas.map(function(a){return '<option'+(a===editingSesion.atleta?' selected':'')+'>'+a+'</option>';}).join('');
   document.getElementById('sesion-nombre').value=editingSesion.nombre;
@@ -2906,6 +2929,183 @@ function buildSesionPDFDoc(ses,registro,imgCache,opts){
   }
 
   return doc;
+}
+
+// ══════════════════════════════════════════
+// ── INFORME DE CARGA MUSCULAR POR SESIÓN ──
+// ══════════════════════════════════════════
+
+// Diccionario para reconocer a qué zona anatómica pertenece cada "grupo muscular" tal como
+// lo haya escrito el entrenador en el catálogo (texto libre, sin acentos ni mayúsculas para comparar)
+var MUSCLE_ZONE_SYNONYMS={
+  pectoral:['pecho','pectoral','pectorales'],
+  dorsal:['dorsal','dorsales','espalda alta','dorsal ancho','remo','jalon','jalón'],
+  triceps:['triceps','tríceps'],
+  biceps:['biceps','bíceps'],
+  antebrazo:['antebrazo','antebrazos','agarre','prension','prensión'],
+  deltoides:['hombro','hombros','deltoide','deltoides'],
+  abdominales:['abdomen','abdominales','core','abs','oblicuo','oblicuos'],
+  lumbar:['lumbar','zona lumbar','espalda baja'],
+  gluteo:['gluteo','glúteo','gluteos','glúteos'],
+  aductores:['aductor','aductores','ingle'],
+  cuadriceps:['cuadriceps','cuádriceps','cuadricep'],
+  isquios:['isquio','isquios','isquiotibial','isquiotibiales'],
+  gemelo:['gemelo','gemelos','pantorrilla','pantorrillas','soleo','sóleo','gastrocnemio']
+};
+function normalizeTxt(s){return String(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');}
+function mapGrupoToZone(grupo){
+  var g=normalizeTxt(grupo);
+  var zones=Object.keys(MUSCLE_ZONE_SYNONYMS);
+  for(var i=0;i<zones.length;i++){
+    var syns=MUSCLE_ZONE_SYNONYMS[zones[i]];
+    for(var j=0;j<syns.length;j++){
+      if(g.indexOf(normalizeTxt(syns[j]))>=0) return zones[i];
+    }
+  }
+  return null;
+}
+var MUSCLE_ZONE_LABELS={
+  pectoral:'Pectoral',dorsal:'Dorsal',triceps:'Tríceps',biceps:'Bíceps',antebrazo:'Antebrazo',
+  deltoides:'Deltoides',abdominales:'Abdominales',lumbar:'Lumbar',gluteo:'Glúteo',
+  aductores:'Aductores',cuadriceps:'Cuádriceps',isquios:'Isquios',gemelo:'Gemelo'
+};
+
+// Ilustración esquemática frontal + espalda (mismo estilo que el mapa de dolor de ESGRIMA-26)
+var MUSCLE_BODY_SVG_HTML="<svg viewBox=\"0 0 300 330\" xmlns=\"http://www.w3.org/2000/svg\" width=\"600\" style=\"max-width:100%;height:auto\"><text x=\"75\" y=\"14\" font-size=\"9\" fill=\"#888\" text-anchor=\"middle\" font-family=\"sans-serif\">FRENTE</text><text x=\"225\" y=\"14\" font-size=\"9\" fill=\"#888\" text-anchor=\"middle\" font-family=\"sans-serif\">ESPALDA</text><!-- ═══ SILUETA BASE (no interactiva, solo contexto) ═══ --><g fill=\"#3a3a3a\" stroke=\"#4a4a4a\" stroke-width=\"1\"><!-- Frente: cabeza, cuello, contorno de piernas --><ellipse cx=\"75\" cy=\"34\" rx=\"13\" ry=\"16\"/><path d=\"M68 50 L68 58 Q75 62 82 58 L82 50 Z\"/><path d=\"M60 175 Q58 210 58 240 L64 240 Q65 210 66 180 Z\"/><path d=\"M90 175 Q92 210 92 240 L86 240 Q85 210 84 180 Z\"/><ellipse cx=\"61\" cy=\"248\" rx=\"6\" ry=\"5\"/><ellipse cx=\"89\" cy=\"248\" rx=\"6\" ry=\"5\"/><!-- Espalda: cabeza, cuello, piernas --><ellipse cx=\"225\" cy=\"34\" rx=\"13\" ry=\"16\"/><path d=\"M218 50 L218 58 Q225 62 232 58 L232 50 Z\"/><path d=\"M210 178 Q208 210 208 240 L214 240 Q215 210 216 182 Z\"/><path d=\"M240 178 Q242 210 242 240 L234 240 Q235 210 234 182 Z\"/><ellipse cx=\"211\" cy=\"248\" rx=\"6\" ry=\"5\"/><ellipse cx=\"239\" cy=\"248\" rx=\"6\" ry=\"5\"/></g><!-- ═══ FRENTE ═══ --><!-- Deltoides --><path class=\"mz\" data-zone=\"deltoides\" d=\"M45 62 Q38 60 36 68 Q35 76 42 80 Q48 78 50 70 Q50 64 45 62 Z\" stroke=\"#111\" stroke-width=\"0.8\"/><path class=\"mz\" data-zone=\"deltoides\" d=\"M105 62 Q112 60 114 68 Q115 76 108 80 Q102 78 100 70 Q100 64 105 62 Z\" stroke=\"#111\" stroke-width=\"0.8\"/><!-- Pectoral --><path class=\"mz\" data-zone=\"pectoral\" d=\"M52 66 Q75 60 98 66 L98 68 Q90 90 75 92 Q60 90 52 68 Z\" stroke=\"#111\" stroke-width=\"0.8\"/><!-- Biceps --><path class=\"mz\" data-zone=\"biceps\" d=\"M37 82 Q34 95 37 106 Q42 108 46 105 Q47 92 44 80 Q40 79 37 82 Z\" stroke=\"#111\" stroke-width=\"0.8\"/><path class=\"mz\" data-zone=\"biceps\" d=\"M113 82 Q116 95 113 106 Q108 108 104 105 Q103 92 106 80 Q110 79 113 82 Z\" stroke=\"#111\" stroke-width=\"0.8\"/><!-- Antebrazo --><path class=\"mz\" data-zone=\"antebrazo\" d=\"M36 109 Q33 122 37 133 Q41 135 44 132 Q45 120 43 108 Q39 107 36 109 Z\" stroke=\"#111\" stroke-width=\"0.8\"/><path class=\"mz\" data-zone=\"antebrazo\" d=\"M114 109 Q117 122 113 133 Q109 135 106 132 Q105 120 107 108 Q111 107 114 109 Z\" stroke=\"#111\" stroke-width=\"0.8\"/><!-- Abdominales (grid 2x3) --><g class=\"mz\" data-zone=\"abdominales\" stroke=\"#111\" stroke-width=\"0.8\"><rect x=\"63\" y=\"95\" width=\"10\" height=\"9\" rx=\"2\"/><rect x=\"77\" y=\"95\" width=\"10\" height=\"9\" rx=\"2\"/><rect x=\"63\" y=\"106\" width=\"10\" height=\"9\" rx=\"2\"/><rect x=\"77\" y=\"106\" width=\"10\" height=\"9\" rx=\"2\"/><rect x=\"63\" y=\"117\" width=\"10\" height=\"9\" rx=\"2\"/><rect x=\"77\" y=\"117\" width=\"10\" height=\"9\" rx=\"2\"/></g><!-- Aductores --><path class=\"mz\" data-zone=\"aductores\" d=\"M67 130 Q75 135 83 130 L83 142 Q75 146 67 142 Z\" stroke=\"#111\" stroke-width=\"0.8\"/><!-- Cuadriceps --><path class=\"mz\" data-zone=\"cuadriceps\" d=\"M55 145 Q52 170 57 195 Q64 198 68 193 Q70 168 66 144 Q60 142 55 145 Z\" stroke=\"#111\" stroke-width=\"0.8\"/><path class=\"mz\" data-zone=\"cuadriceps\" d=\"M95 145 Q98 170 93 195 Q86 198 82 193 Q80 168 84 144 Q90 142 95 145 Z\" stroke=\"#111\" stroke-width=\"0.8\"/><!-- ═══ ESPALDA ═══ --><!-- Trapecio --><path class=\"mz\" data-zone=\"trapecio\" d=\"M225 60 L245 72 Q235 82 225 84 Q215 82 205 72 Z\" stroke=\"#111\" stroke-width=\"0.8\"/><!-- Deltoides post --><path class=\"mz\" data-zone=\"deltoides\" d=\"M195 62 Q188 60 186 68 Q185 76 192 80 Q198 78 200 70 Q200 64 195 62 Z\" stroke=\"#111\" stroke-width=\"0.8\"/><path class=\"mz\" data-zone=\"deltoides\" d=\"M255 62 Q262 60 264 68 Q265 76 258 80 Q252 78 250 70 Q250 64 255 62 Z\" stroke=\"#111\" stroke-width=\"0.8\"/><!-- Dorsal (ala) --><path class=\"mz\" data-zone=\"dorsal\" d=\"M207 76 Q198 85 197 100 Q198 112 210 118 Q222 112 224 98 L224 80 Q216 76 207 76 Z\" stroke=\"#111\" stroke-width=\"0.8\"/><path class=\"mz\" data-zone=\"dorsal\" d=\"M243 76 Q252 85 253 100 Q252 112 240 118 Q228 112 226 98 L226 80 Q234 76 243 76 Z\" stroke=\"#111\" stroke-width=\"0.8\"/><!-- Triceps --><path class=\"mz\" data-zone=\"triceps\" d=\"M187 82 Q184 95 187 106 Q192 108 196 105 Q197 92 194 80 Q190 79 187 82 Z\" stroke=\"#111\" stroke-width=\"0.8\"/><path class=\"mz\" data-zone=\"triceps\" d=\"M263 82 Q266 95 263 106 Q258 108 254 105 Q253 92 256 80 Q260 79 263 82 Z\" stroke=\"#111\" stroke-width=\"0.8\"/><!-- Antebrazo (espalda, mismo grupo que frente) --><path class=\"mz\" data-zone=\"antebrazo\" d=\"M186 109 Q183 122 187 133 Q191 135 194 132 Q195 120 193 108 Q189 107 186 109 Z\" stroke=\"#111\" stroke-width=\"0.8\"/><path class=\"mz\" data-zone=\"antebrazo\" d=\"M264 109 Q267 122 263 133 Q259 135 256 132 Q255 120 257 108 Q261 107 264 109 Z\" stroke=\"#111\" stroke-width=\"0.8\"/><!-- Lumbar --><rect class=\"mz\" data-zone=\"lumbar\" x=\"212\" y=\"118\" width=\"26\" height=\"18\" rx=\"4\" stroke=\"#111\" stroke-width=\"0.8\"/><!-- Gluteo --><path class=\"mz\" data-zone=\"gluteo\" d=\"M204 138 Q200 150 206 160 Q215 164 223 158 L223 140 Q214 135 204 138 Z\" stroke=\"#111\" stroke-width=\"0.8\"/><path class=\"mz\" data-zone=\"gluteo\" d=\"M246 138 Q250 150 244 160 Q235 164 227 158 L227 140 Q236 135 246 138 Z\" stroke=\"#111\" stroke-width=\"0.8\"/><!-- Isquios --><path class=\"mz\" data-zone=\"isquios\" d=\"M206 163 Q203 185 208 205 Q214 208 218 204 Q219 182 215 162 Q210 160 206 163 Z\" stroke=\"#111\" stroke-width=\"0.8\"/><path class=\"mz\" data-zone=\"isquios\" d=\"M244 163 Q247 185 242 205 Q236 208 232 204 Q231 182 235 162 Q240 160 244 163 Z\" stroke=\"#111\" stroke-width=\"0.8\"/><!-- Gemelo --><path class=\"mz\" data-zone=\"gemelo\" d=\"M208 208 Q205 222 209 234 Q214 236 217 233 Q219 220 216 207 Q212 206 208 208 Z\" stroke=\"#111\" stroke-width=\"0.8\"/><path class=\"mz\" data-zone=\"gemelo\" d=\"M242 208 Q245 222 241 234 Q236 236 233 233 Q231 220 234 207 Q238 206 242 208 Z\" stroke=\"#111\" stroke-width=\"0.8\"/></svg>";
+
+// Pinta cada zona con degradado de intensidad (gris neutro sin carga -> lima/naranja/rojo según intensidad)
+function paintMuscleBody(containerId,zoneLoads,maxVal){
+  var c=document.getElementById(containerId);
+  if(!c)return;
+  var total=maxVal||Math.max(1,Object.values(zoneLoads).reduce(function(a,b){return Math.max(a,b);},0));
+  c.querySelectorAll('.mz').forEach(function(el){
+    var zone=el.getAttribute('data-zone');
+    var val=zoneLoads[zone]||0;
+    var isGroup=el.tagName.toLowerCase()==='g';
+    if(val<=0){
+      el.setAttribute('fill','#242424');
+      el.setAttribute('stroke','#333');
+      el.setAttribute('stroke-width','1');
+      if(!isGroup) el.innerHTML='';
+    }else{
+      var t=Math.min(1,val/total);
+      var col=muscleHeatColor(t);
+      el.setAttribute('fill',col);
+      el.setAttribute('stroke',col);
+      el.setAttribute('stroke-width','1.5');
+      if(!isGroup){
+        var title=document.createElementNS('http://www.w3.org/2000/svg','title');
+        title.textContent=(MUSCLE_ZONE_LABELS[zone]||zone)+': '+Math.round(val);
+        el.innerHTML='';
+        el.appendChild(title);
+      }
+    }
+  });
+}
+// Degradado de 3 puntos: azul-gris (bajo) -> lima (medio) -> rojo (alto), consistente con la paleta de la app
+function muscleHeatColor(t){
+  var stops=[{p:0,c:[90,120,150]},{p:0.5,c:[204,255,102]},{p:1,c:[230,70,60]}];
+  var a=stops[0],b=stops[1];
+  if(t>0.5){a=stops[1];b=stops[2];}
+  var localT=(t-a.p)/(b.p-a.p||1);
+  var r=Math.round(a.c[0]+(b.c[0]-a.c[0])*localT);
+  var g=Math.round(a.c[1]+(b.c[1]-a.c[1])*localT);
+  var bl=Math.round(a.c[2]+(b.c[2]-a.c[2])*localT);
+  return 'rgb('+r+','+g+','+bl+')';
+}
+
+// Calcula la carga por zona muscular de una sesión.
+// metodo: 'tonelaje' (series x reps x kg, con reparto principal 1.0 / secundario 0.5)
+//      o  'series' (nº de series efectivas, mismo reparto, sin depender del kg)
+// Usa el registro ejecutado si existe (más preciso); si no, estima con lo planificado en la sesión.
+function computeMuscleLoad(ses,registro,metodo){
+  metodo=metodo||'tonelaje';
+  var zoneLoads={};
+  var registroDatos=(registro&&registro.datos&&registro.datos.ejercicios)||[];
+  (ses.ejercicios||[]).forEach(function(ex,i){
+    var db=DB.ejercicios[ex.id];
+    if(!db) return;
+    var grupos=(db.grupos_musculares||[]).filter(Boolean);
+    if(!grupos.length) return;
+
+    var reg=registroDatos[ex._origIdx!==undefined?ex._origIdx:i];
+    var sets, avgReps, avgLoad;
+    if(reg&&reg.sets&&reg.sets.length){
+      sets=reg.sets.length;
+      var repsArr=reg.sets.map(function(s){return parseFloat(s.reps)||0;});
+      var loadArr=reg.sets.map(function(s){return parseFloat(s.load)||0;});
+      avgReps=repsArr.reduce(function(a,b){return a+b;},0)/sets;
+      avgLoad=loadArr.reduce(function(a,b){return a+b;},0)/sets;
+    }else{
+      sets=parseFloat(getParamVal(ex,'series'))||0;
+      avgReps=parseFloat(getParamVal(ex,'reps'))||0;
+      avgLoad=parseFloat(getParamVal(ex,'kg'))||0;
+    }
+    if(!sets) return;
+
+    var valor;
+    if(metodo==='series'){
+      valor=sets;
+    }else{
+      valor= avgLoad>0 ? (sets*avgReps*avgLoad) : (sets*avgReps); // sin carga (peso corporal): usa volumen de reps como aproximación
+    }
+
+    grupos.forEach(function(g,gi){
+      var zone=mapGrupoToZone(g);
+      if(!zone) return;
+      var factor=gi===0?1.0:0.5; // principal vs secundario
+      zoneLoads[zone]=(zoneLoads[zone]||0)+valor*factor;
+    });
+  });
+  return zoneLoads;
+}
+
+var MUSCLE_REPORT_CTX=null;
+async function openMuscleReport(){
+  if(!editingSesion||!editingSesion.id){toast('Guarda antes de ver el informe','err');return;}
+  var ses=DB.sesiones.find(function(s){return s.id===editingSesion.id;});
+  if(!ses){toast('Sesión no encontrada','err');return;}
+  toast('Calculando carga muscular...');
+  var registro=null;
+  try{
+    var rHist=await api({action:'getHistorial',atleta:ses.atleta});
+    if(rHist.ok) registro=(rHist.registros||[]).find(function(r){return r.fecha===ses.fecha&&r.sesion_id===ses.id;});
+  }catch(e){}
+  MUSCLE_REPORT_CTX={ses:ses,registro:registro,metodo:'tonelaje'};
+  switchMuscleMetodo('tonelaje');
+  openModal('muscular');
+}
+function switchMuscleMetodo(metodo){
+  if(!MUSCLE_REPORT_CTX)return;
+  MUSCLE_REPORT_CTX.metodo=metodo;
+  document.getElementById('msctab-tonelaje').classList.toggle('active',metodo==='tonelaje');
+  document.getElementById('msctab-series').classList.toggle('active',metodo==='series');
+  renderMuscleReport();
+}
+function renderMuscleReport(){
+  var ctx=MUSCLE_REPORT_CTX;
+  if(!ctx)return;
+  var zoneLoads=computeMuscleLoad(ctx.ses,ctx.registro,ctx.metodo);
+  var illuDiv=document.getElementById('muscle-body-illustration');
+  illuDiv.innerHTML=MUSCLE_BODY_SVG_HTML;
+  var hasAny=Object.keys(zoneLoads).some(function(k){return zoneLoads[k]>0;});
+  document.getElementById('muscle-empty-note').style.display=hasAny?'none':'block';
+  var maxVal=Math.max(1,Object.values(zoneLoads).reduce(function(a,b){return Math.max(a,b);},0));
+  setTimeout(function(){paintMuscleBody('muscle-body-illustration',zoneLoads,maxVal);},30);
+
+  var entries=Object.keys(zoneLoads).map(function(z){return {zone:z,label:MUSCLE_ZONE_LABELS[z]||z,val:zoneLoads[z]};});
+  entries.sort(function(a,b){return b.val-a.val;});
+  var legend=document.getElementById('muscle-legend');
+  if(!entries.length){legend.innerHTML='<div style="font-size:12px;color:var(--text-muted);">Sin datos.</div>';return;}
+  legend.innerHTML=entries.map(function(e){
+    var pct=Math.round((e.val/maxVal)*100);
+    var col=muscleHeatColor(e.val/maxVal);
+    var valTxt=ctx.metodo==='series'?Math.round(e.val)+' series':Math.round(e.val)+' kg·rep';
+    return '<div>'+
+      '<div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:2px;"><span>'+e.label+'</span><span style="color:var(--text-dim);font-weight:600;">'+valTxt+'</span></div>'+
+      '<div style="background:var(--surface);border-radius:4px;height:6px;overflow:hidden;"><div style="width:'+pct+'%;height:100%;background:'+col+';"></div></div>'+
+    '</div>';
+  }).join('');
 }
 
 async function exportSesionPDF(){
