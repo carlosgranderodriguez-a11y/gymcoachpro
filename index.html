@@ -373,7 +373,7 @@ td{padding:11px 14px;border-top:1px solid var(--border);font-size:13px;vertical-
             <div class="te-header">
               <input class="te-name-input" id="te-name" placeholder="Nombre de la plantilla..." oninput="markDirty()">
               <div style="display:flex;gap:8px">
-                <button class="btn btn-secondary btn-sm" onclick="exportTemplatePDF()">📄 Exportar PDF</button>
+                <button class="btn btn-secondary btn-sm" onclick="openTemplatePdfSettings()">📄 Exportar PDF</button>
                 <button class="btn btn-secondary btn-sm" onclick="deleteTemplate()">Eliminar</button>
                 <button class="btn btn-primary btn-sm" onclick="saveTemplate()">Guardar</button>
               </div>
@@ -765,7 +765,7 @@ td{padding:11px 14px;border-top:1px solid var(--border);font-size:13px;vertical-
         <div style="font-size:12px;color:var(--text-dim)" id="sesion-modal-date"></div>
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;">
-        <button class="btn btn-secondary btn-sm" id="btn-pdf-sesion" onclick="exportSesionPDF()" style="display:none">📄 PDF</button>
+        <button class="btn btn-secondary btn-sm" id="btn-pdf-sesion" onclick="openSesionPdfSettings()" style="display:none">📄 PDF</button>
         <button class="btn btn-danger btn-sm" id="btn-del-sesion" onclick="deleteSesion()" style="display:none">🗑 Eliminar</button>
         <button class="btn btn-secondary btn-sm" onclick="closeModal('sesion')">Cancelar</button>
         <button class="btn btn-primary btn-sm" id="btn-save-sesion" onclick="saveSesion()">💾 Guardar</button>
@@ -808,6 +808,62 @@ td{padding:11px 14px;border-top:1px solid var(--border);font-size:13px;vertical-
     <div class="modal-actions">
       <button class="btn btn-secondary" onclick="closeModal('newbloque')">Cancelar</button>
       <button class="btn btn-primary" onclick="confirmAddBloque()">Añadir</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-pdfsettings">
+  <div class="modal" style="max-width:1080px;">
+    <div class="modal-title">Ajustar diseño de exportación</div>
+    <div style="display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap;">
+      <div style="width:230px;flex-shrink:0;">
+        <div class="form-group">
+          <label>Tamaño de imagen</label>
+          <select id="pdfopt-imgsize" onchange="refreshPdfPreview()">
+            <option value="grande">Grande</option>
+            <option value="mediano">Mediano</option>
+            <option value="pequeno">Pequeño</option>
+            <option value="oculta">Sin imagen</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Densidad</label>
+          <select id="pdfopt-density" onchange="refreshPdfPreview()">
+            <option value="normal">Normal</option>
+            <option value="compacto">Compacta</option>
+            <option value="muycompacto">Muy compacta</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Máx. columnas por fila</label>
+          <select id="pdfopt-cols" onchange="refreshPdfPreview()">
+            <option value="2">2</option>
+            <option value="3" selected>3</option>
+            <option value="4">4</option>
+          </select>
+        </div>
+        <div class="form-group" style="display:flex;align-items:center;gap:8px;">
+          <input type="checkbox" id="pdfopt-notes" onchange="refreshPdfPreview()">
+          <label style="margin:0;">Mostrar notas del entrenador</label>
+        </div>
+        <div class="form-group" id="pdfopt-exec-wrap" style="display:flex;align-items:center;gap:8px;">
+          <input type="checkbox" id="pdfopt-exec" onchange="refreshPdfPreview()">
+          <label style="margin:0;">Mostrar registro EJECUTADO</label>
+        </div>
+        <div class="form-group" id="pdfopt-summary-wrap" style="display:flex;align-items:center;gap:8px;">
+          <input type="checkbox" id="pdfopt-summary" onchange="refreshPdfPreview()">
+          <label style="margin:0;">Mostrar tarjetas resumen</label>
+        </div>
+        <div id="pdfopt-pagecount" style="font-size:13px;color:var(--text-dim);margin-top:14px;font-weight:600;"></div>
+        <div style="font-size:11px;color:var(--text-muted);margin-top:6px;">Consejo: para que quepa todo en una hoja, prueba "Muy compacta" + "Sin imagen".</div>
+      </div>
+      <div style="flex:1;min-width:280px;">
+        <iframe id="pdf-preview-frame" style="width:100%;height:72vh;border:1px solid var(--border);border-radius:8px;background:#fff;"></iframe>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeModal('pdfsettings')">Cerrar</button>
+      <button class="btn btn-primary" onclick="downloadPdfFromSettings()">⬇️ Descargar PDF</button>
     </div>
   </div>
 </div>
@@ -2391,25 +2447,45 @@ function contrastColor(rgb){
   return lum>0.62?[30,30,30]:[255,255,255];
 }
 // Mide el ancho que ocupará un bloque de métrica (número grande + etiqueta pequeña)
-function measureMetric(doc,label,value){
-  doc.setFont('helvetica','bold');doc.setFontSize(13);
+// Presets de densidad para el panel de ajustes de exportación
+var PDF_DENSITY = {
+  normal:      { headerH:44, cardGapY:5,   phaseGap:10,  phaseSpacing:4,   rowGap:11,  nameSize:11.5, metricSize:13,  labelSize:6.4, execTitleSize:6.8, execSize:7.2, notesSize:7.5, cardExtraPad:6 },
+  compacto:    { headerH:32, cardGapY:3,   phaseGap:7,   phaseSpacing:2.2, rowGap:8.5, nameSize:9.5,  metricSize:10.5,labelSize:5.6, execTitleSize:6,   execSize:6.4, notesSize:6.6, cardExtraPad:4 },
+  muycompacto: { headerH:26, cardGapY:1.8, phaseGap:5.5, phaseSpacing:1.4, rowGap:7,   nameSize:8.5,  metricSize:9,   labelSize:5,   execTitleSize:5.4, execSize:5.8, notesSize:6,   cardExtraPad:2.5 }
+};
+// Tamaños de miniatura según el ajuste de imagen elegido
+var PDF_IMG_SIZE = {
+  grande:  {single:38, grid:32},
+  mediano: {single:28, grid:24},
+  pequeno: {single:18, grid:16},
+  oculta:  {single:0,  grid:0}
+};
+var DEFAULT_PDF_OPTS = {imgSize:'grande', density:'normal', maxCols:3, showNotes:true, showExec:true, showSummary:true};
+function loadSavedPdfOpts(){
+  try{ return Object.assign({},DEFAULT_PDF_OPTS,JSON.parse(localStorage.getItem('gc_pdf_opts')||'{}')); }
+  catch(e){ return Object.assign({},DEFAULT_PDF_OPTS); }
+}
+function savePdfOpts(opts){ try{ localStorage.setItem('gc_pdf_opts',JSON.stringify(opts)); }catch(e){} }
+
+function measureMetric(doc,label,value,dens){
+  doc.setFont('helvetica','bold');doc.setFontSize(dens.metricSize);
   var vw=doc.getTextWidth(String(value));
-  doc.setFont('helvetica','bold');doc.setFontSize(6.4);
+  doc.setFont('helvetica','bold');doc.setFontSize(dens.labelSize);
   var lw=doc.getTextWidth(label.toUpperCase());
   return Math.max(vw,lw);
 }
 // Dibuja una fila de métricas (número grande arriba, etiqueta en mayúsculas debajo)
-function drawMetricsRow(doc,x,y,metrics,maxWidth){
-  var gap=8, rowGap=11, cx=x, rowY=y, used=0;
+function drawMetricsRow(doc,x,y,metrics,maxWidth,dens){
+  var gap=8, rowGap=dens.rowGap, cx=x, rowY=y, used=0;
   metrics.forEach(function(m){
     if(used>0 && cx-x+m.w>maxWidth){cx=x;rowY+=rowGap;used=0;}
-    doc.setFont('helvetica','bold');doc.setFontSize(13);doc.setTextColor(20,23,31);
+    doc.setFont('helvetica','bold');doc.setFontSize(dens.metricSize);doc.setTextColor(20,23,31);
     doc.text(String(m.value),cx,rowY);
-    doc.setFont('helvetica','bold');doc.setFontSize(6.4);doc.setTextColor(163,167,174);
-    doc.text(m.label.toUpperCase(),cx,rowY+4);
+    doc.setFont('helvetica','bold');doc.setFontSize(dens.labelSize);doc.setTextColor(163,167,174);
+    doc.text(m.label.toUpperCase(),cx,rowY+dens.metricSize*0.32);
     cx+=m.w+gap;used++;
   });
-  return (rowY-y)+7;
+  return (rowY-y)+dens.rowGap*0.68;
 }
 // Dibuja un anillo de progreso (aro de fondo + arco de color) usando muchos segmentos rectos
 function drawProgressRing(doc,cx,cy,r,lw,pct,trackRgb,fillRgb){
@@ -2439,8 +2515,10 @@ function cardShadow(doc,x,y,w,h,r){
 
 // Calcula todo el contenido de texto de un ejercicio (nombre, métricas, ejecutado, notas) para un ancho dado.
 // nameReserve resta espacio a la línea del nombre cuando la insignia numerada va en la misma línea (layout horizontal).
-function prepareExercise(doc,ex,reg,textW,nameReserve){
+function prepareExercise(doc,ex,reg,textW,nameReserve,dens,showNotes,showExec){
   nameReserve=nameReserve||0;
+  showNotes=showNotes!==false;
+  showExec=showExec!==false;
   var db=DB.ejercicios[ex.id]||{nombre:ex.id};
   var sets=getParamVal(ex,'series')||ex.sets||'—';
   var reps=getParamVal(ex,'reps')||ex.reps||'—';
@@ -2450,11 +2528,11 @@ function prepareExercise(doc,ex,reg,textW,nameReserve){
   var pctRm=getParamVal(ex,'pct_rm')||'';
   var pctDif=getParamVal(ex,'pct_dif')||'';
   var desc=getParamVal(ex,'descanso')||ex.rest||'';
-  var notas=getParamVal(ex,'notas')||'';
+  var notas=showNotes?(getParamVal(ex,'notas')||''):'';
 
-  doc.setFont('helvetica','bold');doc.setFontSize(11.5);
+  doc.setFont('helvetica','bold');doc.setFontSize(dens.nameSize);
   var nameSplit=doc.splitTextToSize(db.nombre, Math.max(20,textW-nameReserve));
-  var nameH=nameSplit.length*5+2;
+  var nameH=nameSplit.length*(dens.nameSize*0.43)+2;
 
   var metrics=[{label:'Series',value:sets},{label:'Reps',value:reps}];
   if(kg) metrics.push({label:'Carga kg',value:kg});
@@ -2462,28 +2540,31 @@ function prepareExercise(doc,ex,reg,textW,nameReserve){
   if(pctDif) metrics.push({label:'% Dificultad',value:pctDif+'%'});
   if(rir) metrics.push({label:'RIR',value:rir}); else if(rpe) metrics.push({label:'RPE',value:rpe});
   if(desc) metrics.push({label:'Descanso',value:desc});
-  metrics.forEach(function(m){m.w=measureMetric(doc,m.label,m.value);});
+  metrics.forEach(function(m){m.w=measureMetric(doc,m.label,m.value,dens);});
   var estRows=1, acc=0;
   metrics.forEach(function(m){acc+=m.w+8; if(acc>textW){estRows++;acc=m.w+8;}});
-  var metricsH=estRows*11;
+  var metricsH=estRows*dens.rowGap;
 
   var ejecLines=[];
-  if(reg&&reg.sets&&reg.sets.length){
+  if(showExec && reg && reg.sets && reg.sets.length){
     ejecLines=reg.sets.map(function(s,j){return (j+1)+') '+(s.reps||'—')+(String(s.reps||'').match(/\d+$/)?' reps':'')+(s.load?' × '+s.load+'kg':'');});
     if(reg.rpe) ejecLines.push('RPE '+reg.rpe);
   }
-  doc.setFont('helvetica','normal');doc.setFontSize(7.5);
+  doc.setFont('helvetica','normal');doc.setFontSize(dens.execSize);
   var notasSplit=notas?doc.splitTextToSize('Notas: '+notas,textW-4):[];
   var ejecText=ejecLines.length?ejecLines.join('   ·   '):'';
   var ejecSplit=ejecText?doc.splitTextToSize(ejecText,textW-4):[];
-  var ejecBoxH=ejecSplit.length?ejecSplit.length*3.6+3:0;
-  var notasH=notasSplit.length?notasSplit.length*3.4+2.5:0;
+  var ejecLineH=dens.execSize*0.5;
+  var ejecBoxH=ejecSplit.length?ejecSplit.length*ejecLineH+3:0;
+  var notasLineH=dens.notesSize*0.47;
+  var notasH=notasSplit.length?notasSplit.length*notasLineH+2.5:0;
 
   var textH=nameH+metricsH+1+(ejecSplit.length?ejecBoxH+2:0)+(notasSplit.length?notasH:0);
-  return {db:db,nameSplit:nameSplit,nameH:nameH,metrics:metrics,metricsH:metricsH,ejecSplit:ejecSplit,ejecBoxH:ejecBoxH,notasSplit:notasSplit,notasH:notasH,textH:textH};
+  return {db:db,nameSplit:nameSplit,nameH:nameH,metrics:metrics,metricsH:metricsH,ejecSplit:ejecSplit,ejecBoxH:ejecBoxH,ejecLineH:ejecLineH,notasSplit:notasSplit,notasH:notasH,notasLineH:notasLineH,textH:textH};
 }
-// Dibuja la miniatura del ejercicio (foto real o placeholder "Sin imagen")
+// Dibuja la miniatura del ejercicio (foto real o placeholder "Sin imagen"). Si w/h son 0, no dibuja nada.
 function drawExThumb(doc,x,y,w,h,db,imgCache,cardLineRgb,inkFaintRgb){
+  if(!w||!h) return;
   var b64=db.imagen?imgCache[db.imagen]:null;
   var drawn=false;
   if(b64){
@@ -2510,39 +2591,31 @@ function drawExThumb(doc,x,y,w,h,db,imgCache,cardLineRgb,inkFaintRgb){
   }
 }
 // Dibuja la píldora "EJECUTADO" y las notas del entrenador; devuelve la nueva posición Y
-function drawExecAndNotes(doc,x,y,w,content){
+function drawExecAndNotes(doc,x,y,w,content,dens){
   var ty=y;
   if(content.ejecSplit.length){
     doc.setFillColor(238,247,225);
     doc.setDrawColor(211,236,184);doc.setLineWidth(0.25);
     doc.roundedRect(x,ty-3.2,w-2,content.ejecBoxH,1.6,1.6,'FD');
-    doc.setFont('helvetica','bold');doc.setFontSize(6.8);doc.setTextColor(63,107,31);
+    doc.setFont('helvetica','bold');doc.setFontSize(dens.execTitleSize);doc.setTextColor(63,107,31);
     doc.text('EJECUTADO',x+2.6,ty);
-    doc.setFont('helvetica','normal');doc.setFontSize(7.2);doc.setTextColor(63,107,31);
-    doc.text(content.ejecSplit,x+2.6,ty+3.4);
+    doc.setFont('helvetica','normal');doc.setFontSize(dens.execSize);doc.setTextColor(63,107,31);
+    doc.text(content.ejecSplit,x+2.6,ty+content.ejecLineH);
     ty+=content.ejecBoxH+2;
   }
   if(content.notasSplit.length){
-    doc.setFont('helvetica','italic');doc.setFontSize(7.5);doc.setTextColor(107,112,121);
+    doc.setFont('helvetica','italic');doc.setFontSize(dens.notesSize);doc.setTextColor(107,112,121);
     doc.text(content.notasSplit,x,ty);
     ty+=content.notasH;
   }
   return ty;
 }
 
-async function exportSesionPDF(){
-  if(!editingSesion||!editingSesion.id){toast('Guarda antes de exportar','err');return;}
-  var ses=DB.sesiones.find(function(s){return s.id===editingSesion.id;});
-  if(!ses){toast('Sesión no encontrada','err');return;}
-
-  var registro=null;
-  try{
-    var rHist=await api({action:'getHistorial',atleta:ses.atleta});
-    if(rHist.ok) registro=(rHist.registros||[]).find(function(r){return r.fecha===ses.fecha&&r.sesion_id===ses.id;});
-  }catch(e){}
-
-  await preloadLogo();
-  toast('Generando PDF...');
+// Construye el documento PDF de una sesión ya con todos los datos cargados (sin guardar). Reutilizable por la vista previa en vivo.
+function buildSesionPDFDoc(ses,registro,imgCache,opts){
+  opts=Object.assign({},DEFAULT_PDF_OPTS,opts||{});
+  var dens=PDF_DENSITY[opts.density]||PDF_DENSITY.normal;
+  var imgSizes=PDF_IMG_SIZE[opts.imgSize]||PDF_IMG_SIZE.grande;
 
   var jsPDF=window.jspdf.jsPDF;
   var doc=new jsPDF({orientation:'p',unit:'mm',format:'a4'});
@@ -2557,7 +2630,12 @@ async function exportSesionPDF(){
   var rpeAvg=rpes.length?(rpes.reduce(function(a,b){return a+b;},0)/rpes.length):0;
 
   // ── CABECERA (tarjeta blanca) ──
-  var headerH=44;
+  var compactHeader=dens.headerH<32;
+  var titleSize=compactHeader?11.5:17;
+  var metaSize=compactHeader?7.8:10;
+  var titleY=M+7+11+(compactHeader?6:10);
+  var metaY=titleY+(compactHeader?5.5:8);
+  var headerH=Math.max(dens.headerH,(metaY-M)+6);
   cardShadow(doc,M,M,W-2*M,headerH,4);
   doc.setDrawColor(CARD_LINE[0],CARD_LINE[1],CARD_LINE[2]);doc.setLineWidth(0.3);
   doc.setFillColor(255,255,255);
@@ -2588,7 +2666,6 @@ async function exportSesionPDF(){
   doc.setFont('helvetica','bold');doc.setFontSize(8.5);doc.setTextColor(INK_SOFT[0],INK_SOFT[1],INK_SOFT[2]);
   doc.text(TRAINER_BRAND.toUpperCase(),mx,M+13.6);
 
-  // Estado como píldora suave
   var estado=registro?'COMPLETADA':'PLANIFICADA';
   var estFill=registro?[232,247,238]:[238,239,241];
   var estText=registro?[30,139,86]:[107,112,121];
@@ -2602,24 +2679,26 @@ async function exportSesionPDF(){
   doc.setTextColor(estText[0],estText[1],estText[2]);
   doc.text(estado,W-M-8-estW+9.5,M+11.3);
 
-  doc.setFont('helvetica','bold');doc.setFontSize(17);doc.setTextColor(INK[0],INK[1],INK[2]);
-  doc.text(ses.nombre,M+8,M+27);
+  doc.setFont('helvetica','bold');doc.setFontSize(titleSize);doc.setTextColor(INK[0],INK[1],INK[2]);
+  doc.text(ses.nombre,M+8,titleY);
+
 
   var fmtDate=new Date(ses.fecha+'T12:00:00').toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
   var metaX=M+8;
-  doc.setFont('helvetica','bold');doc.setFontSize(10);doc.setTextColor(INK[0],INK[1],INK[2]);
-  doc.text(ses.atleta,metaX,M+35);
+  doc.setFont('helvetica','bold');doc.setFontSize(metaSize);doc.setTextColor(INK[0],INK[1],INK[2]);
+  doc.text(ses.atleta,metaX,metaY);
   metaX+=doc.getTextWidth(ses.atleta)+4;
   doc.setFillColor(INK_FAINT[0],INK_FAINT[1],INK_FAINT[2]);
-  doc.circle(metaX,M+33.7,0.5,'F');
+  doc.circle(metaX,metaY-1.3,0.5,'F');
   metaX+=3.5;
-  doc.setFont('helvetica','normal');doc.setFontSize(10);doc.setTextColor(INK_SOFT[0],INK_SOFT[1],INK_SOFT[2]);
-  doc.text(fmtDate,metaX,M+35);
+  doc.setFont('helvetica','normal');doc.setFontSize(metaSize);doc.setTextColor(INK_SOFT[0],INK_SOFT[1],INK_SOFT[2]);
+  doc.text(fmtDate,metaX,metaY);
+
 
   var y=M+headerH+8;
 
-  // ── TARJETAS RESUMEN CON ANILLO (solo si hay datos ejecutados) ──
-  if(registro&&registroDatos.length){
+  // ── TARJETAS RESUMEN CON ANILLO ──
+  if(opts.showSummary && registro && registroDatos.length){
     var cardW=(W-2*M-6)/2, cardH2=26;
     var summaryCards=[
       {label:'COMPLETADOS',sub:'Ejercicios ejecutados hoy',val:doneEjs+'/'+totalEjs,pct:totalEjs?doneEjs/totalEjs:0,color:[141,198,63]},
@@ -2655,11 +2734,6 @@ async function exportSesionPDF(){
   var extraKeys=Object.keys(bloques).filter(function(k){return bloqueOrder.indexOf(k)<0;});
   var ordered=bloqueOrder.filter(function(k){return bloques[k];}).concat(extraKeys);
 
-  var imgCache=await preloadExerciseImages(ses.ejercicios||[]);
-  if(preloadExerciseImages.lastFailed&&preloadExerciseImages.lastFailed.length){
-    toast('⚠️ No se cargaron '+preloadExerciseImages.lastFailed.length+' imagen(es): '+preloadExerciseImages.lastFailed.join(', '),'err');
-  }
-
   var globalExIdx=0;
   ordered.forEach(function(bid){
     var bDef=getBloques().find(function(b){return b.id===bid;})||{name:bid,color:'#999'};
@@ -2668,7 +2742,6 @@ async function exportSesionPDF(){
 
     if(y>258){doc.addPage();y=M;}
 
-    // Cabecera de fase: punto de color + nombre + contador (minimal, sin banda)
     var col=hexToRgb(bDef.color);
     var txtCol=contrastColor(col);
     doc.setFillColor(col.r,col.g,col.b);
@@ -2678,16 +2751,15 @@ async function exportSesionPDF(){
     doc.setFont('helvetica','normal');doc.setFontSize(8.5);doc.setTextColor(INK_FAINT[0],INK_FAINT[1],INK_FAINT[2]);
     var countTxt=exs.length+(exs.length===1?' ejercicio':' ejercicios');
     doc.text(countTxt, W-M-doc.getTextWidth(countTxt), y+3);
-    y+=10;
+    y+=dens.phaseGap;
 
     if(exs.length===1){
-      // ── Fase con un solo ejercicio: tarjeta horizontal ancha (foto a la izquierda) ──
       var ex0=exs[0];
-      var imgW=38, imgH=38, gapH=6;
+      var imgW=imgSizes.single, imgH=imgSizes.single, gapH=imgW?6:0;
       var textX=M+4+imgW+gapH, textW=W-2*M-8-imgW-gapH;
       var reg0=registroDatos[globalExIdx]; globalExIdx++;
-      var content=prepareExercise(doc,ex0,reg0,textW,9);
-      var cardH=Math.max(imgH+8,content.textH+6);
+      var content=prepareExercise(doc,ex0,reg0,textW,imgW?9:0,dens,opts.showNotes,opts.showExec);
+      var cardH=Math.max(imgH+8,content.textH+dens.cardExtraPad);
 
       if(y+cardH>272){doc.addPage();y=M;}
 
@@ -2701,7 +2773,7 @@ async function exportSesionPDF(){
       drawExThumb(doc,M+4,y+4,imgW,imgH,content.db,imgCache,CARD_LINE,INK_FAINT);
 
       var ty=y+8;
-      doc.setFont('helvetica','bold');doc.setFontSize(11.5);doc.setTextColor(INK[0],INK[1],INK[2]);
+      doc.setFont('helvetica','bold');doc.setFontSize(dens.nameSize);doc.setTextColor(INK[0],INK[1],INK[2]);
       doc.text(content.nameSplit, textX, ty);
       doc.setFillColor(col.r,col.g,col.b);
       doc.circle(textX+textW-3.5,y+7.2,3.2,'F');
@@ -2709,29 +2781,29 @@ async function exportSesionPDF(){
       doc.text('1',textX+textW-3.5,y+8.3,{align:'center'});
 
       ty+=content.nameH;
-      ty+=drawMetricsRow(doc,textX,ty,content.metrics,textW);
+      ty+=drawMetricsRow(doc,textX,ty,content.metrics,textW,dens);
       ty+=1;
-      drawExecAndNotes(doc,textX,ty,textW,content);
+      drawExecAndNotes(doc,textX,ty,textW,content,dens);
 
-      y+=cardH+5;
+      y+=cardH+dens.cardGapY;
 
     }else{
-      // ── Fase con varios ejercicios: columnas iguales, foto arriba, contenido debajo ──
-      var colsPerRow=Math.min(exs.length,3);
+      var colsPerRow=Math.min(exs.length,opts.maxCols);
       var colGap=5;
       var colW=(W-2*M-(colsPerRow-1)*colGap)/colsPerRow;
       var innerW=colW-8;
-      var imgHv=32;
+      var imgHv=imgSizes.grid;
 
       for(var rowStart=0; rowStart<exs.length; rowStart+=colsPerRow){
         var rowExs=exs.slice(rowStart,rowStart+colsPerRow);
 
         var rowContents=rowExs.map(function(exr){
           var reg=registroDatos[globalExIdx]; globalExIdx++;
-          return prepareExercise(doc,exr,reg,innerW,0);
+          return prepareExercise(doc,exr,reg,innerW,0,dens,opts.showNotes,opts.showExec);
         });
         var maxTextH=Math.max.apply(null,rowContents.map(function(c){return c.textH;}));
-        var cardH=imgHv+8+maxTextH+6;
+        var topBlock=imgHv?imgHv+8:4;
+        var cardH=topBlock+maxTextH+dens.cardExtraPad;
 
         if(y+cardH>272){doc.addPage();y=M;}
 
@@ -2749,25 +2821,25 @@ async function exportSesionPDF(){
 
           drawExThumb(doc,cx0+4,y+4,colW-8,imgHv,content.db,imgCache,CARD_LINE,INK_FAINT);
 
-          // Insignia numerada sobre la esquina de la foto
           doc.setFillColor(col.r,col.g,col.b);
-          doc.circle(cx0+colW-4-3,y+4+3,3,'F');
+          var badgeCx=imgHv?cx0+colW-4-3:cx0+colW-4-3, badgeCy=imgHv?y+4+3:y+6;
+          doc.circle(badgeCx,badgeCy,3,'F');
           doc.setFont('helvetica','bold');doc.setFontSize(7.5);doc.setTextColor(txtCol[0],txtCol[1],txtCol[2]);
-          doc.text(String(localNum),cx0+colW-4-3,y+4+3+1,{align:'center'});
+          doc.text(String(localNum),badgeCx,badgeCy+1,{align:'center'});
 
-          var tyv=y+imgHv+12;
-          doc.setFont('helvetica','bold');doc.setFontSize(10.5);doc.setTextColor(INK[0],INK[1],INK[2]);
+          var tyv=y+topBlock;
+          doc.setFont('helvetica','bold');doc.setFontSize(dens.nameSize);doc.setTextColor(INK[0],INK[1],INK[2]);
           doc.text(content.nameSplit, cx0+4, tyv);
           tyv+=content.nameH;
-          tyv+=drawMetricsRow(doc,cx0+4,tyv,content.metrics,innerW);
+          tyv+=drawMetricsRow(doc,cx0+4,tyv,content.metrics,innerW,dens);
           tyv+=1;
-          drawExecAndNotes(doc,cx0+4,tyv,innerW,content);
+          drawExecAndNotes(doc,cx0+4,tyv,innerW,content,dens);
         });
 
-        y+=cardH+5;
+        y+=cardH+dens.cardGapY;
       }
     }
-    y+=4;
+    y+=dens.phaseSpacing;
   });
 
   // ── PIE ──
@@ -2781,19 +2853,40 @@ async function exportSesionPDF(){
     doc.text('Página '+p+' / '+pageCount, W-M-doc.getTextWidth('Página '+p+' / '+pageCount), H-9);
   }
 
-  // ── DESCARGAR ──
+  return doc;
+}
+
+async function exportSesionPDF(){
+  if(!editingSesion||!editingSesion.id){toast('Guarda antes de exportar','err');return;}
+  var ses=DB.sesiones.find(function(s){return s.id===editingSesion.id;});
+  if(!ses){toast('Sesión no encontrada','err');return;}
+
+  var registro=null;
+  try{
+    var rHist=await api({action:'getHistorial',atleta:ses.atleta});
+    if(rHist.ok) registro=(rHist.registros||[]).find(function(r){return r.fecha===ses.fecha&&r.sesion_id===ses.id;});
+  }catch(e){}
+
+  await preloadLogo();
+  toast('Generando PDF...');
+
+  var imgCache=await preloadExerciseImages(ses.ejercicios||[]);
+  if(preloadExerciseImages.lastFailed&&preloadExerciseImages.lastFailed.length){
+    toast('⚠️ No se cargaron '+preloadExerciseImages.lastFailed.length+' imagen(es): '+preloadExerciseImages.lastFailed.join(', '),'err');
+  }
+
+  var doc=buildSesionPDFDoc(ses,registro,imgCache,loadSavedPdfOpts());
   var filename='Sesion_'+ses.atleta.split(' ')[0]+'_'+ses.fecha+'_'+ses.nombre.replace(/[^a-zA-Z0-9]/g,'_')+'.pdf';
   doc.save(filename);
   toast('✅ PDF descargado');
 }
 
-// ── EXPORTAR PDF DE PLANTILLA (vista previa, sin datos de ejecución) ──
-async function exportTemplatePDF(){
-  if(!currentTemplate){toast('Selecciona o crea una plantilla','err');return;}
-  if(!Object.keys(currentTemplate.bloques||{}).length){toast('Esta plantilla no tiene bloques','err');return;}
 
-  await preloadLogo();
-  toast('Generando PDF...');
+// ── EXPORTAR PDF DE PLANTILLA (vista previa, sin datos de ejecución) ──
+function buildTemplatePDFDoc(tpl,imgCache,opts){
+  opts=Object.assign({},DEFAULT_PDF_OPTS,opts||{});
+  var dens=PDF_DENSITY[opts.density]||PDF_DENSITY.normal;
+  var imgSizes=PDF_IMG_SIZE[opts.imgSize]||PDF_IMG_SIZE.grande;
 
   var jsPDF=window.jspdf.jsPDF;
   var doc=new jsPDF({orientation:'p',unit:'mm',format:'a4'});
@@ -2802,7 +2895,12 @@ async function exportTemplatePDF(){
   var CARD=[244,245,242], CARD_LINE=[230,231,226], LIME=[198,236,74];
 
   // ── CABECERA (tarjeta blanca) ──
-  var headerH=38;
+  var compactHeader=dens.headerH<32;
+  var titleSize=compactHeader?11.5:17;
+  var metaSize=compactHeader?7.8:10;
+  var titleY=M+7+11+(compactHeader?6:10);
+  var metaY=titleY+(compactHeader?5.5:8);
+  var headerH=Math.max(dens.headerH,(metaY-M)+6);
   cardShadow(doc,M,M,W-2*M,headerH,4);
   doc.setDrawColor(CARD_LINE[0],CARD_LINE[1],CARD_LINE[2]);doc.setLineWidth(0.3);
   doc.setFillColor(255,255,255);
@@ -2833,7 +2931,6 @@ async function exportTemplatePDF(){
   doc.setFont('helvetica','bold');doc.setFontSize(8.5);doc.setTextColor(INK_SOFT[0],INK_SOFT[1],INK_SOFT[2]);
   doc.text(TRAINER_BRAND.toUpperCase(),mx,M+13.6);
 
-  // Píldora "PLANTILLA" (neutra, no es una sesión ejecutada)
   var estado='PLANTILLA';
   doc.setFont('helvetica','bold');doc.setFontSize(8.5);
   var estW=doc.getTextWidth(estado)+13;
@@ -2844,28 +2941,22 @@ async function exportTemplatePDF(){
   doc.setTextColor(107,112,121);
   doc.text(estado,W-M-8-estW+9.5,M+11.3);
 
-  doc.setFont('helvetica','bold');doc.setFontSize(17);doc.setTextColor(INK[0],INK[1],INK[2]);
-  doc.text(currentTemplate.name||'(Plantilla sin nombre)',M+8,M+27);
+  doc.setFont('helvetica','bold');doc.setFontSize(titleSize);doc.setTextColor(INK[0],INK[1],INK[2]);
+  doc.text(tpl.name||'(Plantilla sin nombre)',M+8,titleY);
 
-  var totalBloques=Object.keys(currentTemplate.bloques).length;
-  var totalEjs=Object.values(currentTemplate.bloques).reduce(function(a,arr){return a+(arr||[]).length;},0);
-  doc.setFont('helvetica','normal');doc.setFontSize(10);doc.setTextColor(INK_SOFT[0],INK_SOFT[1],INK_SOFT[2]);
-  doc.text(totalBloques+(totalBloques===1?' bloque':' bloques')+'   ·   '+totalEjs+(totalEjs===1?' ejercicio':' ejercicios'),M+8,M+35);
+  var totalBloques=Object.keys(tpl.bloques).length;
+  var totalEjs=Object.values(tpl.bloques).reduce(function(a,arr){return a+(arr||[]).length;},0);
+  doc.setFont('helvetica','normal');doc.setFontSize(metaSize);doc.setTextColor(INK_SOFT[0],INK_SOFT[1],INK_SOFT[2]);
+  doc.text(totalBloques+(totalBloques===1?' bloque':' bloques')+'   ·   '+totalEjs+(totalEjs===1?' ejercicio':' ejercicios'),M+8,metaY);
+
 
   var y=M+headerH+8;
-
-  var bloqueIds=Object.keys(currentTemplate.bloques);
-  var allEjercicios=[];
-  bloqueIds.forEach(function(bid){(currentTemplate.bloques[bid]||[]).forEach(function(ex){allEjercicios.push(ex);});});
-  var imgCache=await preloadExerciseImages(allEjercicios);
-  if(preloadExerciseImages.lastFailed&&preloadExerciseImages.lastFailed.length){
-    toast('⚠️ No se cargaron '+preloadExerciseImages.lastFailed.length+' imagen(es): '+preloadExerciseImages.lastFailed.join(', '),'err');
-  }
+  var bloqueIds=Object.keys(tpl.bloques);
 
   bloqueIds.forEach(function(bid){
-    var exs=currentTemplate.bloques[bid]||[];
+    var exs=tpl.bloques[bid]||[];
     if(!exs.length) return;
-    var meta=resolveBloqueMeta(bid,currentTemplate);
+    var meta=resolveBloqueMeta(bid,tpl);
     var col=hexToRgb(meta.color);
     var txtCol=contrastColor(col);
 
@@ -2878,14 +2969,14 @@ async function exportTemplatePDF(){
     doc.setFont('helvetica','normal');doc.setFontSize(8.5);doc.setTextColor(INK_FAINT[0],INK_FAINT[1],INK_FAINT[2]);
     var countTxt=exs.length+(exs.length===1?' ejercicio':' ejercicios');
     doc.text(countTxt, W-M-doc.getTextWidth(countTxt), y+3);
-    y+=10;
+    y+=dens.phaseGap;
 
     if(exs.length===1){
       var ex0=exs[0];
-      var imgW=38, imgH=38, gapH=6;
+      var imgW=imgSizes.single, imgH=imgSizes.single, gapH=imgW?6:0;
       var textX=M+4+imgW+gapH, textW=W-2*M-8-imgW-gapH;
-      var content=prepareExercise(doc,ex0,null,textW,9);
-      var cardH=Math.max(imgH+8,content.textH+6);
+      var content=prepareExercise(doc,ex0,null,textW,imgW?9:0,dens,opts.showNotes,false);
+      var cardH=Math.max(imgH+8,content.textH+dens.cardExtraPad);
 
       if(y+cardH>272){doc.addPage();y=M;}
 
@@ -2899,7 +2990,7 @@ async function exportTemplatePDF(){
       drawExThumb(doc,M+4,y+4,imgW,imgH,DB.ejercicios[ex0.id]||{nombre:ex0.id},imgCache,CARD_LINE,INK_FAINT);
 
       var ty=y+8;
-      doc.setFont('helvetica','bold');doc.setFontSize(11.5);doc.setTextColor(INK[0],INK[1],INK[2]);
+      doc.setFont('helvetica','bold');doc.setFontSize(dens.nameSize);doc.setTextColor(INK[0],INK[1],INK[2]);
       doc.text(content.nameSplit, textX, ty);
       doc.setFillColor(col.r,col.g,col.b);
       doc.circle(textX+textW-3.5,y+7.2,3.2,'F');
@@ -2907,24 +2998,25 @@ async function exportTemplatePDF(){
       doc.text('1',textX+textW-3.5,y+8.3,{align:'center'});
 
       ty+=content.nameH;
-      ty+=drawMetricsRow(doc,textX,ty,content.metrics,textW);
+      ty+=drawMetricsRow(doc,textX,ty,content.metrics,textW,dens);
       ty+=1;
-      drawExecAndNotes(doc,textX,ty,textW,content);
+      drawExecAndNotes(doc,textX,ty,textW,content,dens);
 
-      y+=cardH+5;
+      y+=cardH+dens.cardGapY;
 
     }else{
-      var colsPerRow=Math.min(exs.length,3);
+      var colsPerRow=Math.min(exs.length,opts.maxCols);
       var colGap=5;
       var colW=(W-2*M-(colsPerRow-1)*colGap)/colsPerRow;
       var innerW=colW-8;
-      var imgHv=32;
+      var imgHv=imgSizes.grid;
 
       for(var rowStart=0; rowStart<exs.length; rowStart+=colsPerRow){
         var rowExs=exs.slice(rowStart,rowStart+colsPerRow);
-        var rowContents=rowExs.map(function(exr){return prepareExercise(doc,exr,null,innerW,0);});
+        var rowContents=rowExs.map(function(exr){return prepareExercise(doc,exr,null,innerW,0,dens,opts.showNotes,false);});
         var maxTextH=Math.max.apply(null,rowContents.map(function(c){return c.textH;}));
-        var cardH=imgHv+8+maxTextH+6;
+        var topBlock=imgHv?imgHv+8:4;
+        var cardH=topBlock+maxTextH+dens.cardExtraPad;
 
         if(y+cardH>272){doc.addPage();y=M;}
 
@@ -2943,23 +3035,24 @@ async function exportTemplatePDF(){
           drawExThumb(doc,cx0+4,y+4,colW-8,imgHv,DB.ejercicios[exr.id]||{nombre:exr.id},imgCache,CARD_LINE,INK_FAINT);
 
           doc.setFillColor(col.r,col.g,col.b);
-          doc.circle(cx0+colW-4-3,y+4+3,3,'F');
+          var badgeCx=cx0+colW-4-3, badgeCy=imgHv?y+4+3:y+6;
+          doc.circle(badgeCx,badgeCy,3,'F');
           doc.setFont('helvetica','bold');doc.setFontSize(7.5);doc.setTextColor(txtCol[0],txtCol[1],txtCol[2]);
-          doc.text(String(localNum),cx0+colW-4-3,y+4+3+1,{align:'center'});
+          doc.text(String(localNum),badgeCx,badgeCy+1,{align:'center'});
 
-          var tyv=y+imgHv+12;
-          doc.setFont('helvetica','bold');doc.setFontSize(10.5);doc.setTextColor(INK[0],INK[1],INK[2]);
+          var tyv=y+topBlock;
+          doc.setFont('helvetica','bold');doc.setFontSize(dens.nameSize);doc.setTextColor(INK[0],INK[1],INK[2]);
           doc.text(content.nameSplit, cx0+4, tyv);
           tyv+=content.nameH;
-          tyv+=drawMetricsRow(doc,cx0+4,tyv,content.metrics,innerW);
+          tyv+=drawMetricsRow(doc,cx0+4,tyv,content.metrics,innerW,dens);
           tyv+=1;
-          drawExecAndNotes(doc,cx0+4,tyv,innerW,content);
+          drawExecAndNotes(doc,cx0+4,tyv,innerW,content,dens);
         });
 
-        y+=cardH+5;
+        y+=cardH+dens.cardGapY;
       }
     }
-    y+=4;
+    y+=dens.phaseSpacing;
   });
 
   // ── PIE ──
@@ -2973,11 +3066,120 @@ async function exportTemplatePDF(){
     doc.text('Página '+p+' / '+pageCount, W-M-doc.getTextWidth('Página '+p+' / '+pageCount), H-9);
   }
 
+  return doc;
+}
+
+async function exportTemplatePDF(){
+  if(!currentTemplate){toast('Selecciona o crea una plantilla','err');return;}
+  if(!Object.keys(currentTemplate.bloques||{}).length){toast('Esta plantilla no tiene bloques','err');return;}
+
+  await preloadLogo();
+  toast('Generando PDF...');
+
+  var allEjercicios=[];
+  Object.keys(currentTemplate.bloques).forEach(function(bid){(currentTemplate.bloques[bid]||[]).forEach(function(ex){allEjercicios.push(ex);});});
+  var imgCache=await preloadExerciseImages(allEjercicios);
+  if(preloadExerciseImages.lastFailed&&preloadExerciseImages.lastFailed.length){
+    toast('⚠️ No se cargaron '+preloadExerciseImages.lastFailed.length+' imagen(es): '+preloadExerciseImages.lastFailed.join(', '),'err');
+  }
+
+  var opts=Object.assign({},loadSavedPdfOpts(),{showSummary:false});
+  var doc=buildTemplatePDFDoc(currentTemplate,imgCache,opts);
   var filename='Plantilla_'+(currentTemplate.name||'sin_nombre').replace(/[^a-zA-Z0-9]/g,'_')+'.pdf';
   doc.save(filename);
   toast('✅ PDF descargado');
 }
 
+// ── PANEL DE AJUSTES DE EXPORTACIÓN CON VISTA PREVIA EN VIVO ──
+var PDF_PREVIEW_CTX=null;
+
+function getPdfOptsFromForm(){
+  return {
+    imgSize:document.getElementById('pdfopt-imgsize').value,
+    density:document.getElementById('pdfopt-density').value,
+    maxCols:parseInt(document.getElementById('pdfopt-cols').value,10)||3,
+    showNotes:document.getElementById('pdfopt-notes').checked,
+    showExec:document.getElementById('pdfopt-exec').checked,
+    showSummary:document.getElementById('pdfopt-summary').checked
+  };
+}
+function setPdfOptsToForm(opts){
+  document.getElementById('pdfopt-imgsize').value=opts.imgSize;
+  document.getElementById('pdfopt-density').value=opts.density;
+  document.getElementById('pdfopt-cols').value=String(opts.maxCols);
+  document.getElementById('pdfopt-notes').checked=opts.showNotes;
+  document.getElementById('pdfopt-exec').checked=opts.showExec;
+  document.getElementById('pdfopt-summary').checked=opts.showSummary;
+}
+
+async function openSesionPdfSettings(){
+  if(!editingSesion||!editingSesion.id){toast('Guarda antes de exportar','err');return;}
+  var ses=DB.sesiones.find(function(s){return s.id===editingSesion.id;});
+  if(!ses){toast('Sesión no encontrada','err');return;}
+  toast('Cargando vista previa...');
+  var registro=null;
+  try{
+    var rHist=await api({action:'getHistorial',atleta:ses.atleta});
+    if(rHist.ok) registro=(rHist.registros||[]).find(function(r){return r.fecha===ses.fecha&&r.sesion_id===ses.id;});
+  }catch(e){}
+  await preloadLogo();
+  var imgCache=await preloadExerciseImages(ses.ejercicios||[]);
+
+  PDF_PREVIEW_CTX={kind:'sesion',ses:ses,registro:registro,imgCache:imgCache};
+  document.getElementById('pdfopt-exec-wrap').style.display='flex';
+  document.getElementById('pdfopt-summary-wrap').style.display='flex';
+  setPdfOptsToForm(loadSavedPdfOpts());
+  openModal('pdfsettings');
+  refreshPdfPreview();
+}
+
+async function openTemplatePdfSettings(){
+  if(!currentTemplate){toast('Selecciona o crea una plantilla','err');return;}
+  if(!Object.keys(currentTemplate.bloques||{}).length){toast('Esta plantilla no tiene bloques','err');return;}
+  toast('Cargando vista previa...');
+  await preloadLogo();
+  var allEjercicios=[];
+  Object.keys(currentTemplate.bloques).forEach(function(bid){(currentTemplate.bloques[bid]||[]).forEach(function(ex){allEjercicios.push(ex);});});
+  var imgCache=await preloadExerciseImages(allEjercicios);
+
+  PDF_PREVIEW_CTX={kind:'template',tpl:JSON.parse(JSON.stringify(currentTemplate)),imgCache:imgCache};
+  document.getElementById('pdfopt-exec-wrap').style.display='none';
+  document.getElementById('pdfopt-summary-wrap').style.display='none';
+  setPdfOptsToForm(loadSavedPdfOpts());
+  openModal('pdfsettings');
+  refreshPdfPreview();
+}
+
+function refreshPdfPreview(){
+  if(!PDF_PREVIEW_CTX) return;
+  var opts=getPdfOptsFromForm();
+  var doc;
+  if(PDF_PREVIEW_CTX.kind==='sesion'){
+    doc=buildSesionPDFDoc(PDF_PREVIEW_CTX.ses,PDF_PREVIEW_CTX.registro,PDF_PREVIEW_CTX.imgCache,opts);
+  }else{
+    doc=buildTemplatePDFDoc(PDF_PREVIEW_CTX.tpl,PDF_PREVIEW_CTX.imgCache,Object.assign({},opts,{showSummary:false}));
+  }
+  PDF_PREVIEW_CTX.lastDoc=doc;
+  var pageCount=doc.internal.getNumberOfPages();
+  document.getElementById('pdfopt-pagecount').textContent='📄 '+pageCount+(pageCount===1?' página':' páginas');
+  document.getElementById('pdf-preview-frame').src=doc.output('bloburl');
+}
+
+function downloadPdfFromSettings(){
+  if(!PDF_PREVIEW_CTX||!PDF_PREVIEW_CTX.lastDoc){toast('Espera a que cargue la vista previa','err');return;}
+  var opts=getPdfOptsFromForm();
+  savePdfOpts(opts);
+  var filename;
+  if(PDF_PREVIEW_CTX.kind==='sesion'){
+    var ses=PDF_PREVIEW_CTX.ses;
+    filename='Sesion_'+ses.atleta.split(' ')[0]+'_'+ses.fecha+'_'+ses.nombre.replace(/[^a-zA-Z0-9]/g,'_')+'.pdf';
+  }else{
+    filename='Plantilla_'+(PDF_PREVIEW_CTX.tpl.name||'sin_nombre').replace(/[^a-zA-Z0-9]/g,'_')+'.pdf';
+  }
+  PDF_PREVIEW_CTX.lastDoc.save(filename);
+  toast('✅ PDF descargado');
+  closeModal('pdfsettings');
+}
 
 // ── EXPORTAR PDF DE SESIÓN DE RESISTENCIA ──
 var ESTR_TYPE_COLOR={calentamiento:'#60a5fa',serie:'#ccff66',recuperacion:'#fb923c',vuelta:'#4ade80'};
