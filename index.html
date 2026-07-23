@@ -135,6 +135,21 @@ td{padding:11px 14px;border-top:1px solid var(--border);font-size:13px;vertical-
 .param-chip input,.param-chip select{background:transparent;border:none;color:var(--text);font-size:11px;outline:none;width:60px;}
 .param-chip-remove{background:transparent;border:none;color:var(--text-muted);cursor:pointer;font-size:12px;line-height:1;padding:0 0 0 2px;}
 .param-chip-remove:hover{color:var(--red);}
+.order-block{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:10px;margin-bottom:10px;}
+.order-block-header{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
+.order-block-dot{width:8px;height:8px;border-radius:2px;flex-shrink:0;}
+.order-block-name{font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--text);flex:1;}
+.order-block-arrows{display:flex;gap:3px;}
+.order-arrow,.order-arrow-sm{background:var(--surface);border:1px solid var(--border);color:var(--text-dim);border-radius:5px;cursor:pointer;font-size:10px;line-height:1;padding:3px 5px;}
+.order-arrow:hover,.order-arrow-sm:hover{color:var(--accent);border-color:var(--accent);}
+.order-arrow:disabled,.order-arrow-sm:disabled{opacity:.3;cursor:default;}
+.order-arrow:disabled:hover,.order-arrow-sm:disabled:hover{color:var(--text-dim);border-color:var(--border);}
+.order-ex-item{display:flex;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:6px 8px;margin-bottom:5px;cursor:grab;}
+.order-ex-item.dragging{opacity:.4;}
+.order-ex-item.drag-over{border-color:var(--accent);}
+.order-drag-handle{color:var(--text-muted);font-size:13px;flex-shrink:0;}
+.order-ex-name{flex:1;font-size:12px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.order-ex-arrows{display:flex;gap:3px;flex-shrink:0;}
 .param-add-btn{font-size:10px;padding:2px 8px;border-radius:4px;border:1px dashed var(--border);background:transparent;color:var(--text-muted);cursor:pointer;}
 .param-picker{position:fixed;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:8px;z-index:300;min-width:160px;box-shadow:0 8px 32px rgba(0,0,0,0.5);}
 .param-picker-item{padding:7px 12px;border-radius:6px;font-size:12px;cursor:pointer;}
@@ -373,7 +388,7 @@ td{padding:11px 14px;border-top:1px solid var(--border);font-size:13px;vertical-
             <div class="te-header">
               <input class="te-name-input" id="te-name" placeholder="Nombre de la plantilla..." oninput="markDirty()">
               <div style="display:flex;gap:8px">
-                <button class="btn btn-secondary btn-sm" onclick="openTemplatePdfSettings()">📄 Exportar PDF</button>
+                <button class="btn btn-secondary btn-sm" onclick="openTemplatePdfSettings()">👁️ Vista previa PDF</button>
                 <button class="btn btn-secondary btn-sm" onclick="deleteTemplate()">Eliminar</button>
                 <button class="btn btn-primary btn-sm" onclick="saveTemplate()">Guardar</button>
               </div>
@@ -548,6 +563,7 @@ td{padding:11px 14px;border-top:1px solid var(--border);font-size:13px;vertical-
   <div class="modal">
     <div class="modal-title" id="param-modal-title">Nuevo parámetro</div>
     <div class="form-group"><label>Nombre visible</label><input type="text" id="pm-label" placeholder="Ej: Cadencia"></div>
+    <div class="form-group"><label>Unidad de medida (opcional)</label><input type="text" id="pm-unidad" placeholder="Ej: rpm, kg, cm, seg..."></div>
     <div class="form-group"><label>Tipo de campo</label>
       <select id="pm-type" onchange="document.getElementById('pm-options-wrap').style.display=this.value==='select'?'':'none';">
         <option value="text">Texto libre</option>
@@ -765,7 +781,7 @@ td{padding:11px 14px;border-top:1px solid var(--border);font-size:13px;vertical-
         <div style="font-size:12px;color:var(--text-dim)" id="sesion-modal-date"></div>
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;">
-        <button class="btn btn-secondary btn-sm" id="btn-pdf-sesion" onclick="openSesionPdfSettings()" style="display:none">📄 PDF</button>
+        <button class="btn btn-secondary btn-sm" id="btn-pdf-sesion" onclick="openSesionPdfSettings()" style="display:none">👁️ Vista previa PDF</button>
         <button class="btn btn-danger btn-sm" id="btn-del-sesion" onclick="deleteSesion()" style="display:none">🗑 Eliminar</button>
         <button class="btn btn-secondary btn-sm" onclick="closeModal('sesion')">Cancelar</button>
         <button class="btn btn-primary btn-sm" id="btn-save-sesion" onclick="saveSesion()">💾 Guardar</button>
@@ -814,48 +830,58 @@ td{padding:11px 14px;border-top:1px solid var(--border);font-size:13px;vertical-
 
 <div class="modal-overlay" id="modal-pdfsettings">
   <div class="modal" style="max-width:1080px;">
-    <div class="modal-title">Ajustar diseño de exportación</div>
+    <div class="modal-title">Vista previa y ajustes de exportación</div>
+    <div style="display:flex;gap:8px;margin-bottom:14px;">
+      <div class="fchip active" id="pdftab-ajustes" onclick="switchPdfPanelTab('ajustes')">⚙️ Ajustes</div>
+      <div class="fchip" id="pdftab-orden" onclick="switchPdfPanelTab('orden')">✏️ Editar disposición</div>
+    </div>
     <div style="display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap;">
-      <div style="width:230px;flex-shrink:0;">
-        <div class="form-group">
-          <label>Tamaño de imagen</label>
-          <select id="pdfopt-imgsize" onchange="refreshPdfPreview()">
-            <option value="grande">Grande</option>
-            <option value="mediano">Mediano</option>
-            <option value="pequeno">Pequeño</option>
-            <option value="oculta">Sin imagen</option>
-          </select>
+      <div style="width:250px;flex-shrink:0;">
+        <div id="pdfpanel-ajustes">
+          <div class="form-group">
+            <label>Tamaño de imagen</label>
+            <select id="pdfopt-imgsize" onchange="refreshPdfPreview()">
+              <option value="grande">Grande</option>
+              <option value="mediano">Mediano</option>
+              <option value="pequeno">Pequeño</option>
+              <option value="oculta">Sin imagen</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Densidad</label>
+            <select id="pdfopt-density" onchange="refreshPdfPreview()">
+              <option value="normal">Normal</option>
+              <option value="compacto">Compacta</option>
+              <option value="muycompacto">Muy compacta</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Máx. columnas por fila</label>
+            <select id="pdfopt-cols" onchange="refreshPdfPreview()">
+              <option value="2">2</option>
+              <option value="3" selected>3</option>
+              <option value="4">4</option>
+            </select>
+          </div>
+          <div class="form-group" style="display:flex;align-items:center;gap:8px;">
+            <input type="checkbox" id="pdfopt-notes" onchange="refreshPdfPreview()">
+            <label style="margin:0;">Mostrar notas del entrenador</label>
+          </div>
+          <div class="form-group" id="pdfopt-exec-wrap" style="display:flex;align-items:center;gap:8px;">
+            <input type="checkbox" id="pdfopt-exec" onchange="refreshPdfPreview()">
+            <label style="margin:0;">Mostrar registro EJECUTADO</label>
+          </div>
+          <div class="form-group" id="pdfopt-summary-wrap" style="display:flex;align-items:center;gap:8px;">
+            <input type="checkbox" id="pdfopt-summary" onchange="refreshPdfPreview()">
+            <label style="margin:0;">Mostrar tarjetas resumen</label>
+          </div>
+          <div id="pdfopt-pagecount" style="font-size:13px;color:var(--text-dim);margin-top:14px;font-weight:600;"></div>
+          <div style="font-size:11px;color:var(--text-muted);margin-top:6px;">Consejo: para que quepa todo en una hoja, prueba "Muy compacta" + "Sin imagen".</div>
         </div>
-        <div class="form-group">
-          <label>Densidad</label>
-          <select id="pdfopt-density" onchange="refreshPdfPreview()">
-            <option value="normal">Normal</option>
-            <option value="compacto">Compacta</option>
-            <option value="muycompacto">Muy compacta</option>
-          </select>
+        <div id="pdfpanel-orden" style="display:none;max-height:72vh;overflow-y:auto;padding-right:4px;">
+          <div style="font-size:11px;color:var(--text-muted);margin-bottom:10px;">Arrastra un ejercicio (⠿) o usa las flechas para reordenarlo dentro de su fase. Las flechas de la cabecera mueven la fase entera.</div>
+          <div id="order-blocks-container"></div>
         </div>
-        <div class="form-group">
-          <label>Máx. columnas por fila</label>
-          <select id="pdfopt-cols" onchange="refreshPdfPreview()">
-            <option value="2">2</option>
-            <option value="3" selected>3</option>
-            <option value="4">4</option>
-          </select>
-        </div>
-        <div class="form-group" style="display:flex;align-items:center;gap:8px;">
-          <input type="checkbox" id="pdfopt-notes" onchange="refreshPdfPreview()">
-          <label style="margin:0;">Mostrar notas del entrenador</label>
-        </div>
-        <div class="form-group" id="pdfopt-exec-wrap" style="display:flex;align-items:center;gap:8px;">
-          <input type="checkbox" id="pdfopt-exec" onchange="refreshPdfPreview()">
-          <label style="margin:0;">Mostrar registro EJECUTADO</label>
-        </div>
-        <div class="form-group" id="pdfopt-summary-wrap" style="display:flex;align-items:center;gap:8px;">
-          <input type="checkbox" id="pdfopt-summary" onchange="refreshPdfPreview()">
-          <label style="margin:0;">Mostrar tarjetas resumen</label>
-        </div>
-        <div id="pdfopt-pagecount" style="font-size:13px;color:var(--text-dim);margin-top:14px;font-weight:600;"></div>
-        <div style="font-size:11px;color:var(--text-muted);margin-top:6px;">Consejo: para que quepa todo en una hoja, prueba "Muy compacta" + "Sin imagen".</div>
       </div>
       <div style="flex:1;min-width:280px;">
         <iframe id="pdf-preview-frame" style="width:100%;height:72vh;border:1px solid var(--border);border-radius:8px;background:#fff;"></iframe>
@@ -1483,7 +1509,7 @@ function renderParamsConfig(){
   wrap.innerHTML='<div style="display:flex;flex-direction:column;gap:8px;">'+params.map(function(p){
     var typeLabel=p.type==='select'?'Lista':(p.type==='number'?'Número':'Texto');
     return '<div style="display:flex;justify-content:space-between;align-items:center;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;">'
-      +'<div><strong>'+p.label+'</strong> <span style="color:var(--text-muted);font-size:11px;">· '+typeLabel+(p.type==='select'&&p.options?' ('+p.options.join(', ')+')':'')+'</span></div>'
+      +'<div><strong>'+p.label+'</strong>'+(p.unidad?' <span style="color:var(--accent-dim);font-size:11px;">('+p.unidad+')</span>':'')+' <span style="color:var(--text-muted);font-size:11px;">· '+typeLabel+(p.type==='select'&&p.options?' ('+p.options.join(', ')+')':'')+'</span></div>'
       +'<div style="display:flex;gap:6px;">'
         +'<button class="btn btn-secondary btn-xs" onclick="openEditParamAjuste(\''+p.id+'\')">✏️</button>'
         +'<button class="btn btn-danger btn-xs" onclick="deleteParamAjusteDirecto(\''+p.id+'\')">✕</button>'
@@ -1498,6 +1524,7 @@ function openParamAjuste(){
   document.getElementById('param-modal-title').textContent='Nuevo parámetro';
   document.getElementById('btn-del-param').style.display='none';
   document.getElementById('pm-label').value='';
+  document.getElementById('pm-unidad').value='';
   document.getElementById('pm-type').value='text';
   document.getElementById('pm-options').value='';
   document.getElementById('pm-options-wrap').style.display='none';
@@ -1510,6 +1537,7 @@ function openEditParamAjuste(id){
   document.getElementById('param-modal-title').textContent='Editar parámetro';
   document.getElementById('btn-del-param').style.display='inline-block';
   document.getElementById('pm-label').value=p.label;
+  document.getElementById('pm-unidad').value=p.unidad||'';
   document.getElementById('pm-type').value=p.type;
   document.getElementById('pm-options').value=(p.options||[]).join(', ');
   document.getElementById('pm-options-wrap').style.display=p.type==='select'?'':'none';
@@ -1517,6 +1545,7 @@ function openEditParamAjuste(id){
 }
 async function saveParamAjuste(){
   var label=document.getElementById('pm-label').value.trim();
+  var unidad=document.getElementById('pm-unidad').value.trim();
   var type=document.getElementById('pm-type').value;
   var optionsRaw=document.getElementById('pm-options').value.trim();
   if(!label){toast('El nombre es obligatorio','err');return;}
@@ -1526,6 +1555,7 @@ async function saveParamAjuste(){
     id: editingParamId || label.toLowerCase().replace(/\s+/g,'_').replace(/[^a-z0-9_]/g,''),
     label: label, type: type
   };
+  if(unidad) newParam.unidad=unidad;
   if(type==='select') newParam.options=optionsRaw.split(',').map(function(s){return s.trim();}).filter(Boolean);
   if(editingParamId){
     list=list.map(function(p){return p.id===editingParamId?newParam:p;});
@@ -1672,10 +1702,10 @@ function renderBloqueExs(bloqueId){
     list.appendChild(row);
   });
 }
-function buildParamChip(p,bloqueId,exIdx,paramIdx){var cat=getParamsCatalog().find(function(c){return c.id===p.id;})||{label:p.id,type:'text'};var input='';if(cat.type==='select'){var opts=(cat.options||[]).map(function(o){return '<option'+(p.val===o?' selected':'')+'>'+o+'</option>';}).join('');input='<select onchange="updateParam(\''+bloqueId+'\','+exIdx+','+paramIdx+',this.value)">'+opts+'</select>';}else{input='<input type="'+cat.type+'" value="'+(p.val||'')+'" oninput="updateParam(\''+bloqueId+'\','+exIdx+','+paramIdx+',this.value)">';}return '<div class="param-chip"><label>'+cat.label+'</label>'+input+'<button type="button" class="param-chip-remove" title="Quitar parámetro" onclick="removeParam(\''+bloqueId+'\','+exIdx+','+paramIdx+')">✕</button></div>';}
+function buildParamChip(p,bloqueId,exIdx,paramIdx){var cat=getParamsCatalog().find(function(c){return c.id===p.id;})||{label:p.id,type:'text'};var input='';if(cat.type==='select'){var opts=(cat.options||[]).map(function(o){return '<option'+(p.val===o?' selected':'')+'>'+o+'</option>';}).join('');input='<select onchange="updateParam(\''+bloqueId+'\','+exIdx+','+paramIdx+',this.value)">'+opts+'</select>';}else{input='<input type="'+cat.type+'" value="'+(p.val||'')+'" oninput="updateParam(\''+bloqueId+'\','+exIdx+','+paramIdx+',this.value)">';}var lbl=cat.label+(cat.unidad?' ('+cat.unidad+')':'');return '<div class="param-chip"><label>'+lbl+'</label>'+input+'<button type="button" class="param-chip-remove" title="Quitar parámetro" onclick="removeParam(\''+bloqueId+'\','+exIdx+','+paramIdx+')">✕</button></div>';}
 function updateParam(b,ei,pi,v){if(currentTemplate.bloques[b]&&currentTemplate.bloques[b][ei]&&currentTemplate.bloques[b][ei].params[pi])currentTemplate.bloques[b][ei].params[pi].val=v;markDirty();}
 function removeParam(b,ei,pi){if(!currentTemplate.bloques[b]||!currentTemplate.bloques[b][ei])return;currentTemplate.bloques[b][ei].params.splice(pi,1);markDirty();renderBloqueExs(b);}
-function showParamPicker(e,bloqueId,exIdx){e.stopPropagation();var picker=document.getElementById('param-picker');var existing=(currentTemplate.bloques[bloqueId][exIdx].params||[]).map(function(p){return p.id;});var available=getParamsCatalog().filter(function(p){return !existing.includes(p.id);});if(!available.length){toast('Todos los parámetros añadidos');return;}picker.innerHTML=available.map(function(p){return '<div class="param-picker-item" onclick="addParam(\''+bloqueId+'\','+exIdx+',\''+p.id+'\')">'+p.label+'</div>';}).join('');var rect=e.target.getBoundingClientRect();picker.style.left=rect.left+'px';picker.style.top=(rect.bottom+6)+'px';picker.style.display='block';}
+function showParamPicker(e,bloqueId,exIdx){e.stopPropagation();var picker=document.getElementById('param-picker');var existing=(currentTemplate.bloques[bloqueId][exIdx].params||[]).map(function(p){return p.id;});var available=getParamsCatalog().filter(function(p){return !existing.includes(p.id);});if(!available.length){toast('Todos los parámetros añadidos');return;}picker.innerHTML=available.map(function(p){return '<div class="param-picker-item" onclick="addParam(\''+bloqueId+'\','+exIdx+',\''+p.id+'\')">'+p.label+(p.unidad?' <span style="color:var(--text-muted);">('+p.unidad+')</span>':'')+'</div>';}).join('');var rect=e.target.getBoundingClientRect();picker.style.left=rect.left+'px';picker.style.top=(rect.bottom+6)+'px';picker.style.display='block';}
 function addParam(b,ei,pid){var cat=getParamsCatalog().find(function(c){return c.id===pid;});var val=cat&&cat.type==='select'&&cat.options?cat.options[0]:'';currentTemplate.bloques[b][ei].params.push({id:pid,val:val});markDirty();document.getElementById('param-picker').style.display='none';renderBloqueExs(b);}
 function removeEx(b,idx){currentTemplate.bloques[b].splice(idx,1);markDirty();renderBloqueExs(b);}
 function dropEx(targetBloque,targetIdx){if(!dragSrc||dragSrc.context!=='template')return;var srcEx=currentTemplate.bloques[dragSrc.bloque].splice(dragSrc.idx,1)[0];if(!currentTemplate.bloques[targetBloque])currentTemplate.bloques[targetBloque]=[];currentTemplate.bloques[targetBloque].splice(targetIdx,0,srcEx);markDirty();renderBloqueExs(dragSrc.bloque);if(targetBloque!==dragSrc.bloque)renderBloqueExs(targetBloque);dragSrc=null;}
@@ -2264,10 +2294,10 @@ function renderSesionBloqueExs(bloqueId){
     list.appendChild(row);
   });
 }
-function buildSesionParamChip(p,bloqueId,exIdx,paramIdx){var cat=getParamsCatalog().find(function(c){return c.id===p.id;})||{label:p.id,type:'text'};var input='';if(cat.type==='select'){var opts=(cat.options||[]).map(function(o){return '<option'+(p.val===o?' selected':'')+'>'+o+'</option>';}).join('');input='<select onchange="updateSesionParam(\''+bloqueId+'\','+exIdx+','+paramIdx+',this.value)">'+opts+'</select>';}else{input='<input type="'+cat.type+'" value="'+(p.val||'')+'" oninput="updateSesionParam(\''+bloqueId+'\','+exIdx+','+paramIdx+',this.value)">';}return '<div class="param-chip"><label>'+cat.label+'</label>'+input+'<button type="button" class="param-chip-remove" title="Quitar parámetro" onclick="removeSesionParam(\''+bloqueId+'\','+exIdx+','+paramIdx+')">✕</button></div>';}
+function buildSesionParamChip(p,bloqueId,exIdx,paramIdx){var cat=getParamsCatalog().find(function(c){return c.id===p.id;})||{label:p.id,type:'text'};var input='';if(cat.type==='select'){var opts=(cat.options||[]).map(function(o){return '<option'+(p.val===o?' selected':'')+'>'+o+'</option>';}).join('');input='<select onchange="updateSesionParam(\''+bloqueId+'\','+exIdx+','+paramIdx+',this.value)">'+opts+'</select>';}else{input='<input type="'+cat.type+'" value="'+(p.val||'')+'" oninput="updateSesionParam(\''+bloqueId+'\','+exIdx+','+paramIdx+',this.value)">';}var lbl=cat.label+(cat.unidad?' ('+cat.unidad+')':'');return '<div class="param-chip"><label>'+lbl+'</label>'+input+'<button type="button" class="param-chip-remove" title="Quitar parámetro" onclick="removeSesionParam(\''+bloqueId+'\','+exIdx+','+paramIdx+')">✕</button></div>';}
 function updateSesionParam(b,ei,pi,v){if(editingSesion.bloques[b]&&editingSesion.bloques[b][ei]&&editingSesion.bloques[b][ei].params[pi])editingSesion.bloques[b][ei].params[pi].val=v;}
 function removeSesionParam(b,ei,pi){if(!editingSesion.bloques[b]||!editingSesion.bloques[b][ei])return;editingSesion.bloques[b][ei].params.splice(pi,1);renderSesionBloqueExs(b);}
-function showSesionParamPicker(e,bloqueId,exIdx){e.stopPropagation();var picker=document.getElementById('param-picker');var existing=(editingSesion.bloques[bloqueId][exIdx].params||[]).map(function(p){return p.id;});var available=getParamsCatalog().filter(function(p){return !existing.includes(p.id);});if(!available.length){toast('Todos los parámetros añadidos');return;}picker.innerHTML=available.map(function(p){return '<div class="param-picker-item" onclick="addSesionParam(\''+bloqueId+'\','+exIdx+',\''+p.id+'\')">'+p.label+'</div>';}).join('');var rect=e.target.getBoundingClientRect();picker.style.left=rect.left+'px';picker.style.top=(rect.bottom+6)+'px';picker.style.display='block';}
+function showSesionParamPicker(e,bloqueId,exIdx){e.stopPropagation();var picker=document.getElementById('param-picker');var existing=(editingSesion.bloques[bloqueId][exIdx].params||[]).map(function(p){return p.id;});var available=getParamsCatalog().filter(function(p){return !existing.includes(p.id);});if(!available.length){toast('Todos los parámetros añadidos');return;}picker.innerHTML=available.map(function(p){return '<div class="param-picker-item" onclick="addSesionParam(\''+bloqueId+'\','+exIdx+',\''+p.id+'\')">'+p.label+(p.unidad?' <span style="color:var(--text-muted);">('+p.unidad+')</span>':'')+'</div>';}).join('');var rect=e.target.getBoundingClientRect();picker.style.left=rect.left+'px';picker.style.top=(rect.bottom+6)+'px';picker.style.display='block';}
 function addSesionParam(b,ei,pid){var cat=getParamsCatalog().find(function(c){return c.id===pid;});var val=cat&&cat.type==='select'&&cat.options?cat.options[0]:'';editingSesion.bloques[b][ei].params.push({id:pid,val:val});document.getElementById('param-picker').style.display='none';renderSesionBloqueExs(b);}
 function addExToSesionBloque(bloqueId,sel){var id=sel.value;if(!id)return;if(!editingSesion.bloques[bloqueId])editingSesion.bloques[bloqueId]=[];editingSesion.bloques[bloqueId].push({id:id,params:[{id:'series',val:'3'},{id:'reps',val:'10'},{id:'kg',val:''},{id:'descanso',val:'90s'}]});sel.value='';renderSesionBloques();}
 function removeExFromSesion(b,idx){editingSesion.bloques[b].splice(idx,1);renderSesionBloques();}
@@ -2730,9 +2760,15 @@ function buildSesionPDFDoc(ses,registro,imgCache,opts){
     if(!bloques[bid]) bloques[bid]=[];
     bloques[bid].push(ex);
   });
-  var bloqueOrder=['activacion','fuerza','potencia','pliometria','pot-resistida','resistencia','vuelta-calma'];
-  var extraKeys=Object.keys(bloques).filter(function(k){return bloqueOrder.indexOf(k)<0;});
-  var ordered=bloqueOrder.filter(function(k){return bloques[k];}).concat(extraKeys);
+  var ordered;
+  if(opts.blockOrder&&opts.blockOrder.length){
+    ordered=opts.blockOrder.filter(function(k){return bloques[k]&&bloques[k].length;});
+    Object.keys(bloques).forEach(function(k){if(ordered.indexOf(k)<0)ordered.push(k);});
+  }else{
+    var bloqueOrder=['activacion','fuerza','potencia','pliometria','pot-resistida','resistencia','vuelta-calma'];
+    var extraKeys=Object.keys(bloques).filter(function(k){return bloqueOrder.indexOf(k)<0;});
+    ordered=bloqueOrder.filter(function(k){return bloques[k];}).concat(extraKeys);
+  }
 
   var globalExIdx=0;
   ordered.forEach(function(bid){
@@ -2757,7 +2793,7 @@ function buildSesionPDFDoc(ses,registro,imgCache,opts){
       var ex0=exs[0];
       var imgW=imgSizes.single, imgH=imgSizes.single, gapH=imgW?6:0;
       var textX=M+4+imgW+gapH, textW=W-2*M-8-imgW-gapH;
-      var reg0=registroDatos[globalExIdx]; globalExIdx++;
+      var reg0=registroDatos[ex0._origIdx!==undefined?ex0._origIdx:globalExIdx]; globalExIdx++;
       var content=prepareExercise(doc,ex0,reg0,textW,imgW?9:0,dens,opts.showNotes,opts.showExec);
       var cardH=Math.max(imgH+8,content.textH+dens.cardExtraPad);
 
@@ -2798,7 +2834,7 @@ function buildSesionPDFDoc(ses,registro,imgCache,opts){
         var rowExs=exs.slice(rowStart,rowStart+colsPerRow);
 
         var rowContents=rowExs.map(function(exr){
-          var reg=registroDatos[globalExIdx]; globalExIdx++;
+          var reg=registroDatos[exr._origIdx!==undefined?exr._origIdx:globalExIdx]; globalExIdx++;
           return prepareExercise(doc,exr,reg,innerW,0,dens,opts.showNotes,opts.showExec);
         });
         var maxTextH=Math.max.apply(null,rowContents.map(function(c){return c.textH;}));
@@ -2951,7 +2987,13 @@ function buildTemplatePDFDoc(tpl,imgCache,opts){
 
 
   var y=M+headerH+8;
-  var bloqueIds=Object.keys(tpl.bloques);
+  var bloqueIds;
+  if(opts.blockOrder&&opts.blockOrder.length){
+    bloqueIds=opts.blockOrder.filter(function(k){return tpl.bloques[k]&&tpl.bloques[k].length;});
+    Object.keys(tpl.bloques).forEach(function(k){if(bloqueIds.indexOf(k)<0)bloqueIds.push(k);});
+  }else{
+    bloqueIds=Object.keys(tpl.bloques);
+  }
 
   bloqueIds.forEach(function(bid){
     var exs=tpl.bloques[bid]||[];
@@ -3114,21 +3156,31 @@ function setPdfOptsToForm(opts){
 
 async function openSesionPdfSettings(){
   if(!editingSesion||!editingSesion.id){toast('Guarda antes de exportar','err');return;}
-  var ses=DB.sesiones.find(function(s){return s.id===editingSesion.id;});
-  if(!ses){toast('Sesión no encontrada','err');return;}
+  var origSes=DB.sesiones.find(function(s){return s.id===editingSesion.id;});
+  if(!origSes){toast('Sesión no encontrada','err');return;}
   toast('Cargando vista previa...');
   var registro=null;
   try{
-    var rHist=await api({action:'getHistorial',atleta:ses.atleta});
-    if(rHist.ok) registro=(rHist.registros||[]).find(function(r){return r.fecha===ses.fecha&&r.sesion_id===ses.id;});
+    var rHist=await api({action:'getHistorial',atleta:origSes.atleta});
+    if(rHist.ok) registro=(rHist.registros||[]).find(function(r){return r.fecha===origSes.fecha&&r.sesion_id===origSes.id;});
   }catch(e){}
   await preloadLogo();
-  var imgCache=await preloadExerciseImages(ses.ejercicios||[]);
+  var imgCache=await preloadExerciseImages(origSes.ejercicios||[]);
 
-  PDF_PREVIEW_CTX={kind:'sesion',ses:ses,registro:registro,imgCache:imgCache};
+  // Clon con índice original marcado, para poder reordenar sin perder la alineación con el registro ejecutado
+  var ses=JSON.parse(JSON.stringify(origSes));
+  (ses.ejercicios||[]).forEach(function(ex,i){ex._origIdx=i;});
+
+  var bloqueOrderDefault=['activacion','fuerza','potencia','pliometria','pot-resistida','resistencia','vuelta-calma'];
+  var presentBids=[];
+  (ses.ejercicios||[]).forEach(function(ex){var bid=ex.bloque||'otros';if(presentBids.indexOf(bid)<0)presentBids.push(bid);});
+  var blockOrderIds=bloqueOrderDefault.filter(function(k){return presentBids.indexOf(k)>=0;}).concat(presentBids.filter(function(k){return bloqueOrderDefault.indexOf(k)<0;}));
+
+  PDF_PREVIEW_CTX={kind:'sesion',ses:ses,registro:registro,imgCache:imgCache,blockOrderIds:blockOrderIds};
   document.getElementById('pdfopt-exec-wrap').style.display='flex';
   document.getElementById('pdfopt-summary-wrap').style.display='flex';
   setPdfOptsToForm(loadSavedPdfOpts());
+  switchPdfPanelTab('ajustes');
   openModal('pdfsettings');
   refreshPdfPreview();
 }
@@ -3142,17 +3194,27 @@ async function openTemplatePdfSettings(){
   Object.keys(currentTemplate.bloques).forEach(function(bid){(currentTemplate.bloques[bid]||[]).forEach(function(ex){allEjercicios.push(ex);});});
   var imgCache=await preloadExerciseImages(allEjercicios);
 
-  PDF_PREVIEW_CTX={kind:'template',tpl:JSON.parse(JSON.stringify(currentTemplate)),imgCache:imgCache};
+  var tpl=JSON.parse(JSON.stringify(currentTemplate));
+  PDF_PREVIEW_CTX={kind:'template',tpl:tpl,imgCache:imgCache,blockOrderIds:Object.keys(tpl.bloques)};
   document.getElementById('pdfopt-exec-wrap').style.display='none';
   document.getElementById('pdfopt-summary-wrap').style.display='none';
   setPdfOptsToForm(loadSavedPdfOpts());
+  switchPdfPanelTab('ajustes');
   openModal('pdfsettings');
   refreshPdfPreview();
 }
 
+function switchPdfPanelTab(tab){
+  document.getElementById('pdftab-ajustes').classList.toggle('active',tab==='ajustes');
+  document.getElementById('pdftab-orden').classList.toggle('active',tab==='orden');
+  document.getElementById('pdfpanel-ajustes').style.display=tab==='ajustes'?'block':'none';
+  document.getElementById('pdfpanel-orden').style.display=tab==='orden'?'block':'none';
+  if(tab==='orden') renderPdfOrderPanel();
+}
+
 function refreshPdfPreview(){
   if(!PDF_PREVIEW_CTX) return;
-  var opts=getPdfOptsFromForm();
+  var opts=Object.assign({},getPdfOptsFromForm(),{blockOrder:PDF_PREVIEW_CTX.blockOrderIds});
   var doc;
   if(PDF_PREVIEW_CTX.kind==='sesion'){
     doc=buildSesionPDFDoc(PDF_PREVIEW_CTX.ses,PDF_PREVIEW_CTX.registro,PDF_PREVIEW_CTX.imgCache,opts);
@@ -3163,6 +3225,131 @@ function refreshPdfPreview(){
   var pageCount=doc.internal.getNumberOfPages();
   document.getElementById('pdfopt-pagecount').textContent='📄 '+pageCount+(pageCount===1?' página':' páginas');
   document.getElementById('pdf-preview-frame').src=doc.output('bloburl');
+}
+
+// ── PANEL DE REORDENACIÓN (arrastrar / subir / bajar) ──
+function getPdfOrderGroups(){
+  if(!PDF_PREVIEW_CTX) return [];
+  if(PDF_PREVIEW_CTX.kind==='sesion'){
+    var grouped={};
+    (PDF_PREVIEW_CTX.ses.ejercicios||[]).forEach(function(ex){
+      var bid=ex.bloque||'otros';
+      if(!grouped[bid])grouped[bid]=[];
+      grouped[bid].push(ex);
+    });
+    return PDF_PREVIEW_CTX.blockOrderIds.filter(function(bid){return grouped[bid]&&grouped[bid].length;}).map(function(bid){
+      var bDef=getBloques().find(function(b){return b.id===bid;})||{name:bid,color:'#999'};
+      return {bid:bid,name:bDef.name,color:bDef.color,exercises:grouped[bid]};
+    });
+  }else{
+    var tpl=PDF_PREVIEW_CTX.tpl;
+    return PDF_PREVIEW_CTX.blockOrderIds.filter(function(bid){return tpl.bloques[bid]&&tpl.bloques[bid].length;}).map(function(bid){
+      var meta=resolveBloqueMeta(bid,tpl);
+      return {bid:bid,name:meta.name,color:meta.color,exercises:tpl.bloques[bid]};
+    });
+  }
+}
+function renderPdfOrderPanel(){
+  var groups=getPdfOrderGroups();
+  var container=document.getElementById('order-blocks-container');
+  if(!groups.length){container.innerHTML='<div style="font-size:12px;color:var(--text-muted);">Sin ejercicios para reordenar.</div>';return;}
+  container.innerHTML=groups.map(function(g,bi){
+    var exHtml=g.exercises.map(function(ex,ei){
+      var name=(DB.ejercicios[ex.id]||{}).nombre||ex.id;
+      return '<div class="order-ex-item" draggable="true" data-bid="'+g.bid+'" data-idx="'+ei+'">'+
+        '<span class="order-drag-handle">⠿</span>'+
+        '<span class="order-ex-name" title="'+escAttr(name)+'">'+escAttr(name)+'</span>'+
+        '<div class="order-ex-arrows">'+
+          '<button class="order-arrow-sm" onclick="moveExercise(\''+g.bid+'\','+ei+',-1)"'+(ei===0?' disabled':'')+'>▲</button>'+
+          '<button class="order-arrow-sm" onclick="moveExercise(\''+g.bid+'\','+ei+',1)"'+(ei===g.exercises.length-1?' disabled':'')+'>▼</button>'+
+        '</div>'+
+      '</div>';
+    }).join('');
+    return '<div class="order-block">'+
+      '<div class="order-block-header">'+
+        '<span class="order-block-dot" style="background:'+g.color+'"></span>'+
+        '<span class="order-block-name">'+escAttr(g.name)+'</span>'+
+        '<div class="order-block-arrows">'+
+          '<button class="order-arrow" onclick="moveBlock(\''+g.bid+'\',-1)"'+(bi===0?' disabled':'')+'>▲</button>'+
+          '<button class="order-arrow" onclick="moveBlock(\''+g.bid+'\',1)"'+(bi===groups.length-1?' disabled':'')+'>▼</button>'+
+        '</div>'+
+      '</div>'+
+      '<div class="order-ex-list" data-bid="'+g.bid+'">'+exHtml+'</div>'+
+    '</div>';
+  }).join('');
+  attachOrderDragHandlers();
+}
+function moveExercise(bid,idx,dir){
+  var newIdx=idx+dir;
+  if(PDF_PREVIEW_CTX.kind==='template'){
+    var arr=PDF_PREVIEW_CTX.tpl.bloques[bid];
+    if(newIdx<0||newIdx>=arr.length)return;
+    var tmp=arr[idx];arr[idx]=arr[newIdx];arr[newIdx]=tmp;
+  }else{
+    var groups=getPdfOrderGroups();
+    var g=groups.find(function(x){return x.bid===bid;});
+    if(!g||newIdx<0||newIdx>=g.exercises.length)return;
+    var tmp2=g.exercises[idx];g.exercises[idx]=g.exercises[newIdx];g.exercises[newIdx]=tmp2;
+    rebuildSesionFlatOrder(groups);
+  }
+  renderPdfOrderPanel();
+  refreshPdfPreview();
+}
+function moveBlock(bid,dir){
+  var idx=PDF_PREVIEW_CTX.blockOrderIds.indexOf(bid);
+  var newIdx=idx+dir;
+  if(idx<0||newIdx<0||newIdx>=PDF_PREVIEW_CTX.blockOrderIds.length)return;
+  var tmp=PDF_PREVIEW_CTX.blockOrderIds[idx];
+  PDF_PREVIEW_CTX.blockOrderIds[idx]=PDF_PREVIEW_CTX.blockOrderIds[newIdx];
+  PDF_PREVIEW_CTX.blockOrderIds[newIdx]=tmp;
+  renderPdfOrderPanel();
+  refreshPdfPreview();
+}
+// Reconstruye el array plano ses.ejercicios a partir de los grupos ya reordenados
+function rebuildSesionFlatOrder(groups){
+  var flat=[];
+  groups.forEach(function(g){g.exercises.forEach(function(ex){flat.push(ex);});});
+  // Añade cualquier ejercicio de bloques no listados (por seguridad, no debería ocurrir)
+  PDF_PREVIEW_CTX.ses.ejercicios.forEach(function(ex){if(flat.indexOf(ex)<0)flat.push(ex);});
+  PDF_PREVIEW_CTX.ses.ejercicios=flat;
+}
+function attachOrderDragHandlers(){
+  var items=document.querySelectorAll('.order-ex-item');
+  var dragged=null;
+  items.forEach(function(item){
+    item.addEventListener('dragstart',function(e){
+      dragged={bid:item.getAttribute('data-bid'),idx:parseInt(item.getAttribute('data-idx'),10)};
+      item.classList.add('dragging');
+    });
+    item.addEventListener('dragend',function(){item.classList.remove('dragging');});
+    item.addEventListener('dragover',function(e){
+      e.preventDefault();
+      if(item.getAttribute('data-bid')===((dragged||{}).bid))item.classList.add('drag-over');
+    });
+    item.addEventListener('dragleave',function(){item.classList.remove('drag-over');});
+    item.addEventListener('drop',function(e){
+      e.preventDefault();
+      item.classList.remove('drag-over');
+      if(!dragged)return;
+      var targetBid=item.getAttribute('data-bid'), targetIdx=parseInt(item.getAttribute('data-idx'),10);
+      if(dragged.bid!==targetBid)return; // solo se reordena dentro de la misma fase
+      if(dragged.idx===targetIdx)return;
+      if(PDF_PREVIEW_CTX.kind==='template'){
+        var arr=PDF_PREVIEW_CTX.tpl.bloques[targetBid];
+        var moved=arr.splice(dragged.idx,1)[0];
+        arr.splice(targetIdx,0,moved);
+      }else{
+        var groups=getPdfOrderGroups();
+        var g=groups.find(function(x){return x.bid===targetBid;});
+        var moved2=g.exercises.splice(dragged.idx,1)[0];
+        g.exercises.splice(targetIdx,0,moved2);
+        rebuildSesionFlatOrder(groups);
+      }
+      dragged=null;
+      renderPdfOrderPanel();
+      refreshPdfPreview();
+    });
+  });
 }
 
 function downloadPdfFromSettings(){
@@ -3180,6 +3367,7 @@ function downloadPdfFromSettings(){
   toast('✅ PDF descargado');
   closeModal('pdfsettings');
 }
+
 
 // ── EXPORTAR PDF DE SESIÓN DE RESISTENCIA ──
 var ESTR_TYPE_COLOR={calentamiento:'#60a5fa',serie:'#ccff66',recuperacion:'#fb923c',vuelta:'#4ade80'};
