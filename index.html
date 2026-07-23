@@ -115,6 +115,10 @@ td{padding:11px 14px;border-top:1px solid var(--border);font-size:13px;vertical-
 .bloque-header{padding:10px 14px;display:flex;align-items:center;gap:10px;cursor:pointer;}
 .bloque-color{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
 .bloque-name{font-size:13px;font-weight:700;flex:1;}
+.bloque-name-input{font-size:13px;font-weight:700;flex:1;min-width:0;background:transparent;border:1px solid transparent;border-radius:6px;padding:5px 7px;color:var(--text);outline:none;font-family:inherit;}
+.bloque-name-input:hover{border-color:var(--border);}
+.bloque-name-input:focus{border-color:var(--border);background:var(--surface2);}
+.bloque-type-badge{font-size:10px;color:var(--text-dim);background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:3px 9px;white-space:nowrap;flex-shrink:0;}
 .bloque-count{font-size:11px;color:var(--text-muted);}
 .bloque-body{border-top:1px solid var(--border);}
 .bloque-add{padding:8px 14px;border-bottom:1px solid var(--border);}
@@ -129,6 +133,8 @@ td{padding:11px 14px;border-top:1px solid var(--border);font-size:13px;vertical-
 .param-chip{display:flex;align-items:center;gap:4px;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:3px 8px;font-size:11px;}
 .param-chip label{color:var(--text-muted);}
 .param-chip input,.param-chip select{background:transparent;border:none;color:var(--text);font-size:11px;outline:none;width:60px;}
+.param-chip-remove{background:transparent;border:none;color:var(--text-muted);cursor:pointer;font-size:12px;line-height:1;padding:0 0 0 2px;}
+.param-chip-remove:hover{color:var(--red);}
 .param-add-btn{font-size:10px;padding:2px 8px;border-radius:4px;border:1px dashed var(--border);background:transparent;color:var(--text-muted);cursor:pointer;}
 .param-picker{position:fixed;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:8px;z-index:300;min-width:160px;box-shadow:0 8px 32px rgba(0,0,0,0.5);}
 .param-picker-item{padding:7px 12px;border-radius:6px;font-size:12px;cursor:pointer;}
@@ -795,8 +801,8 @@ td{padding:11px 14px;border-top:1px solid var(--border);font-size:13px;vertical-
     </div>
     <div style="text-align:center;color:var(--text-muted);font-size:11px;margin:6px 0;">— o crear uno personalizado —</div>
     <div class="form-group">
-      <label>Nombre del bloque personalizado</label>
-      <input id="nb-name" type="text" placeholder="Ej: Trabajo técnico">
+      <label>Nombre a mostrar (opcional, también sirve para renombrar un predefinido, ej: "Fuerza 1")</label>
+      <input id="nb-name" type="text" placeholder="Ej: Trabajo técnico, Fuerza 1...">
     </div>
     <div class="modal-actions">
       <button class="btn btn-secondary" onclick="closeModal('newbloque')">Cancelar</button>
@@ -1547,11 +1553,23 @@ function newTemplate(){var t={id:'tpl_'+Date.now(),name:'',bloques:{}};DB.templa
 function selectTemplate(i){if(isDirty&&!confirm('Hay cambios sin guardar. ¿Continuar?'))return;currentTemplate=JSON.parse(JSON.stringify(DB.templates[i]));isDirty=false;renderTemplateList();showTemplateEditor();}
 function showTemplateEditor(){document.getElementById('te-placeholder').style.display='none';document.getElementById('te-content').style.display='block';document.getElementById('te-name').value=currentTemplate.name;renderBloques();}
 function markDirty(){isDirty=true;}
+function escAttr(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');}
+function baseTipoName(bloqueId){
+  var found=getBloques().find(function(b){return b.id===tipoDeBloqueKey(bloqueId);});
+  return found?found.name:tipoDeBloqueKey(bloqueId);
+}
 function resolveBloqueMeta(bloqueId, container){
   if(container&&container.bloqueMeta&&container.bloqueMeta[bloqueId])return container.bloqueMeta[bloqueId];
   var found=getBloques().find(function(b){return b.id===tipoDeBloqueKey(bloqueId);});
   if(found)return {name:found.name,color:found.color};
   return {name:tipoDeBloqueKey(bloqueId),color:'#a3a3a3'};
+}
+function renameBloqueTemplate(bloqueId,value){
+  if(!currentTemplate.bloqueMeta)currentTemplate.bloqueMeta={};
+  var prevColor=resolveBloqueMeta(bloqueId,currentTemplate).color;
+  var trimmed=(value||'').trim();
+  currentTemplate.bloqueMeta[bloqueId]={name:trimmed||baseTipoName(bloqueId),color:prevColor};
+  markDirty();
 }
 function renderBloques(){
   var c=document.getElementById('bloques-container');c.innerHTML='';
@@ -1561,9 +1579,10 @@ function renderBloques(){
   }
   idsUsados.forEach(function(bloqueId){
     var meta=resolveBloqueMeta(bloqueId,currentTemplate);
+    var tipoBase=baseTipoName(bloqueId);
     var exs=currentTemplate.bloques[bloqueId]||[];
     var div=document.createElement('div');div.className='bloque';
-    div.innerHTML='<div class="bloque-header"><div class="bloque-color" style="background:'+meta.color+'"></div><div class="bloque-name">'+meta.name+'</div><div class="bloque-count">'+exs.length+' ej.</div><button class="btn btn-danger btn-xs" onclick="removeBloqueFromTemplate(\''+bloqueId+'\')">✕</button></div><div class="bloque-body"><div class="bloque-add"><button class="btn btn-secondary btn-sm" onclick="openEjPicker(\'template\',\''+bloqueId+'\')">+ Añadir ejercicio</button></div><div id="blist-'+bloqueId+'"></div></div>';
+    div.innerHTML='<div class="bloque-header"><div class="bloque-color" style="background:'+meta.color+'"></div><input class="bloque-name-input" value="'+escAttr(meta.name)+'" placeholder="Nombre del bloque" oninput="renameBloqueTemplate(\''+bloqueId+'\',this.value)"><span class="bloque-type-badge" title="Tipo de bloque">'+escAttr(tipoBase)+'</span><div class="bloque-count">'+exs.length+' ej.</div><button class="btn btn-danger btn-xs" onclick="removeBloqueFromTemplate(\''+bloqueId+'\')">✕</button></div><div class="bloque-body"><div class="bloque-add"><button class="btn btn-secondary btn-sm" onclick="openEjPicker(\'template\',\''+bloqueId+'\')">+ Añadir ejercicio</button></div><div id="blist-'+bloqueId+'"></div></div>';
     c.appendChild(div);renderBloqueExs(bloqueId);
   });
   var addBtn=document.createElement('button');
@@ -1595,8 +1614,9 @@ function renderBloqueExs(bloqueId){
     list.appendChild(row);
   });
 }
-function buildParamChip(p,bloqueId,exIdx,paramIdx){var cat=getParamsCatalog().find(function(c){return c.id===p.id;})||{label:p.id,type:'text'};var input='';if(cat.type==='select'){var opts=(cat.options||[]).map(function(o){return '<option'+(p.val===o?' selected':'')+'>'+o+'</option>';}).join('');input='<select onchange="updateParam(\''+bloqueId+'\','+exIdx+','+paramIdx+',this.value)">'+opts+'</select>';}else{input='<input type="'+cat.type+'" value="'+(p.val||'')+'" oninput="updateParam(\''+bloqueId+'\','+exIdx+','+paramIdx+',this.value)">';}return '<div class="param-chip"><label>'+cat.label+'</label>'+input+'</div>';}
+function buildParamChip(p,bloqueId,exIdx,paramIdx){var cat=getParamsCatalog().find(function(c){return c.id===p.id;})||{label:p.id,type:'text'};var input='';if(cat.type==='select'){var opts=(cat.options||[]).map(function(o){return '<option'+(p.val===o?' selected':'')+'>'+o+'</option>';}).join('');input='<select onchange="updateParam(\''+bloqueId+'\','+exIdx+','+paramIdx+',this.value)">'+opts+'</select>';}else{input='<input type="'+cat.type+'" value="'+(p.val||'')+'" oninput="updateParam(\''+bloqueId+'\','+exIdx+','+paramIdx+',this.value)">';}return '<div class="param-chip"><label>'+cat.label+'</label>'+input+'<button type="button" class="param-chip-remove" title="Quitar parámetro" onclick="removeParam(\''+bloqueId+'\','+exIdx+','+paramIdx+')">✕</button></div>';}
 function updateParam(b,ei,pi,v){if(currentTemplate.bloques[b]&&currentTemplate.bloques[b][ei]&&currentTemplate.bloques[b][ei].params[pi])currentTemplate.bloques[b][ei].params[pi].val=v;markDirty();}
+function removeParam(b,ei,pi){if(!currentTemplate.bloques[b]||!currentTemplate.bloques[b][ei])return;currentTemplate.bloques[b][ei].params.splice(pi,1);markDirty();renderBloqueExs(b);}
 function showParamPicker(e,bloqueId,exIdx){e.stopPropagation();var picker=document.getElementById('param-picker');var existing=(currentTemplate.bloques[bloqueId][exIdx].params||[]).map(function(p){return p.id;});var available=getParamsCatalog().filter(function(p){return !existing.includes(p.id);});if(!available.length){toast('Todos los parámetros añadidos');return;}picker.innerHTML=available.map(function(p){return '<div class="param-picker-item" onclick="addParam(\''+bloqueId+'\','+exIdx+',\''+p.id+'\')">'+p.label+'</div>';}).join('');var rect=e.target.getBoundingClientRect();picker.style.left=rect.left+'px';picker.style.top=(rect.bottom+6)+'px';picker.style.display='block';}
 function addParam(b,ei,pid){var cat=getParamsCatalog().find(function(c){return c.id===pid;});var val=cat&&cat.type==='select'&&cat.options?cat.options[0]:'';currentTemplate.bloques[b][ei].params.push({id:pid,val:val});markDirty();document.getElementById('param-picker').style.display='none';renderBloqueExs(b);}
 function removeEx(b,idx){currentTemplate.bloques[b].splice(idx,1);markDirty();renderBloqueExs(b);}
@@ -2186,8 +2206,9 @@ function renderSesionBloqueExs(bloqueId){
     list.appendChild(row);
   });
 }
-function buildSesionParamChip(p,bloqueId,exIdx,paramIdx){var cat=getParamsCatalog().find(function(c){return c.id===p.id;})||{label:p.id,type:'text'};var input='';if(cat.type==='select'){var opts=(cat.options||[]).map(function(o){return '<option'+(p.val===o?' selected':'')+'>'+o+'</option>';}).join('');input='<select onchange="updateSesionParam(\''+bloqueId+'\','+exIdx+','+paramIdx+',this.value)">'+opts+'</select>';}else{input='<input type="'+cat.type+'" value="'+(p.val||'')+'" oninput="updateSesionParam(\''+bloqueId+'\','+exIdx+','+paramIdx+',this.value)">';}return '<div class="param-chip"><label>'+cat.label+'</label>'+input+'</div>';}
+function buildSesionParamChip(p,bloqueId,exIdx,paramIdx){var cat=getParamsCatalog().find(function(c){return c.id===p.id;})||{label:p.id,type:'text'};var input='';if(cat.type==='select'){var opts=(cat.options||[]).map(function(o){return '<option'+(p.val===o?' selected':'')+'>'+o+'</option>';}).join('');input='<select onchange="updateSesionParam(\''+bloqueId+'\','+exIdx+','+paramIdx+',this.value)">'+opts+'</select>';}else{input='<input type="'+cat.type+'" value="'+(p.val||'')+'" oninput="updateSesionParam(\''+bloqueId+'\','+exIdx+','+paramIdx+',this.value)">';}return '<div class="param-chip"><label>'+cat.label+'</label>'+input+'<button type="button" class="param-chip-remove" title="Quitar parámetro" onclick="removeSesionParam(\''+bloqueId+'\','+exIdx+','+paramIdx+')">✕</button></div>';}
 function updateSesionParam(b,ei,pi,v){if(editingSesion.bloques[b]&&editingSesion.bloques[b][ei]&&editingSesion.bloques[b][ei].params[pi])editingSesion.bloques[b][ei].params[pi].val=v;}
+function removeSesionParam(b,ei,pi){if(!editingSesion.bloques[b]||!editingSesion.bloques[b][ei])return;editingSesion.bloques[b][ei].params.splice(pi,1);renderSesionBloqueExs(b);}
 function showSesionParamPicker(e,bloqueId,exIdx){e.stopPropagation();var picker=document.getElementById('param-picker');var existing=(editingSesion.bloques[bloqueId][exIdx].params||[]).map(function(p){return p.id;});var available=getParamsCatalog().filter(function(p){return !existing.includes(p.id);});if(!available.length){toast('Todos los parámetros añadidos');return;}picker.innerHTML=available.map(function(p){return '<div class="param-picker-item" onclick="addSesionParam(\''+bloqueId+'\','+exIdx+',\''+p.id+'\')">'+p.label+'</div>';}).join('');var rect=e.target.getBoundingClientRect();picker.style.left=rect.left+'px';picker.style.top=(rect.bottom+6)+'px';picker.style.display='block';}
 function addSesionParam(b,ei,pid){var cat=getParamsCatalog().find(function(c){return c.id===pid;});var val=cat&&cat.type==='select'&&cat.options?cat.options[0]:'';editingSesion.bloques[b][ei].params.push({id:pid,val:val});document.getElementById('param-picker').style.display='none';renderSesionBloqueExs(b);}
 function addExToSesionBloque(bloqueId,sel){var id=sel.value;if(!id)return;if(!editingSesion.bloques[bloqueId])editingSesion.bloques[bloqueId]=[];editingSesion.bloques[bloqueId].push({id:id,params:[{id:'series',val:'3'},{id:'reps',val:'10'},{id:'kg',val:''},{id:'descanso',val:'90s'}]});sel.value='';renderSesionBloques();}
@@ -2210,8 +2231,8 @@ async function confirmAddBloque(){
   var bloqueId,bloqueName,bloqueColor;
   if(preId){
     var def=getBloques().find(function(b){return b.id===preId;});
-    bloqueName=def?def.name:preId;
     bloqueColor=def?def.color:'#a3a3a3';
+    bloqueName=name||(def?def.name:preId); // si escribes un nombre propio, manda sobre el nombre del tipo predefinido
     // Si ese tipo ya está en uso, se crea una instancia adicional con clave única (mismo tipo/color, otro bloque independiente)
     bloqueId=target.hasOwnProperty(preId)?(preId+'::'+Date.now()):preId;
   } else {
@@ -2301,6 +2322,31 @@ function dataUrlToPng(dataUrl){
   });
 }
 
+// Redimensiona y comprime a JPEG antes de meterla en el PDF. Las fotos de Drive llegan a 1500px+
+// y sin esto un PDF de 2 páginas puede pesar 50-60MB. Para el tamaño con el que se imprime
+// (unos 4cm de ancho) sobran 500px de lado mayor.
+function dataUrlToCompressedJpeg(dataUrl,maxDim,quality){
+  maxDim=maxDim||500;quality=quality||0.82;
+  return new Promise(function(res,rej){
+    var img=new Image();
+    img.onload=function(){
+      try{
+        var w=img.naturalWidth||img.width, h=img.naturalHeight||img.height;
+        var scale=Math.min(1,maxDim/Math.max(w,h));
+        var cw=Math.max(1,Math.round(w*scale)), ch=Math.max(1,Math.round(h*scale));
+        var canvas=document.createElement('canvas');
+        canvas.width=cw;canvas.height=ch;
+        var ctx=canvas.getContext('2d');
+        ctx.fillStyle='#ffffff';ctx.fillRect(0,0,cw,ch);
+        ctx.drawImage(img,0,0,cw,ch);
+        res(canvas.toDataURL('image/jpeg',quality));
+      }catch(err){rej(err);}
+    };
+    img.onerror=function(err){rej(err);};
+    img.src=dataUrl;
+  });
+}
+
 var LOGO_BASE64=null;
 var TRAINER_EMAIL='carlos.grande.rodriguez@gmail.com';
 var TRAINER_BRAND='Carlos Grande Training';
@@ -2326,7 +2372,7 @@ async function preloadExerciseImages(ejercicios){
     try{
       var raw=await fetchDriveImageBase64(db.imagen);
       if(!raw){ failed.push(db.nombre+' (no se pudo descargar desde Drive)'); return; }
-      cache[db.imagen]=await dataUrlToPng(raw);
+      cache[db.imagen]=await dataUrlToCompressedJpeg(raw,500,0.82);
     }catch(e){
       console.warn('PDF img error:',db.imagen,e);
       failed.push(db.nombre+' (formato no compatible)');
@@ -2337,13 +2383,152 @@ async function preloadExerciseImages(ejercicios){
   return cache;
 }
 
+// Elige texto blanco o negro según la luminosidad del color de fondo, para que siempre se lea bien
+function contrastColor(rgb){
+  var lum=(0.299*rgb.r+0.587*rgb.g+0.114*rgb.b)/255;
+  return lum>0.62?[30,30,30]:[255,255,255];
+}
+// Mide el ancho que ocupará un bloque de métrica (número grande + etiqueta pequeña)
+function measureMetric(doc,label,value){
+  doc.setFont('helvetica','bold');doc.setFontSize(13);
+  var vw=doc.getTextWidth(String(value));
+  doc.setFont('helvetica','bold');doc.setFontSize(6.4);
+  var lw=doc.getTextWidth(label.toUpperCase());
+  return Math.max(vw,lw);
+}
+// Dibuja una fila de métricas (número grande arriba, etiqueta en mayúsculas debajo)
+function drawMetricsRow(doc,x,y,metrics,maxWidth){
+  var gap=8, rowGap=11, cx=x, rowY=y, used=0;
+  metrics.forEach(function(m){
+    if(used>0 && cx-x+m.w>maxWidth){cx=x;rowY+=rowGap;used=0;}
+    doc.setFont('helvetica','bold');doc.setFontSize(13);doc.setTextColor(20,23,31);
+    doc.text(String(m.value),cx,rowY);
+    doc.setFont('helvetica','bold');doc.setFontSize(6.4);doc.setTextColor(163,167,174);
+    doc.text(m.label.toUpperCase(),cx,rowY+4);
+    cx+=m.w+gap;used++;
+  });
+  return (rowY-y)+7;
+}
+// Dibuja un anillo de progreso (aro de fondo + arco de color) usando muchos segmentos rectos
+function drawProgressRing(doc,cx,cy,r,lw,pct,trackRgb,fillRgb){
+  pct=Math.max(0,Math.min(1,pct||0));
+  doc.setLineCap('round');
+  doc.setLineWidth(lw);
+  doc.setDrawColor(trackRgb[0],trackRgb[1],trackRgb[2]);
+  doc.circle(cx,cy,r,'S');
+  if(pct>0.004){
+    doc.setDrawColor(fillRgb[0],fillRgb[1],fillRgb[2]);
+    var steps=Math.max(2,Math.round(pct*100));
+    var sweep=pct*360, prevX,prevY;
+    for(var i=0;i<=steps;i++){
+      var ang=(-90+sweep*(i/steps))*Math.PI/180;
+      var px=cx+r*Math.cos(ang), py=cy+r*Math.sin(ang);
+      if(i>0) doc.line(prevX,prevY,px,py);
+      prevX=px;prevY=py;
+    }
+  }
+  doc.setLineCap('butt');
+}
+// Simula una sombra suave bajo una tarjeta (un rectángulo gris claro ligeramente desplazado)
+function cardShadow(doc,x,y,w,h,r){
+  doc.setFillColor(226,227,222);
+  doc.roundedRect(x+0.7,y+1.2,w,h,r,r,'F');
+}
+
+// Calcula todo el contenido de texto de un ejercicio (nombre, métricas, ejecutado, notas) para un ancho dado.
+// nameReserve resta espacio a la línea del nombre cuando la insignia numerada va en la misma línea (layout horizontal).
+function prepareExercise(doc,ex,reg,textW,nameReserve){
+  nameReserve=nameReserve||0;
+  var db=DB.ejercicios[ex.id]||{nombre:ex.id};
+  var sets=getParamVal(ex,'series')||ex.sets||'—';
+  var reps=getParamVal(ex,'reps')||ex.reps||'—';
+  var kg=getParamVal(ex,'kg')||ex.load||'';
+  var rir=getParamVal(ex,'rir')||'';
+  var rpe=getParamVal(ex,'rpe')||'';
+  var desc=getParamVal(ex,'descanso')||ex.rest||'';
+  var notas=getParamVal(ex,'notas')||'';
+
+  doc.setFont('helvetica','bold');doc.setFontSize(11.5);
+  var nameSplit=doc.splitTextToSize(db.nombre, Math.max(20,textW-nameReserve));
+  var nameH=nameSplit.length*5+2;
+
+  var metrics=[{label:'Series',value:sets},{label:'Reps',value:reps}];
+  if(kg) metrics.push({label:'Carga kg',value:kg});
+  if(rir) metrics.push({label:'RIR',value:rir}); else if(rpe) metrics.push({label:'RPE',value:rpe});
+  if(desc) metrics.push({label:'Descanso',value:desc});
+  metrics.forEach(function(m){m.w=measureMetric(doc,m.label,m.value);});
+  var estRows=1, acc=0;
+  metrics.forEach(function(m){acc+=m.w+8; if(acc>textW){estRows++;acc=m.w+8;}});
+  var metricsH=estRows*11;
+
+  var ejecLines=[];
+  if(reg&&reg.sets&&reg.sets.length){
+    ejecLines=reg.sets.map(function(s,j){return (j+1)+') '+(s.reps||'—')+(String(s.reps||'').match(/\d+$/)?' reps':'')+(s.load?' × '+s.load+'kg':'');});
+    if(reg.rpe) ejecLines.push('RPE '+reg.rpe);
+  }
+  doc.setFont('helvetica','normal');doc.setFontSize(7.5);
+  var notasSplit=notas?doc.splitTextToSize('Notas: '+notas,textW-4):[];
+  var ejecText=ejecLines.length?ejecLines.join('   ·   '):'';
+  var ejecSplit=ejecText?doc.splitTextToSize(ejecText,textW-4):[];
+  var ejecBoxH=ejecSplit.length?ejecSplit.length*3.6+3:0;
+  var notasH=notasSplit.length?notasSplit.length*3.4+2.5:0;
+
+  var textH=nameH+metricsH+1+(ejecSplit.length?ejecBoxH+2:0)+(notasSplit.length?notasH:0);
+  return {db:db,nameSplit:nameSplit,nameH:nameH,metrics:metrics,metricsH:metricsH,ejecSplit:ejecSplit,ejecBoxH:ejecBoxH,notasSplit:notasSplit,notasH:notasH,textH:textH};
+}
+// Dibuja la miniatura del ejercicio (foto real o placeholder "Sin imagen")
+function drawExThumb(doc,x,y,w,h,db,imgCache,cardLineRgb,inkFaintRgb){
+  var b64=db.imagen?imgCache[db.imagen]:null;
+  var drawn=false;
+  if(b64){
+    try{
+      var props=doc.getImageProperties(b64);
+      var ratio=props.width/props.height;
+      var dw=w,dh=w/ratio;
+      if(dh>h){dh=h;dw=h*ratio;}
+      var ix=x+(w-dw)/2, iy=y+(h-dh)/2;
+      doc.setFillColor(255,255,255);
+      doc.roundedRect(x,y,w,h,2.2,2.2,'F');
+      doc.addImage(b64,'JPEG',ix,iy,dw,dh);
+      doc.setDrawColor(cardLineRgb[0],cardLineRgb[1],cardLineRgb[2]);doc.setLineWidth(0.3);
+      doc.roundedRect(x,y,w,h,2.2,2.2,'S');
+      drawn=true;
+    }catch(e){console.warn('PDF addImage error:',db.nombre,e);}
+  }
+  if(!drawn){
+    doc.setFillColor(255,255,255);
+    doc.setDrawColor(cardLineRgb[0],cardLineRgb[1],cardLineRgb[2]);doc.setLineWidth(0.3);
+    doc.roundedRect(x,y,w,h,2.2,2.2,'FD');
+    doc.setFont('helvetica','normal');doc.setFontSize(7);doc.setTextColor(inkFaintRgb[0],inkFaintRgb[1],inkFaintRgb[2]);
+    doc.text('Sin imagen', x+w/2, y+h/2, {align:'center'});
+  }
+}
+// Dibuja la píldora "EJECUTADO" y las notas del entrenador; devuelve la nueva posición Y
+function drawExecAndNotes(doc,x,y,w,content){
+  var ty=y;
+  if(content.ejecSplit.length){
+    doc.setFillColor(238,247,225);
+    doc.setDrawColor(211,236,184);doc.setLineWidth(0.25);
+    doc.roundedRect(x,ty-3.2,w-2,content.ejecBoxH,1.6,1.6,'FD');
+    doc.setFont('helvetica','bold');doc.setFontSize(6.8);doc.setTextColor(63,107,31);
+    doc.text('EJECUTADO',x+2.6,ty);
+    doc.setFont('helvetica','normal');doc.setFontSize(7.2);doc.setTextColor(63,107,31);
+    doc.text(content.ejecSplit,x+2.6,ty+3.4);
+    ty+=content.ejecBoxH+2;
+  }
+  if(content.notasSplit.length){
+    doc.setFont('helvetica','italic');doc.setFontSize(7.5);doc.setTextColor(107,112,121);
+    doc.text(content.notasSplit,x,ty);
+    ty+=content.notasH;
+  }
+  return ty;
+}
+
 async function exportSesionPDF(){
   if(!editingSesion||!editingSesion.id){toast('Guarda antes de exportar','err');return;}
-  // Buscar sesión guardada
   var ses=DB.sesiones.find(function(s){return s.id===editingSesion.id;});
   if(!ses){toast('Sesión no encontrada','err');return;}
 
-  // Buscar registro ejecutado si existe
   var registro=null;
   try{
     var rHist=await api({action:'getHistorial',atleta:ses.atleta});
@@ -2356,181 +2541,236 @@ async function exportSesionPDF(){
   var jsPDF=window.jspdf.jsPDF;
   var doc=new jsPDF({orientation:'p',unit:'mm',format:'a4'});
   var W=210, H=297, M=15;
+  var INK=[20,23,31], INK_SOFT=[107,112,121], INK_FAINT=[163,167,174];
+  var CARD=[244,245,242], CARD_LINE=[230,231,226], LIME=[198,236,74];
 
-  // ── CABECERA ──
+  var registroDatos=(registro&&registro.datos&&registro.datos.ejercicios)||[];
+  var totalEjs=(ses.ejercicios||[]).length;
+  var doneEjs=registroDatos.filter(function(r){return r.sets&&r.sets.some(function(s){return s.reps||s.load;});}).length;
+  var rpes=registroDatos.map(function(r){return parseFloat(r.rpe)||0;}).filter(Boolean);
+  var rpeAvg=rpes.length?(rpes.reduce(function(a,b){return a+b;},0)/rpes.length):0;
+
+  // ── CABECERA (tarjeta blanca) ──
+  var headerH=44;
+  cardShadow(doc,M,M,W-2*M,headerH,4);
+  doc.setDrawColor(CARD_LINE[0],CARD_LINE[1],CARD_LINE[2]);doc.setLineWidth(0.3);
+  doc.setFillColor(255,255,255);
+  doc.roundedRect(M,M,W-2*M,headerH,4,4,'FD');
+
+  var mx=M+8;
   if(LOGO_BASE64){
-    try{doc.addImage(LOGO_BASE64,'PNG',M,M-2,20,20);}catch(e){}
+    try{
+      doc.setFillColor(255,255,255);
+      doc.setDrawColor(CARD_LINE[0],CARD_LINE[1],CARD_LINE[2]);doc.setLineWidth(0.3);
+      doc.roundedRect(mx,M+7,11,11,2.4,2.4,'FD');
+      doc.addImage(LOGO_BASE64,'PNG',mx+1,M+8,9,9);
+      mx+=15;
+    }catch(e){
+      doc.setFillColor(INK[0],INK[1],INK[2]);
+      doc.roundedRect(mx,M+7,11,11,2.4,2.4,'F');
+      doc.setFont('helvetica','bold');doc.setFontSize(8);doc.setTextColor(LIME[0],LIME[1],LIME[2]);
+      doc.text((TRAINER_BRAND.match(/\b\w/g)||['C','G']).slice(0,2).join('').toUpperCase(),mx+5.5,M+13.3,{align:'center'});
+      mx+=15;
+    }
+  }else{
+    doc.setFillColor(INK[0],INK[1],INK[2]);
+    doc.roundedRect(mx,M+7,11,11,2.4,2.4,'F');
+    doc.setFont('helvetica','bold');doc.setFontSize(8);doc.setTextColor(LIME[0],LIME[1],LIME[2]);
+    doc.text((TRAINER_BRAND.match(/\b\w/g)||['C','G']).slice(0,2).join('').toUpperCase(),mx+5.5,M+13.3,{align:'center'});
+    mx+=15;
   }
-  doc.setFont('helvetica','bold');doc.setFontSize(16);doc.setTextColor(30,40,80);
-  doc.text(TRAINER_BRAND, M+25, M+6);
-  doc.setFont('helvetica','normal');doc.setFontSize(9);doc.setTextColor(120,120,120);
-  doc.text('Sesión de entrenamiento', M+25, M+11);
+  doc.setFont('helvetica','bold');doc.setFontSize(8.5);doc.setTextColor(INK_SOFT[0],INK_SOFT[1],INK_SOFT[2]);
+  doc.text(TRAINER_BRAND.toUpperCase(),mx,M+13.6);
 
-  // Línea separadora
-  doc.setDrawColor(122,158,63); doc.setLineWidth(0.8);
-  doc.line(M, M+20, W-M, M+20);
+  // Estado como píldora suave
+  var estado=registro?'COMPLETADA':'PLANIFICADA';
+  var estFill=registro?[232,247,238]:[238,239,241];
+  var estText=registro?[30,139,86]:[107,112,121];
+  var estDot=registro?[40,181,107]:[163,167,174];
+  doc.setFont('helvetica','bold');doc.setFontSize(8.5);
+  var estW=doc.getTextWidth(estado)+13;
+  doc.setFillColor(estFill[0],estFill[1],estFill[2]);
+  doc.roundedRect(W-M-8-estW,M+7,estW,7,3.5,3.5,'F');
+  doc.setFillColor(estDot[0],estDot[1],estDot[2]);
+  doc.circle(W-M-8-estW+6,M+10.6,1,'F');
+  doc.setTextColor(estText[0],estText[1],estText[2]);
+  doc.text(estado,W-M-8-estW+9.5,M+11.3);
 
-  // Info de la sesión
-  var yInfo=M+27;
-  doc.setFont('helvetica','bold');doc.setFontSize(13);doc.setTextColor(30,30,30);
-  doc.text(ses.nombre, M, yInfo);
-  doc.setFont('helvetica','normal');doc.setFontSize(10);doc.setTextColor(90,90,90);
+  doc.setFont('helvetica','bold');doc.setFontSize(17);doc.setTextColor(INK[0],INK[1],INK[2]);
+  doc.text(ses.nombre,M+8,M+27);
+
   var fmtDate=new Date(ses.fecha+'T12:00:00').toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
-  doc.text('Atleta: '+ses.atleta+'    Fecha: '+fmtDate, M, yInfo+6);
+  var metaX=M+8;
+  doc.setFont('helvetica','bold');doc.setFontSize(10);doc.setTextColor(INK[0],INK[1],INK[2]);
+  doc.text(ses.atleta,metaX,M+35);
+  metaX+=doc.getTextWidth(ses.atleta)+4;
+  doc.setFillColor(INK_FAINT[0],INK_FAINT[1],INK_FAINT[2]);
+  doc.circle(metaX,M+33.7,0.5,'F');
+  metaX+=3.5;
+  doc.setFont('helvetica','normal');doc.setFontSize(10);doc.setTextColor(INK_SOFT[0],INK_SOFT[1],INK_SOFT[2]);
+  doc.text(fmtDate,metaX,M+35);
 
-  // Estado
-  var estado=registro?'Completada':'Planificada';
-  var estadoColor=registro?[74,222,128]:[150,150,150];
-  doc.setTextColor(estadoColor[0],estadoColor[1],estadoColor[2]);
-  doc.setFont('helvetica','bold');
-  doc.text(estado, W-M-doc.getTextWidth(estado), yInfo);
+  var y=M+headerH+8;
 
-  // ── TARJETAS POR BLOQUE (con ilustración de cada ejercicio) ──
-  var y=yInfo+14;
+  // ── TARJETAS RESUMEN CON ANILLO (solo si hay datos ejecutados) ──
+  if(registro&&registroDatos.length){
+    var cardW=(W-2*M-6)/2, cardH2=26;
+    var summaryCards=[
+      {label:'COMPLETADOS',sub:'Ejercicios ejecutados hoy',val:doneEjs+'/'+totalEjs,pct:totalEjs?doneEjs/totalEjs:0,color:[141,198,63]},
+      {label:'RPE MEDIO',sub:'Esfuerzo percibido global',val:rpes.length?rpeAvg.toFixed(1):'—',pct:rpes.length?Math.min(1,rpeAvg/10):0,color:[242,153,74]}
+    ];
+    summaryCards.forEach(function(card,ci){
+      var cx0=M+ci*(cardW+6);
+      cardShadow(doc,cx0,y,cardW,cardH2,4);
+      doc.setDrawColor(CARD_LINE[0],CARD_LINE[1],CARD_LINE[2]);doc.setLineWidth(0.3);
+      doc.setFillColor(255,255,255);
+      doc.roundedRect(cx0,y,cardW,cardH2,4,4,'FD');
+      var ringCx=cx0+17, ringCy=y+cardH2/2, ringR=8.5;
+      drawProgressRing(doc,ringCx,ringCy,ringR,2.5,card.pct,[236,236,234],card.color);
+      doc.setFont('helvetica','bold');doc.setFontSize(9.5);doc.setTextColor(INK[0],INK[1],INK[2]);
+      doc.text(card.val,ringCx,ringCy+1.3,{align:'center'});
+      var tx=cx0+31;
+      doc.setFont('helvetica','bold');doc.setFontSize(7.3);doc.setTextColor(INK_FAINT[0],INK_FAINT[1],INK_FAINT[2]);
+      doc.text(card.label,tx,y+10.5);
+      doc.setFont('helvetica','normal');doc.setFontSize(8.2);doc.setTextColor(INK_SOFT[0],INK_SOFT[1],INK_SOFT[2]);
+      doc.text(doc.splitTextToSize(card.sub,cardW-tx+cx0-6),tx,y+16);
+    });
+    y+=cardH2+10;
+  }
 
-  // Agrupar ejercicios por bloque
+  // ── BLOQUES DE EJERCICIOS ──
   var bloques={};
   (ses.ejercicios||[]).forEach(function(ex){
     var bid=ex.bloque||'otros';
     if(!bloques[bid]) bloques[bid]=[];
     bloques[bid].push(ex);
   });
-
-  // Datos ejecutados (por posición)
-  var registroDatos=(registro&&registro.datos&&registro.datos.ejercicios)||[];
-
   var bloqueOrder=['activacion','fuerza','potencia','pliometria','pot-resistida','resistencia','vuelta-calma'];
   var extraKeys=Object.keys(bloques).filter(function(k){return bloqueOrder.indexOf(k)<0;});
   var ordered=bloqueOrder.filter(function(k){return bloques[k];}).concat(extraKeys);
 
-  // Precargar imágenes de todos los ejercicios de la sesión
   var imgCache=await preloadExerciseImages(ses.ejercicios||[]);
   if(preloadExerciseImages.lastFailed&&preloadExerciseImages.lastFailed.length){
     toast('⚠️ No se cargaron '+preloadExerciseImages.lastFailed.length+' imagen(es): '+preloadExerciseImages.lastFailed.join(', '),'err');
   }
 
+  var globalExIdx=0;
   ordered.forEach(function(bid){
     var bDef=getBloques().find(function(b){return b.id===bid;})||{name:bid,color:'#999'};
     var exs=bloques[bid]||[];
     if(!exs.length) return;
 
-    if(y>255){doc.addPage();y=M;}
+    if(y>258){doc.addPage();y=M;}
 
-    // Título bloque (banda de color a todo lo ancho)
+    // Cabecera de fase: punto de color + nombre + contador (minimal, sin banda)
     var col=hexToRgb(bDef.color);
+    var txtCol=contrastColor(col);
     doc.setFillColor(col.r,col.g,col.b);
-    doc.rect(M,y,W-2*M,7,'F');
-    doc.setFont('helvetica','bold');doc.setFontSize(11);doc.setTextColor(30,30,30);
-    doc.text(bDef.name.toUpperCase(), M+4, y+5);
-    y+=11;
+    doc.roundedRect(M,y+0.3,3,3,0.8,0.8,'F');
+    doc.setFont('helvetica','bold');doc.setFontSize(10.5);doc.setTextColor(INK[0],INK[1],INK[2]);
+    doc.text(bDef.name.toUpperCase(), M+6.5, y+3);
+    doc.setFont('helvetica','normal');doc.setFontSize(8.5);doc.setTextColor(INK_FAINT[0],INK_FAINT[1],INK_FAINT[2]);
+    var countTxt=exs.length+(exs.length===1?' ejercicio':' ejercicios');
+    doc.text(countTxt, W-M-doc.getTextWidth(countTxt), y+3);
+    y+=10;
 
-    exs.forEach(function(ex,i){
-      var db=DB.ejercicios[ex.id]||{nombre:ex.id};
-      var sets=getParamVal(ex,'series')||ex.sets||'—';
-      var reps=getParamVal(ex,'reps')||ex.reps||'—';
-      var kg=getParamVal(ex,'kg')||ex.load||'—';
-      var rir=getParamVal(ex,'rir')||'';
-      var rpe=getParamVal(ex,'rpe')||'';
-      var rirRpe=rir?'RIR '+rir:(rpe?'RPE '+rpe:'');
-      var desc=getParamVal(ex,'descanso')||ex.rest||'—';
-      var notas=getParamVal(ex,'notas')||'';
-      var reg=registroDatos[i];
-      var ejecLines=[];
-      if(reg&&reg.sets&&reg.sets.length){
-        ejecLines=reg.sets.map(function(s,j){return (j+1)+') '+(s.reps||'—')+' reps @ '+(s.load||'—')+'kg';});
-        if(reg.rpe) ejecLines.push('RPE registrado: '+reg.rpe);
-      }
-
-      var imgW=38, imgH=30, gap=4;
-      var textX=M+imgW+gap, textW=W-2*M-imgW-gap;
-
-      doc.setFont('helvetica','normal');doc.setFontSize(7.5);
-      var notasSplit=notas?doc.splitTextToSize('Notas: '+notas,textW):[];
-      var ejecText=ejecLines.length?('Ejecutado: '+ejecLines.join('   ')):'';
-      var ejecSplit=ejecText?doc.splitTextToSize(ejecText,textW):[];
-      var statsLine='Series × Reps: '+sets+' × '+reps+(kg&&kg!=='—'?'   ·   Carga: '+kg:'')+(rirRpe?'   ·   '+rirRpe:'')+(desc&&desc!=='—'?'   ·   Descanso: '+desc:'');
-      var statsSplit=doc.splitTextToSize(statsLine,textW);
-
-      var textH=5+statsSplit.length*4+(ejecSplit.length?ejecSplit.length*3.6+2:0)+(notasSplit.length?notasSplit.length*3.4+2:0);
-      var cardH=Math.max(imgH+4,textH+4);
+    if(exs.length===1){
+      // ── Fase con un solo ejercicio: tarjeta horizontal ancha (foto a la izquierda) ──
+      var ex0=exs[0];
+      var imgW=38, imgH=38, gapH=6;
+      var textX=M+4+imgW+gapH, textW=W-2*M-8-imgW-gapH;
+      var reg0=registroDatos[globalExIdx]; globalExIdx++;
+      var content=prepareExercise(doc,ex0,reg0,textW,9);
+      var cardH=Math.max(imgH+8,content.textH+6);
 
       if(y+cardH>272){doc.addPage();y=M;}
 
-      // Fondo de la tarjeta
-      doc.setDrawColor(225,225,225); doc.setLineWidth(0.2);
-      doc.setFillColor(252,252,252);
-      doc.roundedRect(M,y,W-2*M,cardH,1.5,1.5,'FD');
+      cardShadow(doc,M,y,W-2*M,cardH,3);
+      doc.setDrawColor(CARD_LINE[0],CARD_LINE[1],CARD_LINE[2]);doc.setLineWidth(0.3);
+      doc.setFillColor(CARD[0],CARD[1],CARD[2]);
+      doc.roundedRect(M,y,W-2*M,cardH,3,3,'FD');
+      doc.setFillColor(col.r,col.g,col.b);
+      doc.rect(M+3,y,W-2*M-6,1.5,'F');
 
-      // Ilustración del ejercicio
-      var b64=db.imagen?imgCache[db.imagen]:null;
-      var imgDrawn=false;
-      if(b64){
-        try{
-          var props=doc.getImageProperties(b64);
-          var ratio=props.width/props.height;
-          var dw=imgW,dh=imgW/ratio;
-          if(dh>imgH){dh=imgH;dw=imgH*ratio;}
-          var ix=M+2+(imgW-dw)/2, iy=y+2+(imgH-dh)/2;
-          doc.addImage(b64,'PNG',ix,iy,dw,dh);
-          imgDrawn=true;
-        }catch(e){console.warn('PDF addImage error:',db.nombre,e);}
-      }
-      if(!imgDrawn){
-        doc.setFillColor(235,235,235);
-        doc.rect(M+2,y+2,imgW,imgH,'F');
-        doc.setFont('helvetica','normal');doc.setFontSize(7);doc.setTextColor(160,160,160);
-        doc.text('Sin imagen', M+2+imgW/2, y+2+imgH/2, {align:'center'});
-      }
+      drawExThumb(doc,M+4,y+4,imgW,imgH,content.db,imgCache,CARD_LINE,INK_FAINT);
 
-      // Texto del ejercicio
-      var ty=y+5;
-      doc.setFont('helvetica','bold');doc.setFontSize(10);doc.setTextColor(30,30,30);
-      doc.text((i+1)+'. '+db.nombre, textX, ty);
-      ty+=5;
-      doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(90,90,90);
-      doc.text(statsSplit, textX, ty);
-      ty+=statsSplit.length*4;
-      if(ejecSplit.length){
-        ty+=1;
-        doc.setFont('helvetica','normal');doc.setFontSize(7.5);doc.setTextColor(122,158,63);
-        doc.text(ejecSplit, textX, ty);
-        ty+=ejecSplit.length*3.6;
-      }
-      if(notasSplit.length){
-        ty+=1;
-        doc.setFont('helvetica','italic');doc.setFontSize(7.5);doc.setTextColor(140,140,140);
-        doc.text(notasSplit, textX, ty);
-      }
+      var ty=y+8;
+      doc.setFont('helvetica','bold');doc.setFontSize(11.5);doc.setTextColor(INK[0],INK[1],INK[2]);
+      doc.text(content.nameSplit, textX, ty);
+      doc.setFillColor(col.r,col.g,col.b);
+      doc.circle(textX+textW-3.5,y+7.2,3.2,'F');
+      doc.setFont('helvetica','bold');doc.setFontSize(8);doc.setTextColor(txtCol[0],txtCol[1],txtCol[2]);
+      doc.text('1',textX+textW-3.5,y+8.3,{align:'center'});
 
-      y+=cardH+4;
-    });
+      ty+=content.nameH;
+      ty+=drawMetricsRow(doc,textX,ty,content.metrics,textW);
+      ty+=1;
+      drawExecAndNotes(doc,textX,ty,textW,content);
+
+      y+=cardH+5;
+
+    }else{
+      // ── Fase con varios ejercicios: columnas iguales, foto arriba, contenido debajo ──
+      var colsPerRow=Math.min(exs.length,3);
+      var colGap=5;
+      var colW=(W-2*M-(colsPerRow-1)*colGap)/colsPerRow;
+      var innerW=colW-8;
+      var imgHv=32;
+
+      for(var rowStart=0; rowStart<exs.length; rowStart+=colsPerRow){
+        var rowExs=exs.slice(rowStart,rowStart+colsPerRow);
+
+        var rowContents=rowExs.map(function(exr){
+          var reg=registroDatos[globalExIdx]; globalExIdx++;
+          return prepareExercise(doc,exr,reg,innerW,0);
+        });
+        var maxTextH=Math.max.apply(null,rowContents.map(function(c){return c.textH;}));
+        var cardH=imgHv+8+maxTextH+6;
+
+        if(y+cardH>272){doc.addPage();y=M;}
+
+        rowExs.forEach(function(exr,ci){
+          var cx0=M+ci*(colW+colGap);
+          var content=rowContents[ci];
+          var localNum=rowStart+ci+1;
+
+          cardShadow(doc,cx0,y,colW,cardH,3);
+          doc.setDrawColor(CARD_LINE[0],CARD_LINE[1],CARD_LINE[2]);doc.setLineWidth(0.3);
+          doc.setFillColor(CARD[0],CARD[1],CARD[2]);
+          doc.roundedRect(cx0,y,colW,cardH,3,3,'FD');
+          doc.setFillColor(col.r,col.g,col.b);
+          doc.rect(cx0+3,y,colW-6,1.5,'F');
+
+          drawExThumb(doc,cx0+4,y+4,colW-8,imgHv,content.db,imgCache,CARD_LINE,INK_FAINT);
+
+          // Insignia numerada sobre la esquina de la foto
+          doc.setFillColor(col.r,col.g,col.b);
+          doc.circle(cx0+colW-4-3,y+4+3,3,'F');
+          doc.setFont('helvetica','bold');doc.setFontSize(7.5);doc.setTextColor(txtCol[0],txtCol[1],txtCol[2]);
+          doc.text(String(localNum),cx0+colW-4-3,y+4+3+1,{align:'center'});
+
+          var tyv=y+imgHv+12;
+          doc.setFont('helvetica','bold');doc.setFontSize(10.5);doc.setTextColor(INK[0],INK[1],INK[2]);
+          doc.text(content.nameSplit, cx0+4, tyv);
+          tyv+=content.nameH;
+          tyv+=drawMetricsRow(doc,cx0+4,tyv,content.metrics,innerW);
+          tyv+=1;
+          drawExecAndNotes(doc,cx0+4,tyv,innerW,content);
+        });
+
+        y+=cardH+5;
+      }
+    }
     y+=4;
   });
-
-  // ── RESUMEN si hay datos ejecutados ──
-  if(registro&&registroDatos.length){
-    if(y>260){doc.addPage();y=M;}
-    y+=4;
-    doc.setFillColor(26,43,30);
-    doc.rect(M,y,W-2*M,20,'F');
-    doc.setFont('helvetica','bold');doc.setFontSize(10);doc.setTextColor(204,255,102);
-    doc.text('RESUMEN DE LA SESIÓN', M+4, y+7);
-    var totalEjs=ses.ejercicios.length;
-    var doneEjs=registroDatos.filter(function(r){return r.sets&&r.sets.some(function(s){return s.reps||s.load;});}).length;
-    var rpes=registroDatos.map(function(r){return parseFloat(r.rpe)||0;}).filter(Boolean);
-    var rpeAvg=rpes.length?(rpes.reduce(function(a,b){return a+b;},0)/rpes.length).toFixed(1):'—';
-    doc.setFont('helvetica','normal');doc.setFontSize(9);doc.setTextColor(220,220,220);
-    doc.text('Ejercicios completados: '+doneEjs+' / '+totalEjs+'    RPE medio: '+rpeAvg, M+4, y+15);
-    y+=25;
-  }
 
   // ── PIE ──
   var pageCount=doc.internal.getNumberOfPages();
   for(var p=1;p<=pageCount;p++){
     doc.setPage(p);
-    doc.setDrawColor(200,200,200); doc.setLineWidth(0.2);
-    doc.line(M, H-15, W-M, H-15);
-    doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(140,140,140);
+    doc.setDrawColor(CARD_LINE[0],CARD_LINE[1],CARD_LINE[2]);doc.setLineWidth(0.3);
+    doc.line(M,H-14,W-M,H-14);
+    doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(INK_FAINT[0],INK_FAINT[1],INK_FAINT[2]);
     doc.text(TRAINER_BRAND+'  ·  '+TRAINER_EMAIL, M, H-9);
     doc.text('Página '+p+' / '+pageCount, W-M-doc.getTextWidth('Página '+p+' / '+pageCount), H-9);
   }
