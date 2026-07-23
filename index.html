@@ -373,6 +373,7 @@ td{padding:11px 14px;border-top:1px solid var(--border);font-size:13px;vertical-
             <div class="te-header">
               <input class="te-name-input" id="te-name" placeholder="Nombre de la plantilla..." oninput="markDirty()">
               <div style="display:flex;gap:8px">
+                <button class="btn btn-secondary btn-sm" onclick="exportTemplatePDF()">📄 Exportar PDF</button>
                 <button class="btn btn-secondary btn-sm" onclick="deleteTemplate()">Eliminar</button>
                 <button class="btn btn-primary btn-sm" onclick="saveTemplate()">Guardar</button>
               </div>
@@ -857,6 +858,7 @@ var DEFAULT_PARAMS_CATALOG = [
   {id:'reps',   label:'Reps',     type:'text'},
   {id:'kg',     label:'kg',       type:'text'},
   {id:'pct_rm', label:'% RM',     type:'number'},
+  {id:'pct_dif', label:'% Dificultad carga', type:'number'},
   {id:'rir',    label:'RIR',      type:'number'},
   {id:'rpe',    label:'RPE',      type:'number'},
   {id:'vel',    label:'Vel m/s',  type:'number'},
@@ -2445,6 +2447,8 @@ function prepareExercise(doc,ex,reg,textW,nameReserve){
   var kg=getParamVal(ex,'kg')||ex.load||'';
   var rir=getParamVal(ex,'rir')||'';
   var rpe=getParamVal(ex,'rpe')||'';
+  var pctRm=getParamVal(ex,'pct_rm')||'';
+  var pctDif=getParamVal(ex,'pct_dif')||'';
   var desc=getParamVal(ex,'descanso')||ex.rest||'';
   var notas=getParamVal(ex,'notas')||'';
 
@@ -2454,6 +2458,8 @@ function prepareExercise(doc,ex,reg,textW,nameReserve){
 
   var metrics=[{label:'Series',value:sets},{label:'Reps',value:reps}];
   if(kg) metrics.push({label:'Carga kg',value:kg});
+  if(pctRm) metrics.push({label:'% RM',value:pctRm+'%'});
+  if(pctDif) metrics.push({label:'% Dificultad',value:pctDif+'%'});
   if(rir) metrics.push({label:'RIR',value:rir}); else if(rpe) metrics.push({label:'RPE',value:rpe});
   if(desc) metrics.push({label:'Descanso',value:desc});
   metrics.forEach(function(m){m.w=measureMetric(doc,m.label,m.value);});
@@ -2780,6 +2786,198 @@ async function exportSesionPDF(){
   doc.save(filename);
   toast('✅ PDF descargado');
 }
+
+// ── EXPORTAR PDF DE PLANTILLA (vista previa, sin datos de ejecución) ──
+async function exportTemplatePDF(){
+  if(!currentTemplate){toast('Selecciona o crea una plantilla','err');return;}
+  if(!Object.keys(currentTemplate.bloques||{}).length){toast('Esta plantilla no tiene bloques','err');return;}
+
+  await preloadLogo();
+  toast('Generando PDF...');
+
+  var jsPDF=window.jspdf.jsPDF;
+  var doc=new jsPDF({orientation:'p',unit:'mm',format:'a4'});
+  var W=210, H=297, M=15;
+  var INK=[20,23,31], INK_SOFT=[107,112,121], INK_FAINT=[163,167,174];
+  var CARD=[244,245,242], CARD_LINE=[230,231,226], LIME=[198,236,74];
+
+  // ── CABECERA (tarjeta blanca) ──
+  var headerH=38;
+  cardShadow(doc,M,M,W-2*M,headerH,4);
+  doc.setDrawColor(CARD_LINE[0],CARD_LINE[1],CARD_LINE[2]);doc.setLineWidth(0.3);
+  doc.setFillColor(255,255,255);
+  doc.roundedRect(M,M,W-2*M,headerH,4,4,'FD');
+
+  var mx=M+8;
+  if(LOGO_BASE64){
+    try{
+      doc.setFillColor(255,255,255);
+      doc.setDrawColor(CARD_LINE[0],CARD_LINE[1],CARD_LINE[2]);doc.setLineWidth(0.3);
+      doc.roundedRect(mx,M+7,11,11,2.4,2.4,'FD');
+      doc.addImage(LOGO_BASE64,'PNG',mx+1,M+8,9,9);
+      mx+=15;
+    }catch(e){
+      doc.setFillColor(INK[0],INK[1],INK[2]);
+      doc.roundedRect(mx,M+7,11,11,2.4,2.4,'F');
+      doc.setFont('helvetica','bold');doc.setFontSize(8);doc.setTextColor(LIME[0],LIME[1],LIME[2]);
+      doc.text((TRAINER_BRAND.match(/\b\w/g)||['C','G']).slice(0,2).join('').toUpperCase(),mx+5.5,M+13.3,{align:'center'});
+      mx+=15;
+    }
+  }else{
+    doc.setFillColor(INK[0],INK[1],INK[2]);
+    doc.roundedRect(mx,M+7,11,11,2.4,2.4,'F');
+    doc.setFont('helvetica','bold');doc.setFontSize(8);doc.setTextColor(LIME[0],LIME[1],LIME[2]);
+    doc.text((TRAINER_BRAND.match(/\b\w/g)||['C','G']).slice(0,2).join('').toUpperCase(),mx+5.5,M+13.3,{align:'center'});
+    mx+=15;
+  }
+  doc.setFont('helvetica','bold');doc.setFontSize(8.5);doc.setTextColor(INK_SOFT[0],INK_SOFT[1],INK_SOFT[2]);
+  doc.text(TRAINER_BRAND.toUpperCase(),mx,M+13.6);
+
+  // Píldora "PLANTILLA" (neutra, no es una sesión ejecutada)
+  var estado='PLANTILLA';
+  doc.setFont('helvetica','bold');doc.setFontSize(8.5);
+  var estW=doc.getTextWidth(estado)+13;
+  doc.setFillColor(238,239,241);
+  doc.roundedRect(W-M-8-estW,M+7,estW,7,3.5,3.5,'F');
+  doc.setFillColor(163,167,174);
+  doc.circle(W-M-8-estW+6,M+10.6,1,'F');
+  doc.setTextColor(107,112,121);
+  doc.text(estado,W-M-8-estW+9.5,M+11.3);
+
+  doc.setFont('helvetica','bold');doc.setFontSize(17);doc.setTextColor(INK[0],INK[1],INK[2]);
+  doc.text(currentTemplate.name||'(Plantilla sin nombre)',M+8,M+27);
+
+  var totalBloques=Object.keys(currentTemplate.bloques).length;
+  var totalEjs=Object.values(currentTemplate.bloques).reduce(function(a,arr){return a+(arr||[]).length;},0);
+  doc.setFont('helvetica','normal');doc.setFontSize(10);doc.setTextColor(INK_SOFT[0],INK_SOFT[1],INK_SOFT[2]);
+  doc.text(totalBloques+(totalBloques===1?' bloque':' bloques')+'   ·   '+totalEjs+(totalEjs===1?' ejercicio':' ejercicios'),M+8,M+35);
+
+  var y=M+headerH+8;
+
+  var bloqueIds=Object.keys(currentTemplate.bloques);
+  var allEjercicios=[];
+  bloqueIds.forEach(function(bid){(currentTemplate.bloques[bid]||[]).forEach(function(ex){allEjercicios.push(ex);});});
+  var imgCache=await preloadExerciseImages(allEjercicios);
+  if(preloadExerciseImages.lastFailed&&preloadExerciseImages.lastFailed.length){
+    toast('⚠️ No se cargaron '+preloadExerciseImages.lastFailed.length+' imagen(es): '+preloadExerciseImages.lastFailed.join(', '),'err');
+  }
+
+  bloqueIds.forEach(function(bid){
+    var exs=currentTemplate.bloques[bid]||[];
+    if(!exs.length) return;
+    var meta=resolveBloqueMeta(bid,currentTemplate);
+    var col=hexToRgb(meta.color);
+    var txtCol=contrastColor(col);
+
+    if(y>258){doc.addPage();y=M;}
+
+    doc.setFillColor(col.r,col.g,col.b);
+    doc.roundedRect(M,y+0.3,3,3,0.8,0.8,'F');
+    doc.setFont('helvetica','bold');doc.setFontSize(10.5);doc.setTextColor(INK[0],INK[1],INK[2]);
+    doc.text(meta.name.toUpperCase(), M+6.5, y+3);
+    doc.setFont('helvetica','normal');doc.setFontSize(8.5);doc.setTextColor(INK_FAINT[0],INK_FAINT[1],INK_FAINT[2]);
+    var countTxt=exs.length+(exs.length===1?' ejercicio':' ejercicios');
+    doc.text(countTxt, W-M-doc.getTextWidth(countTxt), y+3);
+    y+=10;
+
+    if(exs.length===1){
+      var ex0=exs[0];
+      var imgW=38, imgH=38, gapH=6;
+      var textX=M+4+imgW+gapH, textW=W-2*M-8-imgW-gapH;
+      var content=prepareExercise(doc,ex0,null,textW,9);
+      var cardH=Math.max(imgH+8,content.textH+6);
+
+      if(y+cardH>272){doc.addPage();y=M;}
+
+      cardShadow(doc,M,y,W-2*M,cardH,3);
+      doc.setDrawColor(CARD_LINE[0],CARD_LINE[1],CARD_LINE[2]);doc.setLineWidth(0.3);
+      doc.setFillColor(CARD[0],CARD[1],CARD[2]);
+      doc.roundedRect(M,y,W-2*M,cardH,3,3,'FD');
+      doc.setFillColor(col.r,col.g,col.b);
+      doc.rect(M+3,y,W-2*M-6,1.5,'F');
+
+      drawExThumb(doc,M+4,y+4,imgW,imgH,DB.ejercicios[ex0.id]||{nombre:ex0.id},imgCache,CARD_LINE,INK_FAINT);
+
+      var ty=y+8;
+      doc.setFont('helvetica','bold');doc.setFontSize(11.5);doc.setTextColor(INK[0],INK[1],INK[2]);
+      doc.text(content.nameSplit, textX, ty);
+      doc.setFillColor(col.r,col.g,col.b);
+      doc.circle(textX+textW-3.5,y+7.2,3.2,'F');
+      doc.setFont('helvetica','bold');doc.setFontSize(8);doc.setTextColor(txtCol[0],txtCol[1],txtCol[2]);
+      doc.text('1',textX+textW-3.5,y+8.3,{align:'center'});
+
+      ty+=content.nameH;
+      ty+=drawMetricsRow(doc,textX,ty,content.metrics,textW);
+      ty+=1;
+      drawExecAndNotes(doc,textX,ty,textW,content);
+
+      y+=cardH+5;
+
+    }else{
+      var colsPerRow=Math.min(exs.length,3);
+      var colGap=5;
+      var colW=(W-2*M-(colsPerRow-1)*colGap)/colsPerRow;
+      var innerW=colW-8;
+      var imgHv=32;
+
+      for(var rowStart=0; rowStart<exs.length; rowStart+=colsPerRow){
+        var rowExs=exs.slice(rowStart,rowStart+colsPerRow);
+        var rowContents=rowExs.map(function(exr){return prepareExercise(doc,exr,null,innerW,0);});
+        var maxTextH=Math.max.apply(null,rowContents.map(function(c){return c.textH;}));
+        var cardH=imgHv+8+maxTextH+6;
+
+        if(y+cardH>272){doc.addPage();y=M;}
+
+        rowExs.forEach(function(exr,ci){
+          var cx0=M+ci*(colW+colGap);
+          var content=rowContents[ci];
+          var localNum=rowStart+ci+1;
+
+          cardShadow(doc,cx0,y,colW,cardH,3);
+          doc.setDrawColor(CARD_LINE[0],CARD_LINE[1],CARD_LINE[2]);doc.setLineWidth(0.3);
+          doc.setFillColor(CARD[0],CARD[1],CARD[2]);
+          doc.roundedRect(cx0,y,colW,cardH,3,3,'FD');
+          doc.setFillColor(col.r,col.g,col.b);
+          doc.rect(cx0+3,y,colW-6,1.5,'F');
+
+          drawExThumb(doc,cx0+4,y+4,colW-8,imgHv,DB.ejercicios[exr.id]||{nombre:exr.id},imgCache,CARD_LINE,INK_FAINT);
+
+          doc.setFillColor(col.r,col.g,col.b);
+          doc.circle(cx0+colW-4-3,y+4+3,3,'F');
+          doc.setFont('helvetica','bold');doc.setFontSize(7.5);doc.setTextColor(txtCol[0],txtCol[1],txtCol[2]);
+          doc.text(String(localNum),cx0+colW-4-3,y+4+3+1,{align:'center'});
+
+          var tyv=y+imgHv+12;
+          doc.setFont('helvetica','bold');doc.setFontSize(10.5);doc.setTextColor(INK[0],INK[1],INK[2]);
+          doc.text(content.nameSplit, cx0+4, tyv);
+          tyv+=content.nameH;
+          tyv+=drawMetricsRow(doc,cx0+4,tyv,content.metrics,innerW);
+          tyv+=1;
+          drawExecAndNotes(doc,cx0+4,tyv,innerW,content);
+        });
+
+        y+=cardH+5;
+      }
+    }
+    y+=4;
+  });
+
+  // ── PIE ──
+  var pageCount=doc.internal.getNumberOfPages();
+  for(var p=1;p<=pageCount;p++){
+    doc.setPage(p);
+    doc.setDrawColor(CARD_LINE[0],CARD_LINE[1],CARD_LINE[2]);doc.setLineWidth(0.3);
+    doc.line(M,H-14,W-M,H-14);
+    doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(INK_FAINT[0],INK_FAINT[1],INK_FAINT[2]);
+    doc.text(TRAINER_BRAND+'  ·  '+TRAINER_EMAIL, M, H-9);
+    doc.text('Página '+p+' / '+pageCount, W-M-doc.getTextWidth('Página '+p+' / '+pageCount), H-9);
+  }
+
+  var filename='Plantilla_'+(currentTemplate.name||'sin_nombre').replace(/[^a-zA-Z0-9]/g,'_')+'.pdf';
+  doc.save(filename);
+  toast('✅ PDF descargado');
+}
+
 
 // ── EXPORTAR PDF DE SESIÓN DE RESISTENCIA ──
 var ESTR_TYPE_COLOR={calentamiento:'#60a5fa',serie:'#ccff66',recuperacion:'#fb923c',vuelta:'#4ade80'};
