@@ -876,6 +876,17 @@ td{padding:11px 14px;border-top:1px solid var(--border);font-size:13px;vertical-
             <input type="checkbox" id="pdfopt-summary" onchange="refreshPdfPreview()">
             <label style="margin:0;">Mostrar tarjetas resumen</label>
           </div>
+          <div class="form-group" style="display:flex;align-items:center;gap:8px;">
+            <input type="checkbox" id="pdfopt-muscular" onchange="refreshPdfPreview()">
+            <label style="margin:0;">Añadir página de carga muscular</label>
+          </div>
+          <div class="form-group">
+            <label>Criterio de carga muscular</label>
+            <select id="pdfopt-muscular-metodo" onchange="refreshPdfPreview()">
+              <option value="tonelaje">Tonelaje (series×reps×kg)</option>
+              <option value="series">Series efectivas</option>
+            </select>
+          </div>
           <div id="pdfopt-pagecount" style="font-size:13px;color:var(--text-dim);margin-top:14px;font-weight:600;"></div>
           <div style="font-size:11px;color:var(--text-muted);margin-top:6px;">Consejo: para que quepa todo en una hoja, prueba "Muy compacta" + "Sin imagen".</div>
         </div>
@@ -2529,7 +2540,7 @@ var PDF_IMG_SIZE = {
   pequeno: {single:18, grid:16},
   oculta:  {single:0,  grid:0}
 };
-var DEFAULT_PDF_OPTS = {imgSize:'grande', density:'normal', maxCols:3, showNotes:true, showExec:true, showSummary:true};
+var DEFAULT_PDF_OPTS = {imgSize:'grande', density:'normal', maxCols:3, showNotes:true, showExec:true, showSummary:true, showMuscleReport:true};
 function loadSavedPdfOpts(){
   try{ return Object.assign({},DEFAULT_PDF_OPTS,JSON.parse(localStorage.getItem('gc_pdf_opts')||'{}')); }
   catch(e){ return Object.assign({},DEFAULT_PDF_OPTS); }
@@ -2681,7 +2692,7 @@ function drawExecAndNotes(doc,x,y,w,content,dens){
 }
 
 // Construye el documento PDF de una sesión ya con todos los datos cargados (sin guardar). Reutilizable por la vista previa en vivo.
-function buildSesionPDFDoc(ses,registro,imgCache,opts){
+async function buildSesionPDFDoc(ses,registro,imgCache,opts){
   opts=Object.assign({},DEFAULT_PDF_OPTS,opts||{});
   var dens=PDF_DENSITY[opts.density]||PDF_DENSITY.normal;
   var imgSizes=PDF_IMG_SIZE[opts.imgSize]||PDF_IMG_SIZE.grande;
@@ -2819,14 +2830,18 @@ function buildSesionPDFDoc(ses,registro,imgCache,opts){
 
     var col=hexToRgb(bDef.color);
     var txtCol=contrastColor(col);
+    var chipBg=softTintColor(col,0.16);
+    var chipText=darkenColor(col,0.45);
+    doc.setFillColor(chipBg.r,chipBg.g,chipBg.b);
+    doc.roundedRect(M,y-3.6,W-2*M,9.5,3,3,'F');
     doc.setFillColor(col.r,col.g,col.b);
-    doc.roundedRect(M,y+0.3,3,3,0.8,0.8,'F');
-    doc.setFont('helvetica','bold');doc.setFontSize(10.5);doc.setTextColor(INK[0],INK[1],INK[2]);
-    doc.text(bDef.name.toUpperCase(), M+6.5, y+3);
-    doc.setFont('helvetica','normal');doc.setFontSize(8.5);doc.setTextColor(INK_FAINT[0],INK_FAINT[1],INK_FAINT[2]);
+    doc.circle(M+6,y+0.6,1.6,'F');
+    doc.setFont('helvetica','bold');doc.setFontSize(10.5);doc.setTextColor(chipText.r,chipText.g,chipText.b);
+    doc.text(bDef.name.toUpperCase(), M+11, y+3);
+    doc.setFont('helvetica','normal');doc.setFontSize(8.5);doc.setTextColor(chipText.r,chipText.g,chipText.b);
     var countTxt=exs.length+(exs.length===1?' ejercicio':' ejercicios');
-    doc.text(countTxt, W-M-doc.getTextWidth(countTxt), y+3);
-    y+=dens.phaseGap;
+    doc.text(countTxt, W-M-6-doc.getTextWidth(countTxt), y+3);
+    y+=dens.phaseGap+2;
 
     if(exs.length===1){
       var ex0=exs[0];
@@ -2917,6 +2932,11 @@ function buildSesionPDFDoc(ses,registro,imgCache,opts){
     y+=dens.phaseSpacing;
   });
 
+  if(opts.showMuscleReport!==false){
+    var muscleZoneLoads=computeMuscleLoad(ses,registro,opts.muscleMetodo||'tonelaje');
+    await addMuscleReportPageToDoc(doc,muscleZoneLoads,opts.muscleMetodo||'tonelaje');
+  }
+
   // ── PIE ──
   var pageCount=doc.internal.getNumberOfPages();
   for(var p=1;p<=pageCount;p++){
@@ -2974,8 +2994,7 @@ var MUSCLE_ZONE_LABELS={
 var MUSCLE_BODY_SVG_HTML="<svg viewBox=\"0 0 300 330\" xmlns=\"http://www.w3.org/2000/svg\" width=\"600\" style=\"max-width:100%;height:auto\"><text x=\"75\" y=\"14\" font-size=\"9\" fill=\"#888\" text-anchor=\"middle\" font-family=\"sans-serif\">FRENTE</text><text x=\"225\" y=\"14\" font-size=\"9\" fill=\"#888\" text-anchor=\"middle\" font-family=\"sans-serif\">ESPALDA</text><!-- ═══ SILUETA BASE (no interactiva, solo contexto) ═══ --><g fill=\"#3a3a3a\" stroke=\"#4a4a4a\" stroke-width=\"1\"><!-- Frente: cabeza, cuello, contorno de piernas --><ellipse cx=\"75\" cy=\"34\" rx=\"13\" ry=\"16\"/><path d=\"M68 50 L68 58 Q75 62 82 58 L82 50 Z\"/><path d=\"M60 175 Q58 210 58 240 L64 240 Q65 210 66 180 Z\"/><path d=\"M90 175 Q92 210 92 240 L86 240 Q85 210 84 180 Z\"/><ellipse cx=\"61\" cy=\"248\" rx=\"6\" ry=\"5\"/><ellipse cx=\"89\" cy=\"248\" rx=\"6\" ry=\"5\"/><!-- Espalda: cabeza, cuello, piernas --><ellipse cx=\"225\" cy=\"34\" rx=\"13\" ry=\"16\"/><path d=\"M218 50 L218 58 Q225 62 232 58 L232 50 Z\"/><path d=\"M210 178 Q208 210 208 240 L214 240 Q215 210 216 182 Z\"/><path d=\"M240 178 Q242 210 242 240 L234 240 Q235 210 234 182 Z\"/><ellipse cx=\"211\" cy=\"248\" rx=\"6\" ry=\"5\"/><ellipse cx=\"239\" cy=\"248\" rx=\"6\" ry=\"5\"/></g><!-- ═══ FRENTE ═══ --><!-- Deltoides --><path class=\"mz\" data-zone=\"deltoides\" d=\"M45 62 Q38 60 36 68 Q35 76 42 80 Q48 78 50 70 Q50 64 45 62 Z\" stroke=\"#111\" stroke-width=\"0.8\"/><path class=\"mz\" data-zone=\"deltoides\" d=\"M105 62 Q112 60 114 68 Q115 76 108 80 Q102 78 100 70 Q100 64 105 62 Z\" stroke=\"#111\" stroke-width=\"0.8\"/><!-- Pectoral --><path class=\"mz\" data-zone=\"pectoral\" d=\"M52 66 Q75 60 98 66 L98 68 Q90 90 75 92 Q60 90 52 68 Z\" stroke=\"#111\" stroke-width=\"0.8\"/><!-- Biceps --><path class=\"mz\" data-zone=\"biceps\" d=\"M37 82 Q34 95 37 106 Q42 108 46 105 Q47 92 44 80 Q40 79 37 82 Z\" stroke=\"#111\" stroke-width=\"0.8\"/><path class=\"mz\" data-zone=\"biceps\" d=\"M113 82 Q116 95 113 106 Q108 108 104 105 Q103 92 106 80 Q110 79 113 82 Z\" stroke=\"#111\" stroke-width=\"0.8\"/><!-- Antebrazo --><path class=\"mz\" data-zone=\"antebrazo\" d=\"M36 109 Q33 122 37 133 Q41 135 44 132 Q45 120 43 108 Q39 107 36 109 Z\" stroke=\"#111\" stroke-width=\"0.8\"/><path class=\"mz\" data-zone=\"antebrazo\" d=\"M114 109 Q117 122 113 133 Q109 135 106 132 Q105 120 107 108 Q111 107 114 109 Z\" stroke=\"#111\" stroke-width=\"0.8\"/><!-- Abdominales (grid 2x3) --><g class=\"mz\" data-zone=\"abdominales\" stroke=\"#111\" stroke-width=\"0.8\"><rect x=\"63\" y=\"95\" width=\"10\" height=\"9\" rx=\"2\"/><rect x=\"77\" y=\"95\" width=\"10\" height=\"9\" rx=\"2\"/><rect x=\"63\" y=\"106\" width=\"10\" height=\"9\" rx=\"2\"/><rect x=\"77\" y=\"106\" width=\"10\" height=\"9\" rx=\"2\"/><rect x=\"63\" y=\"117\" width=\"10\" height=\"9\" rx=\"2\"/><rect x=\"77\" y=\"117\" width=\"10\" height=\"9\" rx=\"2\"/></g><!-- Aductores --><path class=\"mz\" data-zone=\"aductores\" d=\"M67 130 Q75 135 83 130 L83 142 Q75 146 67 142 Z\" stroke=\"#111\" stroke-width=\"0.8\"/><!-- Cuadriceps --><path class=\"mz\" data-zone=\"cuadriceps\" d=\"M55 145 Q52 170 57 195 Q64 198 68 193 Q70 168 66 144 Q60 142 55 145 Z\" stroke=\"#111\" stroke-width=\"0.8\"/><path class=\"mz\" data-zone=\"cuadriceps\" d=\"M95 145 Q98 170 93 195 Q86 198 82 193 Q80 168 84 144 Q90 142 95 145 Z\" stroke=\"#111\" stroke-width=\"0.8\"/><!-- ═══ ESPALDA ═══ --><!-- Trapecio --><path class=\"mz\" data-zone=\"trapecio\" d=\"M225 60 L245 72 Q235 82 225 84 Q215 82 205 72 Z\" stroke=\"#111\" stroke-width=\"0.8\"/><!-- Deltoides post --><path class=\"mz\" data-zone=\"deltoides\" d=\"M195 62 Q188 60 186 68 Q185 76 192 80 Q198 78 200 70 Q200 64 195 62 Z\" stroke=\"#111\" stroke-width=\"0.8\"/><path class=\"mz\" data-zone=\"deltoides\" d=\"M255 62 Q262 60 264 68 Q265 76 258 80 Q252 78 250 70 Q250 64 255 62 Z\" stroke=\"#111\" stroke-width=\"0.8\"/><!-- Dorsal (ala) --><path class=\"mz\" data-zone=\"dorsal\" d=\"M207 76 Q198 85 197 100 Q198 112 210 118 Q222 112 224 98 L224 80 Q216 76 207 76 Z\" stroke=\"#111\" stroke-width=\"0.8\"/><path class=\"mz\" data-zone=\"dorsal\" d=\"M243 76 Q252 85 253 100 Q252 112 240 118 Q228 112 226 98 L226 80 Q234 76 243 76 Z\" stroke=\"#111\" stroke-width=\"0.8\"/><!-- Triceps --><path class=\"mz\" data-zone=\"triceps\" d=\"M187 82 Q184 95 187 106 Q192 108 196 105 Q197 92 194 80 Q190 79 187 82 Z\" stroke=\"#111\" stroke-width=\"0.8\"/><path class=\"mz\" data-zone=\"triceps\" d=\"M263 82 Q266 95 263 106 Q258 108 254 105 Q253 92 256 80 Q260 79 263 82 Z\" stroke=\"#111\" stroke-width=\"0.8\"/><!-- Antebrazo (espalda, mismo grupo que frente) --><path class=\"mz\" data-zone=\"antebrazo\" d=\"M186 109 Q183 122 187 133 Q191 135 194 132 Q195 120 193 108 Q189 107 186 109 Z\" stroke=\"#111\" stroke-width=\"0.8\"/><path class=\"mz\" data-zone=\"antebrazo\" d=\"M264 109 Q267 122 263 133 Q259 135 256 132 Q255 120 257 108 Q261 107 264 109 Z\" stroke=\"#111\" stroke-width=\"0.8\"/><!-- Lumbar --><rect class=\"mz\" data-zone=\"lumbar\" x=\"212\" y=\"118\" width=\"26\" height=\"18\" rx=\"4\" stroke=\"#111\" stroke-width=\"0.8\"/><!-- Gluteo --><path class=\"mz\" data-zone=\"gluteo\" d=\"M204 138 Q200 150 206 160 Q215 164 223 158 L223 140 Q214 135 204 138 Z\" stroke=\"#111\" stroke-width=\"0.8\"/><path class=\"mz\" data-zone=\"gluteo\" d=\"M246 138 Q250 150 244 160 Q235 164 227 158 L227 140 Q236 135 246 138 Z\" stroke=\"#111\" stroke-width=\"0.8\"/><!-- Isquios --><path class=\"mz\" data-zone=\"isquios\" d=\"M206 163 Q203 185 208 205 Q214 208 218 204 Q219 182 215 162 Q210 160 206 163 Z\" stroke=\"#111\" stroke-width=\"0.8\"/><path class=\"mz\" data-zone=\"isquios\" d=\"M244 163 Q247 185 242 205 Q236 208 232 204 Q231 182 235 162 Q240 160 244 163 Z\" stroke=\"#111\" stroke-width=\"0.8\"/><!-- Gemelo --><path class=\"mz\" data-zone=\"gemelo\" d=\"M208 208 Q205 222 209 234 Q214 236 217 233 Q219 220 216 207 Q212 206 208 208 Z\" stroke=\"#111\" stroke-width=\"0.8\"/><path class=\"mz\" data-zone=\"gemelo\" d=\"M242 208 Q245 222 241 234 Q236 236 233 233 Q231 220 234 207 Q238 206 242 208 Z\" stroke=\"#111\" stroke-width=\"0.8\"/></svg>";
 
 // Pinta cada zona con degradado de intensidad (gris neutro sin carga -> lima/naranja/rojo según intensidad)
-function paintMuscleBody(containerId,zoneLoads,maxVal){
-  var c=document.getElementById(containerId);
+function paintMuscleBodyEl(c,zoneLoads,maxVal){
   if(!c)return;
   var total=maxVal||Math.max(1,Object.values(zoneLoads).reduce(function(a,b){return Math.max(a,b);},0));
   c.querySelectorAll('.mz').forEach(function(el){
@@ -3001,6 +3020,112 @@ function paintMuscleBody(containerId,zoneLoads,maxVal){
       }
     }
   });
+}
+function paintMuscleBody(containerId,zoneLoads,maxVal){
+  paintMuscleBodyEl(document.getElementById(containerId),zoneLoads,maxVal);
+}
+// Renderiza la ilustración ya coloreada como PNG (fuera de pantalla) para poder incrustarla en el PDF con jsPDF
+function renderMuscleSVGDataURL(zoneLoads,maxVal){
+  return new Promise(function(resolve){
+    try{
+      var wrapper=document.createElement('div');
+      wrapper.style.position='fixed';wrapper.style.left='-99999px';wrapper.style.top='0';
+      wrapper.innerHTML=MUSCLE_BODY_SVG_HTML;
+      document.body.appendChild(wrapper);
+      var svgEl=wrapper.querySelector('svg');
+      paintMuscleBodyEl(svgEl,zoneLoads,maxVal);
+      var vb=svgEl.getAttribute('viewBox').split(' ').map(Number);
+      var w=vb[2], h=vb[3];
+      svgEl.setAttribute('width',w);
+      svgEl.setAttribute('height',h);
+      svgEl.style.maxWidth='none';
+      var xml=new XMLSerializer().serializeToString(svgEl);
+      document.body.removeChild(wrapper);
+      var svg64='data:image/svg+xml;base64,'+btoa(unescape(encodeURIComponent(xml)));
+      var img=new Image();
+      img.onload=function(){
+        try{
+          var scale=3;
+          var canvas=document.createElement('canvas');
+          canvas.width=w*scale;canvas.height=h*scale;
+          var ctx=canvas.getContext('2d');
+          ctx.fillStyle='#242424';
+          ctx.fillRect(0,0,canvas.width,canvas.height);
+          ctx.drawImage(img,0,0,canvas.width,canvas.height);
+          resolve(canvas.toDataURL('image/png'));
+        }catch(e){resolve(null);}
+      };
+      img.onerror=function(){resolve(null);};
+      img.src=svg64;
+    }catch(e){resolve(null);}
+  });
+}
+// Igual que computeMuscleLoad pero para una plantilla (bloques -> lista plana), usando solo lo planificado (no hay registro ejecutado)
+function computeMuscleLoadTemplate(tpl,metodo){
+  var flat=[];
+  Object.keys(tpl.bloques||{}).forEach(function(bid){(tpl.bloques[bid]||[]).forEach(function(ex){flat.push(ex);});});
+  return computeMuscleLoad({ejercicios:flat},null,metodo);
+}
+// Añade una página al PDF con la ilustración de carga muscular + leyenda de barras. No hace nada si no hay datos.
+async function addMuscleReportPageToDoc(doc,zoneLoads,metodo){
+  var hasAny=Object.keys(zoneLoads).some(function(k){return zoneLoads[k]>0;});
+  if(!hasAny) return;
+  var W=210,H=297,M=15;
+  var INK=[20,23,31],INK_SOFT=[107,112,121],INK_FAINT=[163,167,174],CARD_LINE=[230,231,226];
+  var maxVal=Math.max(1,Object.values(zoneLoads).reduce(function(a,b){return Math.max(a,b);},0));
+  var imgDataUrl=await renderMuscleSVGDataURL(zoneLoads,maxVal);
+
+  doc.addPage();
+  var y=M;
+  doc.setFont('helvetica','bold');doc.setFontSize(15);doc.setTextColor(INK[0],INK[1],INK[2]);
+  doc.text('Carga muscular de la sesión',M,y+6);
+  doc.setFont('helvetica','normal');doc.setFontSize(9);doc.setTextColor(INK_SOFT[0],INK_SOFT[1],INK_SOFT[2]);
+  doc.text(metodo==='series'?'Criterio: nº de series efectivas por grupo muscular':'Criterio: tonelaje (series × reps × kg) con reparto principal/secundario',M,y+12);
+  y+=20;
+
+  var imgW=95,imgH=95;
+  if(imgDataUrl){
+    try{
+      var props=doc.getImageProperties(imgDataUrl);
+      imgH=imgW*(props.height/props.width);
+      doc.setFillColor(36,36,36);
+      doc.roundedRect(M,y,imgW,imgH,4,4,'F');
+      doc.addImage(imgDataUrl,'PNG',M,y,imgW,imgH);
+    }catch(e){console.warn('muscle report image error:',e);}
+  }
+
+  var entries=Object.keys(zoneLoads).map(function(z){return {zone:z,label:MUSCLE_ZONE_LABELS[z]||z,val:zoneLoads[z]};});
+  entries.sort(function(a,b){return b.val-a.val;});
+  var lx=M+imgW+10, lw=W-2*M-imgW-10, ly=y+2;
+  doc.setFont('helvetica','bold');doc.setFontSize(9);doc.setTextColor(INK_FAINT[0],INK_FAINT[1],INK_FAINT[2]);
+  doc.text('CARGA POR GRUPO MUSCULAR',lx,ly);
+  ly+=8;
+  entries.forEach(function(e){
+    var pct=Math.max(0.04,e.val/maxVal);
+    var col=hexToRgb('#'+muscleHeatColorHex(e.val/maxVal));
+    var valTxt=metodo==='series'?Math.round(e.val)+' series':Math.round(e.val)+' kg·rep';
+    doc.setFont('helvetica','bold');doc.setFontSize(9.5);doc.setTextColor(INK[0],INK[1],INK[2]);
+    doc.text(e.label,lx,ly);
+    doc.setFont('helvetica','normal');doc.setFontSize(8.5);doc.setTextColor(INK_SOFT[0],INK_SOFT[1],INK_SOFT[2]);
+    doc.text(valTxt,lx+lw-doc.getTextWidth(valTxt),ly);
+    doc.setFillColor(238,239,241);
+    doc.roundedRect(lx,ly+2,lw,3,1.5,1.5,'F');
+    doc.setFillColor(col.r,col.g,col.b);
+    doc.roundedRect(lx,ly+2,Math.max(3,lw*pct),3,1.5,1.5,'F');
+    ly+=11;
+  });
+
+  y+=Math.max(imgH,ly-y)+8;
+  doc.setDrawColor(CARD_LINE[0],CARD_LINE[1],CARD_LINE[2]);doc.setLineWidth(0.3);
+  doc.line(M,H-14,W-M,H-14);
+  doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(INK_FAINT[0],INK_FAINT[1],INK_FAINT[2]);
+  doc.text(TRAINER_BRAND+'  ·  '+TRAINER_EMAIL,M,H-9);
+}
+// Versión hex del degradado de calor (para usar con hexToRgb en el PDF)
+function muscleHeatColorHex(t){
+  var rgbStr=muscleHeatColor(t); // 'rgb(r,g,b)'
+  var m=rgbStr.match(/\d+/g).map(Number);
+  return m.map(function(n){return n.toString(16).padStart(2,'0');}).join('');
 }
 // Degradado de 3 puntos: azul-gris (bajo) -> lima (medio) -> rojo (alto), consistente con la paleta de la app
 function muscleHeatColor(t){
@@ -3127,7 +3252,7 @@ async function exportSesionPDF(){
     toast('⚠️ No se cargaron '+preloadExerciseImages.lastFailed.length+' imagen(es): '+preloadExerciseImages.lastFailed.join(', '),'err');
   }
 
-  var doc=buildSesionPDFDoc(ses,registro,imgCache,loadSavedPdfOpts());
+  var doc=await buildSesionPDFDoc(ses,registro,imgCache,loadSavedPdfOpts());
   var filename='Sesion_'+ses.atleta.split(' ')[0]+'_'+ses.fecha+'_'+ses.nombre.replace(/[^a-zA-Z0-9]/g,'_')+'.pdf';
   doc.save(filename);
   toast('✅ PDF descargado');
@@ -3135,7 +3260,7 @@ async function exportSesionPDF(){
 
 
 // ── EXPORTAR PDF DE PLANTILLA (vista previa, sin datos de ejecución) ──
-function buildTemplatePDFDoc(tpl,imgCache,opts){
+async function buildTemplatePDFDoc(tpl,imgCache,opts){
   opts=Object.assign({},DEFAULT_PDF_OPTS,opts||{});
   var dens=PDF_DENSITY[opts.density]||PDF_DENSITY.normal;
   var imgSizes=PDF_IMG_SIZE[opts.imgSize]||PDF_IMG_SIZE.grande;
@@ -3220,14 +3345,18 @@ function buildTemplatePDFDoc(tpl,imgCache,opts){
 
     if(y>258){doc.addPage();y=M;}
 
+    var chipBg=softTintColor(col,0.16);
+    var chipText=darkenColor(col,0.45);
+    doc.setFillColor(chipBg.r,chipBg.g,chipBg.b);
+    doc.roundedRect(M,y-3.6,W-2*M,9.5,3,3,'F');
     doc.setFillColor(col.r,col.g,col.b);
-    doc.roundedRect(M,y+0.3,3,3,0.8,0.8,'F');
-    doc.setFont('helvetica','bold');doc.setFontSize(10.5);doc.setTextColor(INK[0],INK[1],INK[2]);
-    doc.text(meta.name.toUpperCase(), M+6.5, y+3);
-    doc.setFont('helvetica','normal');doc.setFontSize(8.5);doc.setTextColor(INK_FAINT[0],INK_FAINT[1],INK_FAINT[2]);
+    doc.circle(M+6,y+0.6,1.6,'F');
+    doc.setFont('helvetica','bold');doc.setFontSize(10.5);doc.setTextColor(chipText.r,chipText.g,chipText.b);
+    doc.text(meta.name.toUpperCase(), M+11, y+3);
+    doc.setFont('helvetica','normal');doc.setFontSize(8.5);doc.setTextColor(chipText.r,chipText.g,chipText.b);
     var countTxt=exs.length+(exs.length===1?' ejercicio':' ejercicios');
-    doc.text(countTxt, W-M-doc.getTextWidth(countTxt), y+3);
-    y+=dens.phaseGap;
+    doc.text(countTxt, W-M-6-doc.getTextWidth(countTxt), y+3);
+    y+=dens.phaseGap+2;
 
     if(exs.length===1){
       var ex0=exs[0];
@@ -3313,6 +3442,11 @@ function buildTemplatePDFDoc(tpl,imgCache,opts){
     y+=dens.phaseSpacing;
   });
 
+  if(opts.showMuscleReport!==false){
+    var muscleZoneLoads=computeMuscleLoadTemplate(tpl,opts.muscleMetodo||'tonelaje');
+    await addMuscleReportPageToDoc(doc,muscleZoneLoads,opts.muscleMetodo||'tonelaje');
+  }
+
   // ── PIE ──
   var pageCount=doc.internal.getNumberOfPages();
   for(var p=1;p<=pageCount;p++){
@@ -3342,7 +3476,7 @@ async function exportTemplatePDF(){
   }
 
   var opts=Object.assign({},loadSavedPdfOpts(),{showSummary:false});
-  var doc=buildTemplatePDFDoc(currentTemplate,imgCache,opts);
+  var doc=await buildTemplatePDFDoc(currentTemplate,imgCache,opts);
   var filename='Plantilla_'+(currentTemplate.name||'sin_nombre').replace(/[^a-zA-Z0-9]/g,'_')+'.pdf';
   doc.save(filename);
   toast('✅ PDF descargado');
@@ -3358,7 +3492,9 @@ function getPdfOptsFromForm(){
     maxCols:parseInt(document.getElementById('pdfopt-cols').value,10)||3,
     showNotes:document.getElementById('pdfopt-notes').checked,
     showExec:document.getElementById('pdfopt-exec').checked,
-    showSummary:document.getElementById('pdfopt-summary').checked
+    showSummary:document.getElementById('pdfopt-summary').checked,
+    showMuscleReport:document.getElementById('pdfopt-muscular').checked,
+    muscleMetodo:document.getElementById('pdfopt-muscular-metodo').value
   };
 }
 function setPdfOptsToForm(opts){
@@ -3368,6 +3504,8 @@ function setPdfOptsToForm(opts){
   document.getElementById('pdfopt-notes').checked=opts.showNotes;
   document.getElementById('pdfopt-exec').checked=opts.showExec;
   document.getElementById('pdfopt-summary').checked=opts.showSummary;
+  document.getElementById('pdfopt-muscular').checked=opts.showMuscleReport!==false;
+  document.getElementById('pdfopt-muscular-metodo').value=opts.muscleMetodo||'tonelaje';
 }
 
 async function openSesionPdfSettings(){
@@ -3428,15 +3566,18 @@ function switchPdfPanelTab(tab){
   if(tab==='orden') renderPdfOrderPanel();
 }
 
-function refreshPdfPreview(){
+var pdfPreviewReqToken=0;
+async function refreshPdfPreview(){
   if(!PDF_PREVIEW_CTX) return;
+  var myToken=++pdfPreviewReqToken;
   var opts=Object.assign({},getPdfOptsFromForm(),{blockOrder:PDF_PREVIEW_CTX.blockOrderIds});
   var doc;
   if(PDF_PREVIEW_CTX.kind==='sesion'){
-    doc=buildSesionPDFDoc(PDF_PREVIEW_CTX.ses,PDF_PREVIEW_CTX.registro,PDF_PREVIEW_CTX.imgCache,opts);
+    doc=await buildSesionPDFDoc(PDF_PREVIEW_CTX.ses,PDF_PREVIEW_CTX.registro,PDF_PREVIEW_CTX.imgCache,opts);
   }else{
-    doc=buildTemplatePDFDoc(PDF_PREVIEW_CTX.tpl,PDF_PREVIEW_CTX.imgCache,Object.assign({},opts,{showSummary:false}));
+    doc=await buildTemplatePDFDoc(PDF_PREVIEW_CTX.tpl,PDF_PREVIEW_CTX.imgCache,Object.assign({},opts,{showSummary:false}));
   }
+  if(myToken!==pdfPreviewReqToken) return; // llegó una petición más reciente antes que esta; descartar resultado obsoleto
   PDF_PREVIEW_CTX.lastDoc=doc;
   var pageCount=doc.internal.getNumberOfPages();
   document.getElementById('pdfopt-pagecount').textContent='📄 '+pageCount+(pageCount===1?' página':' páginas');
@@ -3568,8 +3709,11 @@ function attachOrderDragHandlers(){
   });
 }
 
-function downloadPdfFromSettings(){
-  if(!PDF_PREVIEW_CTX||!PDF_PREVIEW_CTX.lastDoc){toast('Espera a que cargue la vista previa','err');return;}
+async function downloadPdfFromSettings(){
+  if(!PDF_PREVIEW_CTX){toast('Espera a que cargue la vista previa','err');return;}
+  toast('Preparando descarga...');
+  await refreshPdfPreview(); // garantiza que el PDF descargado coincide exactamente con los ajustes actuales, aunque haya un cambio muy reciente
+  if(!PDF_PREVIEW_CTX.lastDoc){toast('Espera a que cargue la vista previa','err');return;}
   var opts=getPdfOptsFromForm();
   savePdfOpts(opts);
   var filename;
@@ -3789,6 +3933,22 @@ async function exportResistenciaPDF(){
 function hexToRgb(hex){
   var m=hex.replace('#','').match(/.{1,2}/g);
   return {r:parseInt(m[0],16),g:parseInt(m[1],16),b:parseInt(m[2],16)};
+}
+// Mezcla un color con blanco (para fondos de chip suaves/difuminados sobre la hoja blanca)
+function softTintColor(rgb,alpha){
+  return {
+    r:Math.round(255*(1-alpha)+rgb.r*alpha),
+    g:Math.round(255*(1-alpha)+rgb.g*alpha),
+    b:Math.round(255*(1-alpha)+rgb.b*alpha)
+  };
+}
+// Oscurece un color (para que el texto del chip mantenga buen contraste sobre su propio fondo suave)
+function darkenColor(rgb,amount){
+  return {
+    r:Math.round(rgb.r*(1-amount)),
+    g:Math.round(rgb.g*(1-amount)),
+    b:Math.round(rgb.b*(1-amount))
+  };
 }
 
 // ═══════════════════════════════════════════
