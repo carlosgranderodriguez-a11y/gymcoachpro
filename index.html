@@ -805,6 +805,10 @@ td{padding:11px 14px;border-top:1px solid var(--border);font-size:13px;vertical-
     <div style="flex:1;overflow-y:auto;padding:14px 24px;">
       <div id="sesion-bloques-container"></div>
       <button class="btn btn-secondary btn-sm" onclick="openNewBloque('sesion')" style="margin-top:10px">+ Añadir bloque</button>
+      <div id="sesion-muscle-summary-wrap" style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border);">
+        <div style="font-size:10px;color:var(--text-dim);letter-spacing:1px;text-transform:uppercase;margin-bottom:10px;">💪 Resumen muscular</div>
+        <div id="sesion-muscle-summary"></div>
+      </div>
     </div>
   </div>
 </div>
@@ -2340,12 +2344,39 @@ function renderSesionBloqueExs(bloqueId){
     row.ondragover=function(e){e.preventDefault();row.classList.add('drag-over');};
     row.ondrop=function(e){e.preventDefault();row.classList.remove('drag-over');dropExSesion(bloqueId,idx);};
     var paramsHtml=ex.params.map(function(p,pi){return buildSesionParamChip(p,bloqueId,idx,pi);}).join('');
-    row.innerHTML='<div class="ex-drag-handle">⠿</div><div class="ex-row-info"><div class="ex-row-name">'+db.nombre+'</div><div class="ex-params">'+paramsHtml+'<button class="param-add-btn" onclick="showSesionParamPicker(event,\''+bloqueId+'\','+idx+')">+ param</button></div></div><button class="btn btn-danger btn-xs" onclick="removeExFromSesion(\''+bloqueId+'\','+idx+')">✕</button>';
+    var thumbHtml=db.imagen?'<img src="'+db.imagen+'" referrerpolicy="no-referrer" style="width:40px;height:40px;object-fit:cover;border-radius:7px;flex-shrink:0;">':'<div style="width:40px;height:40px;background:var(--surface2);border-radius:7px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:15px;">💪</div>';
+    row.innerHTML='<div class="ex-drag-handle">⠿</div>'+thumbHtml+'<div class="ex-row-info"><div class="ex-row-name">'+db.nombre+'</div><div class="ex-params">'+paramsHtml+'<button class="param-add-btn" onclick="showSesionParamPicker(event,\''+bloqueId+'\','+idx+')">+ param</button></div></div><button class="btn btn-danger btn-xs" onclick="removeExFromSesion(\''+bloqueId+'\','+idx+')">✕</button>';
     list.appendChild(row);
   });
+  renderSesionMuscleSummary();
+}
+// Convierte editingSesion.bloques (formato del editor) a una lista plana de ejercicios, igual que al guardar
+function flattenEditingSesionEjercicios(){
+  var ejercicios=[];
+  Object.keys(editingSesion.bloques||{}).forEach(function(bId){
+    (editingSesion.bloques[bId]||[]).forEach(function(ex){
+      ejercicios.push({id:ex.id,bloque:tipoDeBloqueKey(bId),params:ex.params});
+    });
+  });
+  return ejercicios;
+}
+// Resumen muscular en vivo mientras se edita la sesión (mismo motor que el informe y el PDF)
+function renderSesionMuscleSummary(){
+  var wrap=document.getElementById('sesion-muscle-summary');
+  if(!wrap)return;
+  var zoneLoads=computeMuscleLoad({ejercicios:flattenEditingSesionEjercicios()},null,'tonelaje');
+  var entries=Object.keys(zoneLoads).map(function(z){return {zone:z,label:MUSCLE_ZONE_LABELS[z]||z,val:zoneLoads[z]};}).filter(function(e){return e.val>0;});
+  if(!entries.length){wrap.innerHTML='<div style="font-size:11px;color:var(--text-muted);">Ningún ejercicio de esta sesión tiene grupos musculares asignados todavía.</div>';return;}
+  entries.sort(function(a,b){return b.val-a.val;});
+  var maxVal=entries[0].val;
+  wrap.innerHTML=entries.map(function(e){
+    var pct=Math.max(4,Math.round((e.val/maxVal)*100));
+    var col=muscleHeatColor(e.val/maxVal);
+    return '<div style="margin-bottom:7px;"><div style="display:flex;justify-content:space-between;font-size:11.5px;margin-bottom:3px;"><span>'+e.label+'</span><span style="color:var(--text-muted);">'+Math.round(e.val)+' kg·rep</span></div><div style="background:var(--surface2);border-radius:4px;height:6px;overflow:hidden;"><div style="width:'+pct+'%;height:100%;background:'+col+';"></div></div></div>';
+  }).join('');
 }
 function buildSesionParamChip(p,bloqueId,exIdx,paramIdx){var cat=getParamsCatalog().find(function(c){return c.id===p.id;})||{label:p.id,type:'text'};var input='';if(cat.type==='select'){var opts=(cat.options||[]).map(function(o){return '<option'+(p.val===o?' selected':'')+'>'+o+'</option>';}).join('');input='<select onchange="updateSesionParam(\''+bloqueId+'\','+exIdx+','+paramIdx+',this.value)">'+opts+'</select>';}else{input='<input type="'+cat.type+'" value="'+(p.val||'')+'" oninput="updateSesionParam(\''+bloqueId+'\','+exIdx+','+paramIdx+',this.value)">';}var lbl=cat.label+(cat.unidad?' ('+cat.unidad+')':'');return '<div class="param-chip"><label>'+lbl+'</label>'+input+'<button type="button" class="param-chip-remove" title="Quitar parámetro" onclick="removeSesionParam(\''+bloqueId+'\','+exIdx+','+paramIdx+')">✕</button></div>';}
-function updateSesionParam(b,ei,pi,v){if(editingSesion.bloques[b]&&editingSesion.bloques[b][ei]&&editingSesion.bloques[b][ei].params[pi])editingSesion.bloques[b][ei].params[pi].val=v;}
+function updateSesionParam(b,ei,pi,v){if(editingSesion.bloques[b]&&editingSesion.bloques[b][ei]&&editingSesion.bloques[b][ei].params[pi])editingSesion.bloques[b][ei].params[pi].val=v;renderSesionMuscleSummary();}
 function removeSesionParam(b,ei,pi){if(!editingSesion.bloques[b]||!editingSesion.bloques[b][ei])return;editingSesion.bloques[b][ei].params.splice(pi,1);renderSesionBloqueExs(b);}
 function showSesionParamPicker(e,bloqueId,exIdx){e.stopPropagation();var picker=document.getElementById('param-picker');var existing=(editingSesion.bloques[bloqueId][exIdx].params||[]).map(function(p){return p.id;});var available=getParamsCatalog().filter(function(p){return !existing.includes(p.id);});if(!available.length){toast('Todos los parámetros añadidos');return;}picker.innerHTML=available.map(function(p){return '<div class="param-picker-item" onclick="addSesionParam(\''+bloqueId+'\','+exIdx+',\''+p.id+'\')">'+p.label+(p.unidad?' <span style="color:var(--text-muted);">('+p.unidad+')</span>':'')+'</div>';}).join('');positionPicker(picker,e.target.getBoundingClientRect());}
 function addSesionParam(b,ei,pid){var cat=getParamsCatalog().find(function(c){return c.id===pid;});var val=cat&&cat.type==='select'&&cat.options?cat.options[0]:'';editingSesion.bloques[b][ei].params.push({id:pid,val:val});document.getElementById('param-picker').style.display='none';renderSesionBloqueExs(b);}
