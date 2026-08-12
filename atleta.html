@@ -149,6 +149,52 @@ input[type=range]{width:100%;}
 .complete-btn{width:100%;padding:15px;background:var(--accent);color:#000;border:none;border-radius:12px;font-weight:700;font-size:15px;cursor:pointer;margin-top:18px;}
 .done-badge{display:inline-block;background:#1a2b1e;color:var(--green);font-size:11px;font-weight:700;padding:5px 10px;border-radius:8px;margin-bottom:12px;}
 
+/* ── DETALLE DE RESISTENCIA (rediseño) ─────────────────────── */
+/* Colores de zona: mismos que usa el hub de wearables, para que la
+   lectura sea coherente entre esta app y cualquier gráfica externa. */
+:root{
+  --z1:#60a5fa; --z2:#4ade80; --z3:#fbbf24; --z4:#fb923c; --z5:#ef4444;
+}
+.src-badge{display:inline-flex;align-items:center;gap:5px;background:var(--surface2);border:1px solid var(--border);color:var(--text-dim);font-size:10px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;padding:4px 9px;border-radius:20px;margin-left:8px;vertical-align:middle;}
+
+/* Cifras principales: duración, distancia, ritmo */
+.hero-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--border);border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:14px;}
+.hero-stat{background:var(--surface);padding:14px 8px;text-align:center;}
+.hero-stat .hs-v{font-family:'Barlow Condensed',sans-serif;font-size:27px;font-weight:700;line-height:1;letter-spacing:-.5px;}
+.hero-stat .hs-u{font-size:11px;color:var(--text-dim);font-weight:500;margin-left:2px;}
+.hero-stat .hs-l{font-size:9px;color:var(--text-muted);letter-spacing:1.2px;text-transform:uppercase;margin-top:5px;}
+
+/* Distribución de tiempo en zonas: la barra apilada es la firma de la vista */
+.zonas-bar{display:flex;height:34px;border-radius:9px;overflow:hidden;margin-bottom:12px;background:var(--surface2);}
+.zonas-seg{position:relative;transition:flex .4s ease;}
+.zonas-seg span{position:absolute;inset:0;display:grid;place-items:center;font-size:10px;font-weight:800;color:rgba(0,0,0,.72);}
+.zline{display:flex;align-items:center;gap:9px;padding:7px 0;border-bottom:1px solid var(--border);}
+.zline:last-child{border-bottom:none;}
+.zdot{width:9px;height:9px;border-radius:3px;flex-shrink:0;}
+.zname{font-size:12px;font-weight:600;width:22px;flex-shrink:0;}
+.zdesc{font-size:11px;color:var(--text-muted);flex:1;}
+.ztime{font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:700;}
+.zpct{font-size:11px;color:var(--text-dim);width:34px;text-align:right;}
+
+/* Cargas: TSS y Foster */
+.load-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;}
+.load-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:13px;text-align:center;}
+.load-card .lc-v{font-family:'Barlow Condensed',sans-serif;font-size:29px;font-weight:700;line-height:1;}
+.load-card .lc-l{font-size:9px;color:var(--text-muted);letter-spacing:1.2px;text-transform:uppercase;margin-top:4px;}
+.load-card .lc-h{font-size:10px;color:var(--text-dim);margin-top:5px;line-height:1.35;}
+
+/* Métricas secundarias */
+.met-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:1px;background:var(--border);border:1px solid var(--border);border-radius:14px;overflow:hidden;}
+.met{background:var(--surface);padding:11px 13px;display:flex;justify-content:space-between;align-items:center;}
+.met .m-l{font-size:11px;color:var(--text-dim);}
+.met .m-v{font-family:'Barlow Condensed',sans-serif;font-size:17px;font-weight:700;}
+
+/* Comparación con lo planificado */
+.cmp{display:flex;align-items:baseline;gap:6px;font-size:11px;color:var(--text-dim);margin-top:3px;}
+.cmp b{font-size:12px;}
+.cmp .up{color:var(--orange);} .cmp .dn{color:var(--blue);} .cmp .ok{color:var(--green);}
+.nota-est{font-size:10px;color:var(--text-muted);margin-top:8px;line-height:1.4;font-style:italic;}
+
 /* RESUMEN */
 .summary-icon{font-size:52px;text-align:center;margin:10px 0 6px;}
 .summary-title{font-family:'Barlow Condensed',sans-serif;font-size:26px;font-weight:700;text-align:center;margin-bottom:4px;}
@@ -586,35 +632,172 @@ function empezarSesionFuerza(){
   renderDetalleFuerza(currentDetalle.data,true);
 }
 
+/* ── Detalle de resistencia ────────────────────────────────────
+   Dos modos según el estado de la sesión:
+   - PLANIFICADA (aún sin hacer): objetivos, estructura y notas del coach.
+   - COMPLETADA: lo que realmente pasó — zonas, cargas y métricas —
+     comparado con lo que estaba previsto.                              */
+
+var ZONAS_META = {
+  1: { color: 'var(--z1)', desc: 'Recuperación' },
+  2: { color: 'var(--z2)', desc: 'Aeróbico ligero' },
+  3: { color: 'var(--z3)', desc: 'Tempo' },
+  4: { color: 'var(--z4)', desc: 'Umbral' },
+  5: { color: 'var(--z5)', desc: 'VO2 máx' }
+};
+
+function num(v){ var n = parseFloat(v); return isNaN(n) ? null : n; }
+
+function fmtMin(min){
+  min = num(min); if (min === null) return '—';
+  var h = Math.floor(min / 60), m = Math.round(min % 60);
+  return h ? (h + 'h ' + String(m).padStart(2,'0')) : String(Math.round(min));
+}
+
+// Compara lo ejecutado con lo planificado y devuelve una etiqueta corta
+function compara(real, plan, unidad, tolerancia){
+  real = num(real); plan = num(plan);
+  if (real === null || plan === null || !plan) return '';
+  var dif = real - plan;
+  var pct = Math.abs(dif / plan);
+  if (pct <= (tolerancia || 0.08)) return '<div class="cmp"><span class="ok">≈ según lo previsto</span></div>';
+  var cls = dif > 0 ? 'up' : 'dn';
+  var signo = dif > 0 ? '+' : '';
+  return '<div class="cmp">Previsto <b>' + plan + unidad + '</b> · <span class="' + cls + '">'
+    + signo + Math.round(dif * 10) / 10 + unidad + '</span></div>';
+}
+
+function renderZonas(zonas){
+  if (!zonas || !zonas.length) return '';
+  var total = zonas.reduce(function(a, z){ return a + (num(z.min) || 0); }, 0);
+  if (!total) return '';
+
+  // Barra apilada: de un vistazo se ve dónde vivió el esfuerzo
+  var barra = '<div class="zonas-bar">';
+  zonas.forEach(function(z){
+    var m = num(z.min) || 0;
+    if (m <= 0) return;
+    var pct = (m / total) * 100;
+    var meta = ZONAS_META[z.z] || { color: 'var(--text-muted)' };
+    barra += '<div class="zonas-seg" style="flex:' + m + ';background:' + meta.color + '">'
+      + (pct >= 11 ? '<span>Z' + z.z + '</span>' : '') + '</div>';
+  });
+  barra += '</div>';
+
+  var filas = '<div class="card" style="padding:6px 14px;">';
+  zonas.forEach(function(z){
+    var m = num(z.min) || 0;
+    var meta = ZONAS_META[z.z] || { color: 'var(--text-muted)', desc: '' };
+    var pct = Math.round((m / total) * 100);
+    filas += '<div class="zline">'
+      + '<span class="zdot" style="background:' + meta.color + '"></span>'
+      + '<span class="zname">Z' + z.z + '</span>'
+      + '<span class="zdesc">' + meta.desc + '</span>'
+      + '<span class="ztime">' + (m ? (Math.round(m * 10) / 10) + "'" : '—') + '</span>'
+      + '<span class="zpct">' + pct + '%</span>'
+      + '</div>';
+  });
+  filas += '</div>';
+
+  return '<div class="bloque-h" style="background:var(--accent);">Dónde estuvo el esfuerzo</div>'
+    + barra + filas;
+}
+
 function renderDetalleResistencia(r){
-  var done=resistenciaCompletada(r);
-  var fecha=new Date(r.fecha+'T12:00:00').toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'long'});
-  var html='';
-  if(done)html+='<div class="done-badge">✅ Sesión completada</div>';
-  html+='<div class="det-title cond">'+(r.nombre||'Sesión de resistencia')+'</div>';
-  html+='<div class="det-sub">'+fecha+' · '+(r.disciplina||'')+'</div>';
-  html+='<div class="card">';
-  if(r.duracion_min)html+='<div class="zone-row"><span>Duración</span><b>'+r.duracion_min+' min</b></div>';
-  if(r.distancia_km)html+='<div class="zone-row"><span>Distancia</span><b>'+r.distancia_km+' km</b></div>';
-  if(r.rpe_objetivo)html+='<div class="zone-row"><span>RPE objetivo</span><b>'+r.rpe_objetivo+'</b></div>';
-  if(r.tss)html+='<div class="zone-row"><span>TSS estimado</span><b>'+r.tss+'</b></div>';
-  html+='</div>';
-  if(r.zonas&&r.zonas.length){
-    html+='<div class="bloque-h" style="background:var(--blue);color:#000;">Zonas objetivo</div><div class="card">';
-    r.zonas.forEach(function(z){html+='<div class="zone-row"><span>'+z.nombre+'</span><b>'+(z.hr||z.pace||'—')+'</b></div>';});
-    html+='</div>';
+  var done = resistenciaCompletada(r);
+  var fecha = new Date(r.fecha + 'T12:00:00').toLocaleDateString('es-ES', { weekday:'long', day:'numeric', month:'long' });
+  var html = '';
+
+  if (done) html += '<div class="done-badge">✅ Sesión completada</div>';
+  html += '<div class="det-title cond">' + (r.nombre || 'Sesión de resistencia')
+    + (r.fuente_datos ? '<span class="src-badge">⌚ ' + r.fuente_datos + '</span>' : '') + '</div>';
+  html += '<div class="det-sub">' + fecha + ' · ' + (r.disciplina || '') + '</div>';
+
+  var durReal = num(r.duracion_real), distReal = num(r.distancia_real);
+  var durPlan = num(r.duracion_min),  distPlan = num(r.distancia_km);
+  var dur = durReal !== null ? durReal : durPlan;
+  var dist = distReal !== null ? distReal : distPlan;
+
+  // ── Cifras principales ──
+  html += '<div class="hero-stats">'
+    + '<div class="hero-stat"><div class="hs-v">' + fmtMin(dur) + '<span class="hs-u">min</span></div><div class="hs-l">Duración</div></div>'
+    + '<div class="hero-stat"><div class="hs-v">' + (dist !== null ? dist : '—') + '<span class="hs-u">km</span></div><div class="hs-l">Distancia</div></div>'
+    + '<div class="hero-stat"><div class="hs-v">' + (r.ritmo_medio || '—') + '<span class="hs-u">/km</span></div><div class="hs-l">Ritmo</div></div>'
+    + '</div>';
+
+  if (done) {
+    // Diferencias respecto a lo planificado, solo si había plan
+    var cmpHtml = compara(durReal, durPlan, ' min') + compara(distReal, distPlan, ' km');
+    if (cmpHtml) html += '<div class="card" style="padding:11px 14px;">' + cmpHtml + '</div>';
   }
-  if(r.estructura&&r.estructura.length){
-    html+='<div class="bloque-h" style="background:var(--blue);color:#000;">Estructura</div>';
+
+  // ── Zonas reales (lo que de verdad pasó) ──
+  var zonasReales = r.zonas_real;
+  if (typeof zonasReales === 'string') { try { zonasReales = JSON.parse(zonasReales); } catch(e){ zonasReales = null; } }
+  html += renderZonas(zonasReales);
+
+  // ── Cargas ──
+  var tss = num(r.tss_real) !== null ? num(r.tss_real) : num(r.tss);
+  var foster = num(r.foster_real);
+  if (tss !== null || foster !== null) {
+    html += '<div class="bloque-h" style="background:var(--accent);">Carga de la sesión</div><div class="load-row">';
+    html += '<div class="load-card"><div class="lc-v">' + (tss !== null ? Math.round(tss) : '—') + '</div>'
+      + '<div class="lc-l">TSS</div><div class="lc-h">Intensidad<br>relativa a tu umbral</div></div>';
+    html += '<div class="load-card"><div class="lc-v">' + (foster !== null ? Math.round(foster) : '—') + '</div>'
+      + '<div class="lc-l">Foster (AU)</div><div class="lc-h">Misma escala<br>que tu fuerza</div></div>';
+    html += '</div>';
+  }
+
+  // ── Métricas del reloj ──
+  var mets = [];
+  if (r.fc_media) mets.push(['FC media', r.fc_media + ' ppm']);
+  if (r.fc_max)   mets.push(['FC máx', r.fc_max + ' ppm']);
+  if (r.desnivel_m) mets.push(['Desnivel', Math.round(num(r.desnivel_m)) + ' m']);
+  if (r.cadencia) mets.push(['Cadencia', Math.round(num(r.cadencia)) + ' spm']);
+  if (num(r.rpe_real) !== null) mets.push(['RPE', num(r.rpe_real) + ' /10']);
+  if (mets.length) {
+    if (mets.length % 2) mets.push(['', '']);
+    html += '<div class="bloque-h" style="background:var(--blue);">Datos del reloj</div><div class="met-grid">';
+    mets.forEach(function(m){
+      html += '<div class="met"><span class="m-l">' + m[0] + '</span><span class="m-v">' + m[1] + '</span></div>';
+    });
+    html += '</div>';
+    // El RPE estimado no lo puso el atleta: conviene que lo sepa y lo corrija
+    if (String(r.rpe_estimado).toLowerCase().indexOf('s') === 0) {
+      html += '<div class="nota-est">El RPE está estimado a partir del tiempo en cada zona. Si tu sensación fue distinta, edítalo — tu percepción manda sobre la fórmula.</div>';
+    }
+  }
+
+  // ── Lo que estaba planificado ──
+  if (r.zonas && r.zonas.length) {
+    html += '<div class="bloque-h" style="background:var(--blue);">Zonas objetivo</div><div class="card">';
+    r.zonas.forEach(function(z){
+      html += '<div class="zone-row"><span>' + (z.nombre || '') + '</span><b>' + (z.hr || z.pace || '—') + '</b></div>';
+    });
+    html += '</div>';
+  }
+  if (r.estructura && r.estructura.length) {
+    html += '<div class="bloque-h" style="background:var(--blue);">Estructura</div>';
     r.estructura.forEach(function(st){
-      html+='<div class="step-row"><div class="st-h">'+(st.type||'')+' ×'+(st.reps||1)+'</div><div class="st-m">'
-        +(st.dist_km?st.dist_km+' km · ':'')+(st.ritmo?st.ritmo+'/km · ':'')+(st.tiempo_total?st.tiempo_total+' · ':'')+(st.zona||'')+(st.descanso?' · Descanso '+st.descanso:'')
-      +'</div>'+(st.notas?'<div class="st-m" style="margin-top:3px;">'+st.notas+'</div>':'')+'</div>';
+      html += '<div class="step-row"><div class="st-h">' + (st.type || '') + ' ×' + (st.reps || 1) + '</div><div class="st-m">'
+        + (st.dist_km ? st.dist_km + ' km · ' : '') + (st.ritmo ? st.ritmo + '/km · ' : '')
+        + (st.tiempo_total ? st.tiempo_total + ' · ' : '') + (st.zona || '')
+        + (st.descanso ? ' · Descanso ' + st.descanso : '')
+        + '</div>' + (st.notas ? '<div class="st-m" style="margin-top:3px;">' + st.notas + '</div>' : '') + '</div>';
     });
   }
-  if(r.descripcion)html+='<div class="bloque-h" style="background:var(--blue);color:#000;">Notas del entrenador</div><div class="card">'+r.descripcion+'</div>';
-  if(!done)html+='<button class="complete-btn" onclick="empezarSesionResistencia()">▶️ Empezar sesión</button>';
-  document.getElementById('detalle-content').innerHTML=html;
+  if (r.rpe_objetivo && !done) {
+    html += '<div class="card" style="padding:11px 14px;"><div class="zone-row" style="border:none;"><span>RPE objetivo</span><b>' + r.rpe_objetivo + '</b></div></div>';
+  }
+  if (r.descripcion) {
+    html += '<div class="bloque-h" style="background:var(--blue);">Notas del entrenador</div><div class="card">' + r.descripcion + '</div>';
+  }
+  if (r.notas_atleta) {
+    html += '<div class="bloque-h" style="background:var(--green);">Tus notas</div><div class="card">' + r.notas_atleta + '</div>';
+  }
+
+  if (!done) html += '<button class="complete-btn" onclick="empezarSesionResistencia()">▶️ Empezar sesión</button>';
+  document.getElementById('detalle-content').innerHTML = html;
 }
 
 var sesionStartTime=null,timerInterval=null;
