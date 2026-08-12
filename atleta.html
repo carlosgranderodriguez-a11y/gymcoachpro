@@ -347,6 +347,13 @@ var RES_SESIONES=[];      // Resistencia (tipo:'sesion') del atleta
 // toISOString() convierte a UTC y en Madrid (UTC+2 en verano) desplaza
 // la fecha un día hacia delante/atrás según la hora — este helper evita ese bug.
 function fechaLocalISO(d){ d=d||new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+
+// Compara nombres de atleta de forma tolerante: ignora espacios sobrantes
+// (delante, detrás o dobles) y mayúsculas/minúsculas. Necesario porque los
+// nombres guardados en el Sheet pueden tener espacios finales invisibles
+// (ej. "Carlos Grande ") y una comparación estricta descartaría sus sesiones.
+function normalizaNombre(n){ return String(n||'').trim().replace(/\s+/g,' ').toLowerCase(); }
+function mismoAtleta(a,b){ return normalizaNombre(a)===normalizaNombre(b); }
 var REGISTROS=[];         // Registros de sesiones de fuerza ya completadas
 var EJERCICIOS_DB={};     // Catálogo de ejercicios (nombre + imagen)
 var WELLNESS=[];          // Wellness diario del atleta
@@ -406,8 +413,8 @@ async function loadAsignadas(){
       api({action:'getWellness',atleta:ATLETA}),
       api({action:'getConfig'})
     ]);
-    if(rS&&rS.ok) FUERZA_SESIONES=(rS.sesiones||[]).filter(function(s){return s.atleta===ATLETA;});
-    if(rR&&rR.ok) RES_SESIONES=(rR.items||[]).filter(function(r){return r.tipo==='sesion'&&r.atleta===ATLETA;});
+    if(rS&&rS.ok) FUERZA_SESIONES=(rS.sesiones||[]).filter(function(s){return mismoAtleta(s.atleta,ATLETA);});
+    if(rR&&rR.ok) RES_SESIONES=(rR.items||[]).filter(function(r){return r.tipo==='sesion'&&mismoAtleta(r.atleta,ATLETA);});
     if(rReg&&rReg.ok) REGISTROS=rReg.registros||[];
     if(rEj&&rEj.ok) EJERCICIOS_DB=rEj.ejercicios||{};
     if(rW&&rW.ok) WELLNESS=rW.items||[];
@@ -1009,7 +1016,7 @@ async function loadData(notify){
   try{
     var r=await api({action:'getAllSesiones'});
     if(r&&r.ok){
-      SESIONES=(r.sesiones||[]).filter(function(s){return isRes(s)&&s.atleta===ATLETA;});
+      SESIONES=(r.sesiones||[]).filter(function(s){return isRes(s)&&mismoAtleta(s.atleta,ATLETA);});
       renderHist();
       if(notify)toast('Actualizado');
     }else if(notify)toast('No se pudo cargar','err');
