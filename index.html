@@ -959,6 +959,11 @@ td{padding:11px 14px;border-top:1px solid var(--border);font-size:13px;vertical-
 var API = 'https://script.google.com/macros/s/AKfycbzqXBcIAhrrXHXs2u1_jk8137QI17VxC_IKA3z15cm4ZKwlkTYFbB96zjKpoxk07B4yUA/exec';
 
 var DB = { atletas:[], atletasFull:[], equipos:[], ejercicios:{}, sesiones:[], templates:[], programas:[], resistencia:[], config:{tipos_contraccion:[], materiales:[], categorias:[], grupos_musculares:[], disciplinas_resistencia:[]} };
+
+// Fecha ISO (YYYY-MM-DD) usando componentes LOCALES, no UTC.
+// toISOString() convierte a UTC y en Madrid (UTC+2 en verano) desplaza
+// la fecha un día — este helper evita ese bug al comparar/mostrar días de calendario.
+function fechaLocalISO(d){ d=d||new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
 var calYear, calMonth, selectedDate=null;
 var currentTemplate=null, isDirty=false, dragSrc=null;
 function tipoDeBloqueKey(key){return key.indexOf('::')>-1?key.split('::')[0]:key;}
@@ -1163,13 +1168,13 @@ async function refreshEquipos(){
 function renderPanel(){
   var cardsWrap=document.getElementById('panel-cards');
   if(!cardsWrap) return;
-  var today=new Date().toISOString().slice(0,10);
-  var in7=new Date();in7.setDate(in7.getDate()+7);var in7s=in7.toISOString().slice(0,10);
+  var today=fechaLocalISO();
+  var in7=new Date();in7.setDate(in7.getDate()+7);var in7s=fechaLocalISO(in7);
   var atletasActivos=(DB.atletasFull&&DB.atletasFull.length)?DB.atletasFull.filter(function(a){return a.activo!==false;}).length:DB.atletas.length;
   var todasSesiones=DB.sesiones.map(function(s){return {tipo:'fuerza',fecha:s.fecha};}).concat((DB.resistencia||[]).filter(function(r){return r.tipo==='sesion';}).map(function(r){return {tipo:'resistencia',fecha:r.fecha};}));
   var hoy=todasSesiones.filter(function(s){return s.fecha===today;}).length;
-  var startWeek=new Date();startWeek.setDate(startWeek.getDate()-startWeek.getDay()+1);var startWeekS=startWeek.toISOString().slice(0,10);
-  var endWeek=new Date(startWeek);endWeek.setDate(endWeek.getDate()+6);var endWeekS=endWeek.toISOString().slice(0,10);
+  var startWeek=new Date();startWeek.setDate(startWeek.getDate()-startWeek.getDay()+1);var startWeekS=fechaLocalISO(startWeek);
+  var endWeek=new Date(startWeek);endWeek.setDate(endWeek.getDate()+6);var endWeekS=fechaLocalISO(endWeek);
   var estaSemana=todasSesiones.filter(function(s){return s.fecha>=startWeekS&&s.fecha<=endWeekS;}).length;
 
   var cards=[
@@ -1974,7 +1979,7 @@ function renderAtletaPerfilBanner(){
   var nombre=perfilAtletaActivo;
   var sesFuerza=DB.sesiones.filter(function(s){return s.atleta===nombre;});
   var sesResistencia=(DB.resistencia||[]).filter(function(r){return r.tipo==='sesion'&&r.atleta===nombre;});
-  var today=new Date().toISOString().slice(0,10);
+  var today=fechaLocalISO();
   var proximas=sesFuerza.concat(sesResistencia).filter(function(s){return s.fecha>=today;}).sort(function(a,b){return a.fecha.localeCompare(b.fecha);});
   var proxima=proximas[0];
   var proximaTxt=proxima?new Date(proxima.fecha+'T12:00:00').toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'short'}):'—';
@@ -2002,7 +2007,7 @@ function renderAtletaPerfilBanner(){
 }
 
 function quickAddFuerzaPerfil(){
-  selectedDate=selectedDate||new Date().toISOString().slice(0,10);
+  selectedDate=selectedDate||fechaLocalISO();
   openNewSesion();
 }
 function quickAddResistenciaPerfil(){
@@ -2050,7 +2055,7 @@ function renderCalMes(){
   ['L','M','X','J','V','S','D'].forEach(function(d){var el=document.createElement('div');el.className='cal-day-name';el.textContent=d;grid.appendChild(el);});
   var first=new Date(calYear,calMonth,1),blank=(first.getDay()+6)%7;
   for(var i=0;i<blank;i++){var el=document.createElement('div');el.className='cal-day empty';grid.appendChild(el);}
-  var days=new Date(calYear,calMonth+1,0).getDate(),today=new Date().toISOString().slice(0,10);
+  var days=new Date(calYear,calMonth+1,0).getDate(),today=fechaLocalISO();
   for(var d=1;d<=days;d++){
     var ds=calYear+'-'+String(calMonth+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
     var sesDelDia=DB.sesiones.filter(function(s){return s.fecha===ds&&atletaPasaFiltroCalendario(s.atleta);});
@@ -2098,12 +2103,12 @@ function renderCalSemana(){
   var lastDay=new Date(monday);lastDay.setDate(lastDay.getDate()+6);
   var weekLabel=monday.toLocaleDateString('es-ES',{day:'numeric',month:'short'})+' — '+lastDay.toLocaleDateString('es-ES',{day:'numeric',month:'short',year:'numeric'});
 
-  var today=new Date().toISOString().slice(0,10);
+  var today=fechaLocalISO();
   var dayNames=['LUN','MAR','MIÉ','JUE','VIE','SÁB','DOM'];
 
   // Cargar sesiones por día (fuerza + resistencia)
   var sesPorDia=days.map(function(d){
-    var ds=d.toISOString().slice(0,10);
+    var ds=fechaLocalISO(d);
     var fuerza=DB.sesiones.filter(function(s){return s.fecha===ds&&atletaPasaFiltroCalendario(s.atleta);}).map(function(s){return {tipo:'fuerza',s:s};});
     var resis=(DB.resistencia||[]).filter(function(r){return r.tipo==='sesion'&&r.fecha===ds&&atletaPasaFiltroCalendario(r.atleta);}).map(function(r){return {tipo:'resistencia',r:r};});
     return fuerza.concat(resis);
@@ -2112,7 +2117,7 @@ function renderCalSemana(){
   var loadsPorDia=sesPorDia.map(function(arr){return arr.reduce(function(acc,it){return acc+(it.tipo==='fuerza'?calcSessionLoad(it.s):calcResistenciaLoad(it.r));},0);});
 
   var colsHtml=days.map(function(d,i){
-    var ds=d.toISOString().slice(0,10);
+    var ds=fechaLocalISO(d);
     var isToday=ds===today;
     var sesHtml=sesPorDia[i].map(function(it){
       if(it.tipo==='fuerza'){
@@ -4186,7 +4191,7 @@ function renderResistencia(){
 function setResFilter(disc){resFilterDisc=disc;renderResistencia();}
 
 function openNewResistencia(tipo){
-  editingRes={id:null,tipo:tipo,atleta:(tipo==='sesion'&&perfilAtletaActivo)||DB.atletas[0]||'',fecha:new Date().toISOString().slice(0,10),disciplina:(DB.config.disciplinas_resistencia||[])[0]||'Carrera',nombre:'',duracion_min:'',distancia_km:'',rpe_objetivo:'',tss:'',zonas:[],estructura:[],descripcion:'',fc_media:'',fc_max:'',duracion_real:'',distancia_real:'',rpe_real:'',notas_atleta:''};
+  editingRes={id:null,tipo:tipo,atleta:(tipo==='sesion'&&perfilAtletaActivo)||DB.atletas[0]||'',fecha:fechaLocalISO(),disciplina:(DB.config.disciplinas_resistencia||[])[0]||'Carrera',nombre:'',duracion_min:'',distancia_km:'',rpe_objetivo:'',tss:'',zonas:[],estructura:[],descripcion:'',fc_media:'',fc_max:'',duracion_real:'',distancia_real:'',rpe_real:'',notas_atleta:''};
   renderResistenciaEditor();
   openModal('resistencia');
 }
@@ -4212,7 +4217,7 @@ function renderResistenciaEditor(){
 
   // Atleta
   document.getElementById('res-atleta').innerHTML=DB.atletas.map(function(a){return '<option'+(a===editingRes.atleta?' selected':'')+'>'+a+'</option>';}).join('');
-  document.getElementById('res-fecha').value=editingRes.fecha||new Date().toISOString().slice(0,10);
+  document.getElementById('res-fecha').value=editingRes.fecha||fechaLocalISO();
   // Disciplina
   var discs=DB.config.disciplinas_resistencia||[];
   document.getElementById('res-disciplina').innerHTML=discs.map(function(d){return '<option'+(d===editingRes.disciplina?' selected':'')+'>'+d+'</option>';}).join('');

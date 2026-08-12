@@ -342,6 +342,11 @@ var DISC={swim:{e:'🏊',n:'Natación',metric:'Pace (min/100m)',col:'var(--blue)
 // ── DATOS DE SESIONES ASIGNADAS POR EL ENTRENADOR ──
 var FUERZA_SESIONES=[];   // Sesiones (fuerza) del atleta
 var RES_SESIONES=[];      // Resistencia (tipo:'sesion') del atleta
+
+// Fecha ISO (YYYY-MM-DD) usando componentes LOCALES, no UTC.
+// toISOString() convierte a UTC y en Madrid (UTC+2 en verano) desplaza
+// la fecha un día hacia delante/atrás según la hora — este helper evita ese bug.
+function fechaLocalISO(d){ d=d||new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
 var REGISTROS=[];         // Registros de sesiones de fuerza ya completadas
 var EJERCICIOS_DB={};     // Catálogo de ejercicios (nombre + imagen)
 var WELLNESS=[];          // Wellness diario del atleta
@@ -387,7 +392,7 @@ function enterApp(){
   document.getElementById('login').style.display='none';
   document.getElementById('app').style.display='block';
   document.getElementById('who').textContent=ATLETA.split(' ')[0];
-  if(!document.getElementById('f-fecha').value)document.getElementById('f-fecha').value=new Date().toISOString().slice(0,10);
+  if(!document.getElementById('f-fecha').value)document.getElementById('f-fecha').value=fechaLocalISO();
   calc();loadData(false);loadAsignadas();
 }
 
@@ -426,7 +431,7 @@ function showPage(p,el){
 
 /* ── MI SEMANA ── */
 function getMonday(d){var x=new Date(d);var day=x.getDay()||7;if(day!==1)x.setDate(x.getDate()-day+1);x.setHours(0,0,0,0);return x;}
-function fmtISO(d){return d.toISOString().slice(0,10);}
+function fmtISO(d){return fechaLocalISO(d);}
 function shiftWeek(dir){weekOffset+=dir;renderSemana();}
 
 function sesionesDelDia(ds){
@@ -438,7 +443,7 @@ function fuerzaCompletada(id){return REGISTROS.some(function(reg){return reg.ses
 function resistenciaCompletada(r){return !!(r.duracion_real||r.distancia_real||r.rpe_real);}
 
 function proximasSesiones(n){
-  var todayISO=new Date().toISOString().slice(0,10);
+  var todayISO=fechaLocalISO();
   var f=FUERZA_SESIONES.filter(function(s){return s.fecha>=todayISO;}).map(function(s){return {kind:'fuerza',fecha:s.fecha,nombre:s.nombre||'Sesión de fuerza'};});
   var r=RES_SESIONES.filter(function(s){return s.fecha>=todayISO;}).map(function(s){return {kind:'resistencia',fecha:s.fecha,nombre:s.nombre||'Sesión de resistencia'};});
   return f.concat(r).sort(function(a,b){return a.fecha.localeCompare(b.fecha);}).slice(0,n);
@@ -451,7 +456,7 @@ function renderSemana(){
   for(var i=0;i<7;i++){var d=new Date(monday);d.setDate(d.getDate()+i);days.push(d);}
   var sunday=days[6];
   document.getElementById('week-range').textContent=monday.toLocaleDateString('es-ES',{day:'numeric',month:'short'})+' – '+sunday.toLocaleDateString('es-ES',{day:'numeric',month:'short'});
-  var todayISO=new Date().toISOString().slice(0,10);
+  var todayISO=fechaLocalISO();
 
   // Resumen de próximas sesiones (siempre visible, independiente de la semana que estés mirando)
   var prox=proximasSesiones(3);
@@ -659,7 +664,7 @@ function wellnessPromedios(n){
 /* ── WELLNESS ── */
 var WELL_LABELS={sueno:'😴 Sueño',fatiga:'🔋 Fatiga',dolor:'🩹 Dolor muscular',estres:'🧠 Estrés',animo:'🙂 Ánimo'};
 function wellnessDeHoy(){
-  var todayISO=new Date().toISOString().slice(0,10);
+  var todayISO=fechaLocalISO();
   return WELLNESS.find(function(w){return w.fecha===todayISO;});
 }
 function renderWellness(){
@@ -697,7 +702,7 @@ function renderWellness(){
   document.getElementById('wellness-content').innerHTML=html;
 }
 async function guardarWellnessHoy(){
-  var todayISO=new Date().toISOString().slice(0,10);
+  var todayISO=fechaLocalISO();
   var body={action:'saveWellness',atleta:ATLETA,fecha:todayISO,
     sueno:document.getElementById('w-sueno').value,
     fatiga:document.getElementById('w-fatiga').value,
@@ -766,7 +771,7 @@ function progSinceISO(p){
   if(p==='all')return null;
   var days={'7':7,'30':30,'90':90}[p]||0;
   var d=new Date();d.setDate(d.getDate()-days);
-  return d.toISOString().slice(0,10);
+  return fechaLocalISO(d);
 }
 
 function renderProgreso(){
@@ -1035,7 +1040,7 @@ function resetForm(){
   document.getElementById('f-rpef').value=6;document.getElementById('rpef-v').textContent='6';
   document.getElementById('f-rpem').value=5;document.getElementById('rpem-v').textContent='5';
   document.getElementById('f-zona').selectedIndex=1;
-  document.getElementById('f-fecha').value=new Date().toISOString().slice(0,10);
+  document.getElementById('f-fecha').value=fechaLocalISO();
   document.getElementById('cancel-btn').style.display='none';
   document.getElementById('save-btn').textContent='💾 Guardar sesión';
   calc();
