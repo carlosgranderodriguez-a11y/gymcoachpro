@@ -673,6 +673,47 @@ td{padding:11px 14px;border-top:1px solid var(--border);font-size:13px;vertical-
     <div class="form-group"><label>Tipo de contracción</label><div class="ms-wrap"><div class="ms-chips" id="ms-contraccion"></div></div></div>
     <div class="form-group"><label>Material necesario</label><div class="ms-wrap"><div class="ms-chips" id="ms-material"></div></div></div>
     <div class="form-group"><label>Grupos musculares</label><div class="ms-wrap"><div class="ms-chips" id="ms-grupos"></div></div></div>
+    <!-- Clasificación: la usa el generador de sesiones para componer bloques
+         equilibrados. Sin patrón y rol, un ejercicio no entra en los planes
+         generados automáticamente. -->
+    <div class="form-group" style="border-top:1px solid var(--border);padding-top:14px;margin-top:4px;">
+      <label style="color:var(--accent);">Clasificación · para el generador de sesiones</label>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px;">
+        <div>
+          <label style="font-size:11px;">Patrón de movimiento</label>
+          <select id="ej-patron">
+            <option value="">— Sin clasificar —</option>
+            <option value="RD">Rodilla dominante</option>
+            <option value="CD">Cadera dominante</option>
+            <option value="EH">Empuje horizontal</option>
+            <option value="EV">Empuje vertical</option>
+            <option value="TH">Tracción horizontal</option>
+            <option value="TV">Tracción vertical</option>
+            <option value="CAE">Core anti-extensión</option>
+            <option value="CAR">Core anti-rotación</option>
+            <option value="AIS">Aislamiento</option>
+            <option value="MOV">Movilidad</option>
+          </select>
+        </div>
+        <div>
+          <label style="font-size:11px;">Rol en la sesión</label>
+          <select id="ej-rol">
+            <option value="">— Sin clasificar —</option>
+            <option value="Principal">Principal</option>
+            <option value="Secundario">Secundario</option>
+            <option value="Accesorio">Accesorio</option>
+          </select>
+        </div>
+      </div>
+      <div style="display:flex;gap:18px;margin-top:12px;">
+        <label style="display:flex;align-items:center;gap:7px;font-size:13px;cursor:pointer;">
+          <input type="checkbox" id="ej-unilateral"> Unilateral
+        </label>
+        <label style="display:flex;align-items:center;gap:7px;font-size:13px;cursor:pointer;">
+          <input type="checkbox" id="ej-combinado"> Combinado (dos patrones)
+        </label>
+      </div>
+    </div>
     <div class="form-group"><label>Descripción / ejecución</label><textarea id="ej-desc"></textarea></div>
     <div class="form-group">
       <label>Vídeo del ejercicio</label>
@@ -1313,11 +1354,16 @@ function renderEjercicios(){
     var grupoTag=(e.grupos_musculares||[]).slice(0,1).map(function(g){return '<span class="ex-card-tag grupo">'+g+'</span>';}).join('');
     var contrTag=(e.tipo_contraccion||[]).slice(0,1).map(function(c){return '<span class="ex-card-tag contr">'+c+'</span>';}).join('');
     var matTag=(e.material||[]).slice(0,1).map(function(m){return '<span class="ex-card-tag mat">'+m+'</span>';}).join('');
+    // Aviso visible: un ejercicio sin patrón o sin rol no puede entrar en las
+    // sesiones que genera la IA, así que conviene detectarlo de un vistazo.
+    var claseTag = (e.patron && e.rol)
+      ? '<span class="ex-card-tag" style="background:#1f2a14;color:var(--accent);">'+e.patron+' · '+e.rol.slice(0,3)+'</span>'
+      : '<span class="ex-card-tag" style="background:#3a2410;color:#fb923c;" title="Sin patrón o sin rol: no se usará en sesiones generadas">⚠ sin clasificar</span>';
     return '<div class="ex-card" onclick="showDetail(\''+id+'\')">'
       +'<div class="ex-card-img-wrap">'+imgHtml+'<button class="btn btn-secondary btn-xs" style="position:absolute;top:6px;right:6px;" onclick="event.stopPropagation();openQuickMedia(\''+id+'\')">📷 Foto/vídeo</button></div>'
       +'<div class="ex-card-body"><div class="ex-card-name">'+e.nombre+'</div>'
       +'<div class="ex-card-meta">'+e.categoria+'</div>'
-      +'<div class="ex-card-tags">'+grupoTag+contrTag+matTag+(e.video?'<span class="ex-card-tag video">▶</span>':'')+'</div></div></div>';
+      +'<div class="ex-card-tags">'+claseTag+grupoTag+contrTag+matTag+(e.video?'<span class="ex-card-tag video">▶</span>':'')+'</div></div></div>';
   }).join('');
 }
 function renderFilters(){
@@ -1346,7 +1392,7 @@ function openEjercicio(){
   editingEjId=null;currentImageUrl='';selectedContr=[];selectedMat=[];selectedGrupos=[];
   document.getElementById('modal-ej-title').textContent='Nuevo ejercicio';
   document.getElementById('btn-del-ej').style.display='none';
-  ['ej-nombre','ej-musculos','ej-desc','ej-video'].forEach(function(f){document.getElementById(f).value='';});
+  ['ej-nombre','ej-musculos','ej-desc','ej-video'].forEach(function(f){document.getElementById(f).value='';});document.getElementById('ej-patron').value='';document.getElementById('ej-rol').value='';document.getElementById('ej-unilateral').checked=false;document.getElementById('ej-combinado').checked=false;
   var catSel=document.getElementById('ej-cat');
   catSel.innerHTML=(DB.config.categorias||['Fuerza']).map(function(c){return '<option>'+c+'</option>';}).join('');
   renderMultiSelects();resetImagePreview();resetVideoUploader();openModal('ejercicio');
@@ -1454,7 +1500,7 @@ async function saveEjercicio(){
   var n=document.getElementById('ej-nombre').value.trim();
   if(!n){toast('Nombre requerido','err');return;}
   var id=editingEjId||n.toLowerCase().replace(/\s+/g,'-').replace(/[^a-z0-9-]/g,'');
-  var data={id:id,nombre:n,categoria:document.getElementById('ej-cat').value,musculos:document.getElementById('ej-musculos').value.trim(),descripcion:document.getElementById('ej-desc').value.trim(),video:document.getElementById('ej-video').value.trim(),imagen:currentImageUrl,tipo_contraccion:selectedContr.slice(),material:selectedMat.slice(),grupos_musculares:selectedGrupos.slice()};
+  var data={id:id,nombre:n,categoria:document.getElementById('ej-cat').value,musculos:document.getElementById('ej-musculos').value.trim(),descripcion:document.getElementById('ej-desc').value.trim(),video:document.getElementById('ej-video').value.trim(),imagen:currentImageUrl,tipo_contraccion:selectedContr.slice(),material:selectedMat.slice(),grupos_musculares:selectedGrupos.slice(),patron:document.getElementById('ej-patron').value,rol:document.getElementById('ej-rol').value,unilateral:document.getElementById('ej-unilateral').checked?'sí':'',combinado:document.getElementById('ej-combinado').checked?'sí':''};
   var btn=document.getElementById('btn-save-ej');btn.disabled=true;btn.innerHTML='<span class="loading-inline"></span> Guardando...';
   var r=editingEjId?await apiPost(Object.assign({action:'updateEjercicio'},data)):await apiPost(Object.assign({action:'addEjercicio'},data));
   btn.disabled=false;btn.textContent='Guardar';
@@ -1485,7 +1531,7 @@ function editFromDetail(){
   document.getElementById('btn-del-ej').style.display='inline-block';
   document.getElementById('ej-nombre').value=e.nombre;
   var catSel=document.getElementById('ej-cat');catSel.innerHTML=(DB.config.categorias||['Fuerza']).map(function(c){return '<option'+(e.categoria===c?' selected':'')+'>'+c+'</option>';}).join('');
-  document.getElementById('ej-musculos').value=e.musculos||'';
+  document.getElementById('ej-musculos').value=e.musculos||'';document.getElementById('ej-patron').value=e.patron||'';document.getElementById('ej-rol').value=e.rol||'';document.getElementById('ej-unilateral').checked=String(e.unilateral||'').toLowerCase().indexOf('s')===0;document.getElementById('ej-combinado').checked=String(e.combinado||'').toLowerCase().indexOf('s')===0;
   document.getElementById('ej-desc').value=e.descripcion||'';
   document.getElementById('ej-video').value=e.video||'';
   resetVideoUploader();
