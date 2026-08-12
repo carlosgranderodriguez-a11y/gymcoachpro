@@ -648,23 +648,41 @@ var ZONAS_META = {
 
 function num(v){ var n = parseFloat(v); return isNaN(n) ? null : n; }
 
+// Sheets puede haber convertido un ritmo como "6:28" en una hora
+// (1899-12-30T06:28:00Z). Al hacerlo, los MINUTOS del ritmo quedan en la
+// posición de las horas y los SEGUNDOS en la de los minutos.
+function fmtRitmo(v){
+  if (!v) return null;
+  var s = String(v);
+  if (/^\d{1,3}:\d{2}$/.test(s)) return s;
+  var m = s.match(/T(\d{2}):(\d{2}):(\d{2})/);
+  if (m) return parseInt(m[1], 10) + ':' + m[2];
+  var d = new Date(s);
+  if (!isNaN(d.getTime())) {
+    return d.getUTCHours() + ':' + String(d.getUTCMinutes()).padStart(2, '0');
+  }
+  return null;
+}
+
 function fmtMin(min){
   min = num(min); if (min === null) return '—';
   var h = Math.floor(min / 60), m = Math.round(min % 60);
   return h ? (h + 'h ' + String(m).padStart(2,'0')) : String(Math.round(min));
 }
 
-// Compara lo ejecutado con lo planificado y devuelve una etiqueta corta
-function compara(real, plan, unidad, tolerancia){
+// Compara lo ejecutado con lo planificado. Devuelve '' si no hay plan con
+// el que comparar — así no se muestran comparaciones vacías o engañosas.
+function compara(real, plan, unidad, etiqueta, tolerancia){
   real = num(real); plan = num(plan);
-  if (real === null || plan === null || !plan) return '';
-  var dif = real - plan;
+  if (real === null || plan === null || plan === 0) return '';
+  var dif = Math.round((real - plan) * 10) / 10;
   var pct = Math.abs(dif / plan);
-  if (pct <= (tolerancia || 0.08)) return '<div class="cmp"><span class="ok">≈ según lo previsto</span></div>';
+  if (pct <= (tolerancia || 0.08)) {
+    return '<div class="cmp">' + etiqueta + ' <span class="ok">≈ según lo previsto</span></div>';
+  }
   var cls = dif > 0 ? 'up' : 'dn';
-  var signo = dif > 0 ? '+' : '';
-  return '<div class="cmp">Previsto <b>' + plan + unidad + '</b> · <span class="' + cls + '">'
-    + signo + Math.round(dif * 10) / 10 + unidad + '</span></div>';
+  return '<div class="cmp">' + etiqueta + ' previsto <b>' + plan + unidad + '</b> · <span class="' + cls + '">'
+    + (dif > 0 ? '+' : '') + dif + unidad + '</span></div>';
 }
 
 function renderZonas(zonas){
@@ -722,12 +740,13 @@ function renderDetalleResistencia(r){
   html += '<div class="hero-stats">'
     + '<div class="hero-stat"><div class="hs-v">' + fmtMin(dur) + '<span class="hs-u">min</span></div><div class="hs-l">Duración</div></div>'
     + '<div class="hero-stat"><div class="hs-v">' + (dist !== null ? dist : '—') + '<span class="hs-u">km</span></div><div class="hs-l">Distancia</div></div>'
-    + '<div class="hero-stat"><div class="hs-v">' + (r.ritmo_medio || '—') + '<span class="hs-u">/km</span></div><div class="hs-l">Ritmo</div></div>'
+    + '<div class="hero-stat"><div class="hs-v">' + (fmtRitmo(r.ritmo_medio) || '—') + '<span class="hs-u">/km</span></div><div class="hs-l">Ritmo</div></div>'
     + '</div>';
 
   if (done) {
-    // Diferencias respecto a lo planificado, solo si había plan
-    var cmpHtml = compara(durReal, durPlan, ' min') + compara(distReal, distPlan, ' km');
+    // Diferencias respecto a lo planificado, solo si había plan que comparar
+    var cmpHtml = compara(durReal, durPlan, ' min', 'Duración')
+                + compara(distReal, distPlan, ' km', 'Distancia');
     if (cmpHtml) html += '<div class="card" style="padding:11px 14px;">' + cmpHtml + '</div>';
   }
 
