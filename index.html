@@ -296,6 +296,7 @@ td{padding:11px 14px;border-top:1px solid var(--border);font-size:13px;vertical-
   <div class="tab" onclick="switchTab('calendario',this)">📅 Calendario</div>
   <div class="tab" onclick="switchTab('biblioteca',this)">📚 Biblioteca</div>
   <div class="tab" onclick="switchTab('programas',this)">🗓️ Programas</div>
+  <div class="tab" onclick="switchTab('generador',this)">🤖 Generador</div>
   <div class="tab" onclick="switchTab('ajustes',this)">⚙️ Ajustes</div>
 </div>
 
@@ -477,6 +478,41 @@ td{padding:11px 14px;border-top:1px solid var(--border);font-size:13px;vertical-
             <div style="font-size:11px;color:var(--text-muted);margin-top:6px;">La fecha marca el lunes de la semana 1. Se crea una sesión por cada día con plantilla asignada.</div>
           </div>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── GENERADOR ASISTIDO ──────────────────────────────── -->
+  <div id="page-generador" class="page">
+    <div class="section-header">
+      <div class="section-title">Generador de bloques de fuerza</div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:340px 1fr;gap:16px;align-items:start;">
+      <!-- Parámetros -->
+      <div class="foster-panel">
+        <div class="foster-title">⚙️ Parámetros</div>
+        <div class="form-group"><label>Atleta</label><select id="gen-atleta" onchange="cargarEstadoAtleta()"></select></div>
+        <div class="form-group"><label>Objetivo</label>
+          <select id="gen-objetivo"><option value="hipertrofia">Hipertrofia</option></select>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <div class="form-group"><label>Semanas</label><input type="number" id="gen-semanas" value="4" min="1" max="12"></div>
+          <div class="form-group"><label>Sesiones/sem</label><input type="number" id="gen-dias" value="2" min="1" max="6"></div>
+        </div>
+        <div class="form-group"><label>Notas para el generador</label>
+          <textarea id="gen-notas" rows="3" placeholder="Ej: evitar impacto en tobillo derecho; priorizar tren superior..."></textarea>
+        </div>
+        <button class="btn btn-primary" style="width:100%;" onclick="generarBloque()" id="gen-btn">🤖 Generar borrador</button>
+        <div style="font-size:11px;color:var(--text-muted);margin-top:10px;line-height:1.4;">
+          El borrador no se guarda hasta que lo apruebes. Revísalo antes de publicar.
+        </div>
+      </div>
+
+      <!-- Estado + resultado -->
+      <div>
+        <div id="gen-estado"></div>
+        <div id="gen-resultado"></div>
       </div>
     </div>
   </div>
@@ -1092,7 +1128,182 @@ function switchTab(tab,el){
   if(pg)pg.classList.add('active');
   if(tab==='panel') renderPanel();
   if(tab==='calendario') renderCalendar();
+  if(tab==='generador') initGenerador();
 }
+
+// ══════════════════════════════════════════════════════════
+// GENERADOR ASISTIDO DE BLOQUES DE FUERZA
+// El borrador NUNCA se guarda solo: se muestra para revisión y solo
+// se publica cuando el entrenador lo aprueba explícitamente.
+// ══════════════════════════════════════════════════════════
+var planGenerado=null;
+
+function initGenerador(){
+  var sel=document.getElementById('gen-atleta');
+  if(!sel.options.length){
+    sel.innerHTML=(DB.atletas||[]).map(function(a){return '<option>'+a+'</option>';}).join('');
+  }
+  cargarEstadoAtleta();
+}
+
+var NIVEL_META={
+  verde:    {color:'var(--green)', bg:'#1a2b1e', txt:'VERDE · progresar',        desc:'Indicadores en rango: se puede subir carga según el plan.'},
+  ambar:    {color:'var(--orange)',bg:'#3a2a1a', txt:'ÁMBAR · mantener',          desc:'Hay señales de fatiga: se mantiene carga, sin progresar.'},
+  rojo:     {color:'var(--red)',   bg:'#3a1a1a', txt:'ROJO · descargar',          desc:'Riesgo elevado: toca descargar aunque el calendario dijera otra cosa.'},
+  sin_datos:{color:'var(--blue)',  bg:'#16222e', txt:'SIN DATOS · plan teórico',  desc:'Aún no hay histórico suficiente. Se progresa según el plan teórico.'}
+};
+
+async function cargarEstadoAtleta(){
+  var atleta=document.getElementById('gen-atleta').value;
+  if(!atleta)return;
+  var cont=document.getElementById('gen-estado');
+  cont.innerHTML='<div class="foster-panel"><div class="foster-title">📊 Estado del atleta</div><span class="loading-inline"></span> Calculando...</div>';
+  try{
+    var r=await apiPost({action:'getEstadoAtleta',atleta:atleta});
+    if(!r||!r.ok){cont.innerHTML='<div class="foster-panel">No se pudo calcular el estado: '+((r&&r.error)||'error')+'</div>';return;}
+    var meta=NIVEL_META[r.nivel]||NIVEL_META.sin_datos;
+    var m=r.metricas;
+    cont.innerHTML='<div class="foster-panel" style="margin-bottom:16px;">'
+      +'<div class="foster-title">📊 Estado de '+atleta+'</div>'
+      +'<div style="background:'+meta.bg+';border-left:3px solid '+meta.color+';padding:12px 14px;border-radius:8px;margin-bottom:14px;">'
+        +'<div style="color:'+meta.color+';font-weight:700;font-size:13px;">'+meta.txt+'</div>'
+        +'<div style="font-size:11px;color:var(--text-dim);margin-top:3px;">'+meta.desc+'</div>'
+        +'<ul style="margin:8px 0 0 16px;padding:0;font-size:11px;color:var(--text-dim);line-height:1.6;">'
+          +r.motivos.map(function(x){return '<li>'+x+'</li>';}).join('')
+        +'</ul>'
+      +'</div>'
+      +'<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;">'
+        +metCard('Carga 7d',m.carga_7d,'AU')
+        +metCard('Monotonía',m.monotonia,'')
+        +metCard('Strain',m.strain,'')
+        +metCard('Agudo:crónico',m.acwr,'')
+        +metCard('Wellness 3d',m.wellness_3d!==null?m.wellness_3d:'—','')
+        +metCard('Base 14d',m.wellness_base_14d!==null?m.wellness_base_14d:'—','')
+        +metCard('Desv. RPE',m.desviacion_rpe!==null?(m.desviacion_rpe>0?'+':'')+m.desviacion_rpe:'—','')
+        +metCard('Días c/ carga',m.dias_con_carga_28d+'/28','')
+      +'</div></div>';
+  }catch(e){
+    cont.innerHTML='<div class="foster-panel">Error de conexión: '+e.message+'</div>';
+  }
+}
+
+function metCard(label,val,unit){
+  return '<div class="foster-card" style="margin:0;padding:10px;">'
+    +'<div class="foster-label" style="font-size:9px;">'+label+'</div>'
+    +'<div style="font-size:19px;font-weight:700;color:var(--text);line-height:1.1;">'+val+(unit?'<span style="font-size:10px;color:var(--text-muted)"> '+unit+'</span>':'')+'</div>'
+    +'</div>';
+}
+
+async function generarBloque(){
+  var btn=document.getElementById('gen-btn');
+  var cont=document.getElementById('gen-resultado');
+  btn.disabled=true;btn.innerHTML='<span class="loading-inline"></span> Generando...';
+  cont.innerHTML='<div class="foster-panel">Componiendo el bloque. Puede tardar hasta un minuto.</div>';
+  try{
+    var r=await apiPost({
+      action:'generarBloqueFuerza',
+      atleta:document.getElementById('gen-atleta').value,
+      objetivo:document.getElementById('gen-objetivo').value,
+      semanas:document.getElementById('gen-semanas').value,
+      dias_por_semana:document.getElementById('gen-dias').value,
+      notas:document.getElementById('gen-notas').value.trim()
+    });
+    if(!r||!r.ok){
+      cont.innerHTML='<div class="foster-panel" style="border-color:var(--red);"><b>No se pudo generar</b><div style="font-size:12px;color:var(--text-dim);margin-top:6px;">'+((r&&r.error)||'Error desconocido')+'</div>'+(r&&r.crudo?'<pre style="font-size:10px;white-space:pre-wrap;margin-top:8px;color:var(--text-muted)">'+r.crudo+'</pre>':'')+'</div>';
+      return;
+    }
+    planGenerado=r;
+    renderPlanGenerado(r);
+  }catch(e){
+    cont.innerHTML='<div class="foster-panel" style="border-color:var(--red);">Error de conexión: '+e.message+'</div>';
+  }finally{
+    btn.disabled=false;btn.innerHTML='🤖 Generar borrador';
+  }
+}
+
+function renderPlanGenerado(r){
+  var p=r.plan||{};
+  var h='<div class="foster-panel">';
+  h+='<div class="foster-title">📋 Borrador propuesto <span style="font-size:10px;background:#3a2a1a;color:var(--orange);padding:2px 8px;border-radius:10px;margin-left:6px;">SIN GUARDAR</span></div>';
+  if(p.resumen)h+='<div style="font-size:13px;line-height:1.5;margin-bottom:12px;">'+p.resumen+'</div>';
+
+  // Los problemas de validación se muestran arriba: son motivo para desconfiar
+  if(r.problemas&&r.problemas.length){
+    h+='<div style="background:#3a1a1a;border-left:3px solid var(--red);padding:11px 13px;border-radius:8px;margin-bottom:12px;">'
+      +'<b style="color:var(--red);font-size:12px;">⚠ La propuesta se sale de tus márgenes en '+r.problemas.length+' punto(s)</b>'
+      +'<ul style="margin:6px 0 0 16px;font-size:11px;color:var(--text-dim);line-height:1.6;">'+r.problemas.map(function(x){return '<li>'+x+'</li>';}).join('')+'</ul></div>';
+  }
+  if(p.avisos&&p.avisos.length){
+    h+='<div style="background:#3a2a1a;border-left:3px solid var(--orange);padding:11px 13px;border-radius:8px;margin-bottom:12px;">'
+      +'<b style="color:var(--orange);font-size:12px;">Avisos</b>'
+      +'<ul style="margin:6px 0 0 16px;font-size:11px;color:var(--text-dim);line-height:1.6;">'+p.avisos.map(function(x){return '<li>'+x+'</li>';}).join('')+'</ul></div>';
+  }
+
+  (p.semanas||[]).forEach(function(sem){
+    h+='<div style="border:1px solid var(--border);border-radius:10px;padding:13px;margin-bottom:11px;">';
+    h+='<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px;">'
+      +'<b style="font-size:14px;">Semana '+sem.semana+'</b>'
+      +'<span style="font-size:11px;color:var(--accent);">'+(sem.enfoque||'')+'</span></div>';
+    if(sem.justificacion)h+='<div style="font-size:11px;color:var(--text-dim);font-style:italic;margin-bottom:10px;line-height:1.45;">'+sem.justificacion+'</div>';
+    (sem.sesiones||[]).forEach(function(ses){
+      h+='<div style="background:var(--surface2);border-radius:8px;padding:10px;margin-bottom:8px;">';
+      h+='<div style="font-size:12px;font-weight:600;margin-bottom:7px;">'+(ses.nombre||'Sesión')+'</div>';
+      h+='<table style="width:100%;border-collapse:collapse;font-size:11px;">';
+      (ses.ejercicios||[]).forEach(function(ex){
+        h+='<tr style="border-bottom:1px solid var(--border);">'
+          +'<td style="padding:5px 4px;">'+(ex.nombre||ex.id)+(ex.patron?' <span style="color:var(--text-muted);font-size:9px;">'+ex.patron+'</span>':'')+'</td>'
+          +'<td style="padding:5px 4px;text-align:right;white-space:nowrap;color:var(--text-dim);">'+ex.series+'×'+ex.reps+' @'+ex.rpe+'</td>'
+          +'<td style="padding:5px 4px;text-align:right;color:var(--text-muted);white-space:nowrap;">'+(ex.descanso||'')+'</td>'
+          +'</tr>';
+        if(ex.nota)h+='<tr><td colspan="3" style="padding:0 4px 6px;font-size:10px;color:var(--text-muted);font-style:italic;">'+ex.nota+'</td></tr>';
+      });
+      h+='</table></div>';
+    });
+    h+='</div>';
+  });
+
+  h+='<div style="display:flex;gap:10px;margin-top:14px;">'
+    +'<button class="btn btn-primary" onclick="aprobarPlan()">✅ Aprobar y crear plantillas</button>'
+    +'<button class="btn btn-secondary" onclick="document.getElementById(\'gen-resultado\').innerHTML=\'\';planGenerado=null;">Descartar</button>'
+    +'</div>';
+  if(r.uso)h+='<div style="font-size:10px;color:var(--text-muted);margin-top:8px;">Tokens: '+(r.uso.input_tokens||0)+' entrada / '+(r.uso.output_tokens||0)+' salida</div>';
+  h+='</div>';
+  document.getElementById('gen-resultado').innerHTML=h;
+}
+
+// Convierte el borrador aprobado en plantillas reales de la biblioteca.
+// Se crean como plantillas (no como sesiones en calendario) para que puedas
+// revisarlas y asignarlas cuando quieras.
+async function aprobarPlan(){
+  if(!planGenerado){toast('No hay borrador','err');return;}
+  var p=planGenerado.plan||{};
+  var creadas=0,fallos=0;
+  var atleta=document.getElementById('gen-atleta').value;
+  var prefijo=(p.resumen||'Bloque').split('.')[0].slice(0,28);
+
+  for(var i=0;i<(p.semanas||[]).length;i++){
+    var sem=p.semanas[i];
+    for(var j=0;j<(sem.sesiones||[]).length;j++){
+      var ses=sem.sesiones[j];
+      var bloques={fuerza:(ses.ejercicios||[]).map(function(ex){
+        return {id:ex.id,params:[
+          {id:'series',val:String(ex.series)},
+          {id:'reps',val:String(ex.reps)},
+          {id:'rpe',val:String(ex.rpe)},
+          {id:'descanso',val:String(ex.descanso||'90s')}
+        ]};
+      })};
+      var tpl={id:'tplia_'+Date.now()+'_'+i+'_'+j,name:'S'+sem.semana+' · '+(ses.nombre||'Sesión')+' · '+atleta.split(' ')[0],bloques:bloques};
+      try{
+        var r=await apiPost({action:'saveTemplate',template:tpl});
+        if(r&&r.ok){creadas++;DB.templates.push(tpl);}else fallos++;
+      }catch(e){fallos++;}
+    }
+  }
+  toast(creadas+' plantillas creadas'+(fallos?', '+fallos+' fallos':''),fallos?'err':'ok');
+  renderTemplateList&&renderTemplateList();
+}
+
 
 function switchBiblioteca(sub){
   ['ejercicios','templates','resistencia'].forEach(function(s){
