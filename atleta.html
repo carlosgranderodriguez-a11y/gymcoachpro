@@ -1167,7 +1167,27 @@ function renderProgreso(){
       +'</div></div>';
     }).join('');
   }
-  document.getElementById('progreso-content').innerHTML=html;
+  document.getElementById('progreso-content').innerHTML=
+    '<div class="prog-stats" style="margin-bottom:14px;">'
+    +'<button class="btn btn-p" id="btn-sync-garmin" onclick="syncGarminAhora()" style="width:100%">🔄 Sincronizar ahora</button>'
+    +'<div id="sync-garmin-status" style="font-size:12px;color:var(--text-muted);margin-top:6px;text-align:center;"></div>'
+    +'</div>'
+    +html;
+}
+
+// Botón "Sincronizar ahora" — dispara el sync de Garmin para este atleta
+// al momento, en vez de esperar al cron diario (06:00 UTC).
+async function syncGarminAhora(){
+  var btn=document.getElementById('btn-sync-garmin');
+  var statusEl=document.getElementById('sync-garmin-status');
+  if(!ATLETA)return;
+  btn.disabled=true;btn.textContent='⏳ Sincronizando...';statusEl.textContent='';
+  try{
+    var r=await api({action:'syncGarminNow',atleta:ATLETA});
+    if(r&&r.ok){statusEl.textContent='Solicitado. Puede tardar 1-2 min en aparecer.';}
+    else{statusEl.textContent='⚠️ '+((r&&r.error)||'No se pudo sincronizar.');}
+  }catch(e){statusEl.textContent='⚠️ Error de conexión al sincronizar.';}
+  finally{btn.disabled=false;btn.textContent='🔄 Sincronizar ahora';}
 }
 
 
