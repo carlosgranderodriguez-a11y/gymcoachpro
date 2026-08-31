@@ -12,6 +12,9 @@
 <link rel="manifest" href="manifest-coach.json">
 <link rel="icon" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 :root {
   --bg:#0a0a0a; --surface:#141414; --surface2:#1c1c1c; --border:#2a2a2a;
@@ -80,6 +83,43 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,san
 .atl-edit{font-size:13px;color:var(--text-muted);padding:4px 7px;border-radius:7px;line-height:1;z-index:2;position:relative;}
 .atl-edit:hover{color:var(--text);background:var(--surface2);}
 .atl-empty{color:var(--text-muted);font-size:12px;padding:24px;text-align:center;background:var(--surface);border:1px dashed var(--border);border-radius:12px;}
+
+/* ── Perfil de atleta (overlay a pantalla completa, estilo ATLETAS-26) ── */
+.pa-fh{font-family:'Syne',sans-serif;}
+.pa-fm{font-family:'DM Mono',monospace;}
+.pa-overlay{display:none;position:fixed;inset:0;background:var(--bg);z-index:500;overflow-y:auto;}
+.pa-overlay.on{display:block;}
+.pa-nav{display:flex;align-items:stretch;border-bottom:1px solid var(--border);background:var(--surface);position:sticky;top:0;z-index:10;overflow-x:auto;}
+.pa-brand{padding:0 18px;font-family:'Syne',sans-serif;font-weight:800;font-size:13px;color:var(--accent);border-right:1px solid var(--border);display:flex;align-items:center;white-space:nowrap;gap:8px;}
+.pa-back{padding:0 14px;font-size:11px;font-weight:500;letter-spacing:.07em;text-transform:uppercase;color:var(--text-dim);border-right:1px solid var(--border);white-space:nowrap;font-family:'DM Mono',monospace;display:flex;align-items:center;cursor:pointer;}
+.pa-back:hover{color:var(--text);}
+.pa-tabs{display:flex;overflow-x:auto;flex:1;}
+.pa-tab{padding:0 14px;font-size:11px;font-weight:500;letter-spacing:.07em;text-transform:uppercase;color:var(--text-dim);cursor:pointer;border-bottom:2px solid transparent;transition:all .15s;white-space:nowrap;font-family:'DM Mono',monospace;display:flex;align-items:center;height:50px;}
+.pa-tab:hover{color:var(--text);}
+.pa-tab.on{color:var(--accent);border-bottom-color:var(--accent);}
+.pa-main{max-width:1200px;margin:0 auto;padding:20px 16px 60px;}
+.pa-pnl{display:none;}
+.pa-pnl.on{display:block;}
+.pa-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:18px;}
+.pa-card-sm{padding:12px 14px;}
+.pa-mb{margin-bottom:14px;}
+.pa-ct{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--text-muted);margin-bottom:10px;}
+.pa-g4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:16px;}
+.pa-g2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-bottom:16px;}
+.pa-mv{font-family:'Syne',sans-serif;font-size:28px;font-weight:800;line-height:1;margin:6px 0 3px;}
+.pa-ms{font-size:11px;color:var(--text-muted);}
+.pa-ok{color:var(--green);}.pa-wn{color:var(--orange);}.pa-dg{color:var(--red);}.pa-ac{color:var(--accent);}.pa-bl{color:var(--blue);}
+.pa-st{font-family:'Syne',sans-serif;font-size:20px;font-weight:800;margin-bottom:3px;}
+.pa-ss{font-size:12px;color:var(--text-muted);margin-bottom:16px;}
+.pa-hd{display:flex;align-items:center;gap:14px;margin-bottom:18px;flex-wrap:wrap;}
+.pa-av{width:46px;height:46px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-size:16px;font-weight:800;flex-shrink:0;background:var(--surface2);border:1px solid var(--border);}
+table.pa-tbl{width:100%;border-collapse:collapse;}
+table.pa-tbl th{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.1em;color:var(--text-muted);text-align:left;padding:7px 8px;border-bottom:1px solid var(--border);}
+table.pa-tbl td{padding:9px 8px;border-bottom:1px solid var(--border);font-size:13px;vertical-align:middle;}
+table.pa-tbl tr:last-child td{border-bottom:none;}
+.pa-cw{position:relative;height:200px;}
+.pa-empty{color:var(--text-muted);font-size:12px;padding:16px 0;}
+@media(max-width:640px){.pa-g4{grid-template-columns:repeat(2,1fr);}.pa-g2{grid-template-columns:1fr;}}
 .ms-chips{display:flex;flex-wrap:wrap;gap:5px;}
 .ms-chip{padding:4px 11px;border-radius:14px;border:1px solid var(--border);background:var(--bg);color:var(--text-dim);font-size:11px;cursor:pointer;transition:all 0.15s;user-select:none;}
 .ms-chip.selected{background:var(--accent);color:#000;border-color:var(--accent);font-weight:600;}
@@ -715,6 +755,83 @@ td{padding:11px 14px;border-top:1px solid var(--border);font-size:13px;vertical-
       <button class="btn btn-secondary" onclick="closeModal('planexterno')">Cancelar</button>
       <button class="btn btn-primary" onclick="savePlanExternoUI()">Guardar</button>
     </div>
+  </div>
+</div>
+
+<!-- ══ PERFIL DE ATLETA (overlay a pantalla completa, estilo ATLETAS-26) ══ -->
+<div class="pa-overlay" id="pa-overlay">
+  <div class="pa-nav">
+    <div class="pa-back" onclick="paCerrar()">← Atletas</div>
+    <div class="pa-brand" id="pa-brand">ATLETA</div>
+    <div class="pa-tabs">
+      <div class="pa-tab on" data-pa="res" onclick="paTab('res')">Resumen</div>
+      <div class="pa-tab" data-pa="cal" onclick="paTab('cal')">Entrenamiento</div>
+      <div class="pa-tab" data-pa="tmp" onclick="paTab('tmp')">Temporada</div>
+      <div class="pa-tab" data-pa="wel" onclick="paTab('wel')">Wellness</div>
+      <div class="pa-tab" data-pa="adm" onclick="paTab('adm')">⚙ Gestión</div>
+    </div>
+  </div>
+  <div class="pa-main">
+
+    <!-- RESUMEN -->
+    <div id="pa-pnl-res" class="pa-pnl on">
+      <div class="pa-hd">
+        <div class="pa-av" id="pa-av"></div>
+        <div><div class="pa-st" id="pa-name">Atleta</div><div class="pa-ss" id="pa-sub" style="margin-bottom:0;">—</div></div>
+      </div>
+      <div class="pa-g4">
+        <div class="pa-card pa-card-sm"><div class="pa-ct">Momento de temporada</div><div class="pa-mv pa-bl" id="pa-fase" style="font-size:20px;">—</div><div class="pa-ms">fase de la semana actual</div></div>
+        <div class="pa-card pa-card-sm"><div class="pa-ct">Fatiga (último)</div><div class="pa-mv pa-wn" id="pa-fat">—</div><div class="pa-ms">escala 1–5</div></div>
+        <div class="pa-card pa-card-sm"><div class="pa-ct">Sueño (último)</div><div class="pa-mv pa-ok" id="pa-sue">—</div><div class="pa-ms">escala 1–5</div></div>
+        <div class="pa-card pa-card-sm"><div class="pa-ct">Estado</div><div class="pa-mv" id="pa-estado" style="font-size:18px;">—</div><div class="pa-ms">deporte / estado</div></div>
+      </div>
+      <div class="pa-g2">
+        <div class="pa-card"><div class="pa-ct">Próxima sesión</div><div id="pa-next"></div></div>
+        <div class="pa-card"><div class="pa-ct">Tendencia wellness</div><div class="pa-cw"><canvas id="pa-trend"></canvas></div></div>
+      </div>
+    </div>
+
+    <!-- ENTRENAMIENTO (sesiones + plan externo reales) -->
+    <div id="pa-pnl-cal" class="pa-pnl">
+      <div class="pa-st">Entrenamiento</div>
+      <div class="pa-ss">Sesiones asignadas y planificación externa de este atleta</div>
+      <div class="pa-card pa-mb"><div class="pa-ct">Próximas (7 días)</div><div id="pa-ent-prox"></div></div>
+      <div class="pa-card"><div class="pa-ct">Últimas registradas</div><div id="pa-ent-hist"></div></div>
+      <div style="margin-top:14px;text-align:center;">
+        <button class="btn btn-secondary btn-sm" onclick="paAbrirCalendarioCompleto()">📅 Ver / editar en el calendario completo</button>
+      </div>
+    </div>
+
+    <!-- TEMPORADA (delega en el sistema ya existente) -->
+    <div id="pa-pnl-tmp" class="pa-pnl">
+      <div class="pa-st">Temporada · Carga &amp; RPE</div>
+      <div class="pa-ss">52 semanas, fases y comparación de carga real vs. planificada</div>
+      <div class="pa-card" style="text-align:center;padding:40px 20px;">
+        <div style="font-size:13px;color:var(--text-dim);margin-bottom:14px;">Este panel se abre en su propia ventana para tener más espacio.</div>
+        <button class="btn btn-primary" onclick="paAbrirTemporada()">🏆 Abrir Temporada</button>
+      </div>
+    </div>
+
+    <!-- WELLNESS (histórico, de solo lectura — el autorregistro lo hace el atleta desde su app) -->
+    <div id="pa-pnl-wel" class="pa-pnl">
+      <div class="pa-st">Wellness</div>
+      <div class="pa-ss">Autorregistro diario del atleta (escala 1–5) · solo lectura desde el panel del entrenador</div>
+      <div class="pa-card pa-mb"><div class="pa-ct">Tendencia</div><div class="pa-cw"><canvas id="pa-wel-trend"></canvas></div></div>
+      <div class="pa-card">
+        <div class="pa-ct">Histórico</div>
+        <div style="overflow-x:auto;"><table class="pa-tbl" style="min-width:480px;"><thead><tr><th>Fecha</th><th>Fatiga</th><th>Sueño</th><th>Ánimo</th><th>Dolor</th></tr></thead><tbody id="pa-wel-tbl"></tbody></table></div>
+      </div>
+    </div>
+
+    <!-- GESTIÓN (delega en el modal de atleta ya existente) -->
+    <div id="pa-pnl-adm" class="pa-pnl">
+      <div class="pa-st">Gestión</div>
+      <div class="pa-ss">Perfil, deporte, estado y credenciales de acceso</div>
+      <div class="pa-card" style="text-align:center;padding:40px 20px;">
+        <button class="btn btn-primary" onclick="paEditar()">✏️ Editar datos del atleta</button>
+      </div>
+    </div>
+
   </div>
 </div>
 
@@ -2619,13 +2736,168 @@ function renderCalendar(){
   else renderCalSemana();
 }
 
-function openAtletaPerfil(nombre){
-  perfilAtletaActivo=nombre;
+// ══ PERFIL DE ATLETA (overlay a pantalla completa, estilo ATLETAS-26) ══
+var paAtletaActual=null, paTabActiva='res', paTrendChart=null, paWelTrendChart=null;
+
+async function openAtletaPerfil(nombre){
+  paAtletaActual=nombre;
+  paTabActiva='res';
+  document.getElementById('pa-brand').textContent=nombre;
+  document.getElementById('pa-name').textContent=nombre;
+  var f=(DB.atletasFull||[]).find(function(x){return x.nombre===nombre;});
+  var dep=DISC_ATL[(f&&f.deporte)||'otro']||DISC_ATL.otro;
+  document.getElementById('pa-sub').textContent=dep.label;
+  var iniciales=nombre.split(' ').filter(Boolean).slice(0,2).map(function(p){return p[0];}).join('').toUpperCase();
+  var av=document.getElementById('pa-av');
+  av.textContent=iniciales;
+  av.style.color=dep.color;
+  av.style.borderColor=dep.color;
+  document.querySelectorAll('.pa-tab').forEach(function(t){t.classList.toggle('on',t.dataset.pa==='res');});
+  document.querySelectorAll('.pa-pnl').forEach(function(p){p.classList.remove('on');});
+  document.getElementById('pa-pnl-res').classList.add('on');
+  document.getElementById('pa-overlay').classList.add('on');
+
+  paRenderEntrenamiento(nombre);
+
+  var [rw,rt]=await Promise.all([
+    api({action:'getWellness',atleta:nombre}),
+    api({action:'getTemporada',atleta:nombre})
+  ]);
+  var wellItems=(rw&&rw.ok)?(rw.items||[]):[];
+  var tempItems=(rt&&rt.ok)?(rt.items||[]):[];
+  paRenderResumen(nombre,f,dep,wellItems,tempItems);
+  paRenderWellness(wellItems);
+}
+
+function paTab(tab){
+  paTabActiva=tab;
+  document.querySelectorAll('.pa-tab').forEach(function(t){t.classList.toggle('on',t.dataset.pa===tab);});
+  document.querySelectorAll('.pa-pnl').forEach(function(p){p.classList.remove('on');});
+  document.getElementById('pa-pnl-'+tab).classList.add('on');
+}
+
+function paCerrar(){
+  document.getElementById('pa-overlay').classList.remove('on');
+  paAtletaActual=null;
+}
+
+function paAbrirCalendarioCompleto(){
+  var nombre=paAtletaActual;
+  paCerrar();
   var calTabBtn=document.querySelector('.tab[onclick*="calendario"]');
   switchTab('calendario',calTabBtn);
   document.getElementById('cal-filter-equipo').value='';
   document.getElementById('cal-filter-atleta').value=nombre;
   renderCalendar();
+}
+
+function paAbrirTemporada(){
+  if(paAtletaActual) openTemporada(paAtletaActual);
+}
+
+function paEditar(){
+  if(paAtletaActual) openEditAtleta(paAtletaActual);
+}
+
+function paFaseActualDe(tempItems){
+  if(!tempItems||!tempItems.length) return null;
+  var hoy=fechaLocalISO();
+  var ordenado=tempItems.slice().sort(function(a,b){return (a.fecha_inicio||'').localeCompare(b.fecha_inicio||'');});
+  var actual=null;
+  for(var i=0;i<ordenado.length;i++){
+    if((ordenado[i].fecha_inicio||'')<=hoy) actual=ordenado[i]; else break;
+  }
+  return actual;
+}
+
+function paRenderResumen(nombre,f,dep,wellItems,tempItems){
+  var faseActual=paFaseActualDe(tempItems);
+  var faseEl=document.getElementById('pa-fase');
+  if(faseActual&&faseActual.fase){
+    var desc=FASE_DESC[faseActual.fase];
+    faseEl.textContent=faseActual.fase+(desc?' · '+desc[0]:'');
+  } else faseEl.textContent='Sin definir';
+
+  var ultimo=wellItems.slice().sort(function(a,b){return (b.fecha||'').localeCompare(a.fecha||'');})[0];
+  document.getElementById('pa-fat').textContent=ultimo&&ultimo.fatiga!=null&&ultimo.fatiga!==''?ultimo.fatiga:'—';
+  document.getElementById('pa-sue').textContent=ultimo&&ultimo.sueno!=null&&ultimo.sueno!==''?ultimo.sueno:'—';
+
+  var est=ESTADO_ATL[(f&&f.estado)||'disponible']||ESTADO_ATL.disponible;
+  var estadoEl=document.getElementById('pa-estado');
+  estadoEl.textContent=est.label;
+  estadoEl.style.color=est.color;
+
+  var sesFuerza=DB.sesiones.filter(function(s){return s.atleta===nombre;});
+  var sesResistencia=(DB.resistencia||[]).filter(function(r){return r.tipo==='sesion'&&r.atleta===nombre;});
+  var today=fechaLocalISO();
+  var proximas=sesFuerza.concat(sesResistencia).filter(function(s){return s.fecha>=today;}).sort(function(a,b){return a.fecha.localeCompare(b.fecha);});
+  var proxima=proximas[0];
+  var next=document.getElementById('pa-next');
+  if(!proxima){next.innerHTML='<div class="pa-empty">Sin sesiones próximas.</div>';}
+  else{
+    var fechaTxt=new Date(proxima.fecha+'T12:00:00').toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'short'});
+    next.innerHTML='<div class="pa-mv" style="font-size:18px;">'+escapeHtml(proxima.nombre||'Sesión')+'</div><div class="pa-ms">'+fechaTxt+'</div>';
+  }
+
+  var ctx=document.getElementById('pa-trend');
+  if(paTrendChart){paTrendChart.destroy();paTrendChart=null;}
+  var ultimos=wellItems.slice().sort(function(a,b){return (a.fecha||'').localeCompare(b.fecha||'');}).slice(-14);
+  if(ultimos.length&&ctx){
+    paTrendChart=new Chart(ctx,{type:'line',data:{labels:ultimos.map(function(w){return w.fecha?w.fecha.slice(5):'';}),datasets:[
+      {label:'Fatiga',data:ultimos.map(function(w){return w.fatiga;}),borderColor:'#fb923c',tension:.3},
+      {label:'Sueño',data:ultimos.map(function(w){return w.sueno;}),borderColor:'#4ade80',tension:.3}
+    ]},options:{responsive:true,maintainAspectRatio:false,scales:{y:{min:0,max:5,ticks:{color:'#888'}},x:{ticks:{color:'#888'}}},plugins:{legend:{labels:{color:'#ccc'}}}}});
+  } else if(ctx){
+    ctx.getContext('2d').clearRect(0,0,ctx.width,ctx.height);
+  }
+}
+
+function paRenderEntrenamiento(nombre){
+  var sesFuerza=DB.sesiones.filter(function(s){return s.atleta===nombre;}).map(function(s){return {tipo:'💪 Fuerza',fecha:s.fecha,nombre:s.nombre};});
+  var sesResistencia=(DB.resistencia||[]).filter(function(r){return r.tipo==='sesion'&&r.atleta===nombre;}).map(function(r){return {tipo:'🏃 Resistencia',fecha:r.fecha,nombre:r.nombre};});
+  var planExt=(DB.planExterno||[]).filter(function(p){return p.atleta===nombre;}).map(function(p){return {tipo:'📋 Plan externo',fecha:p.fecha,nombre:(p.disciplina?p.disciplina+' · ':'')+(p.texto||'')};});
+  var todas=sesFuerza.concat(sesResistencia).concat(planExt);
+  var today=fechaLocalISO();
+  var in7=new Date();in7.setDate(in7.getDate()+7);var in7s=fechaLocalISO(in7);
+  var proximas=todas.filter(function(s){return s.fecha>=today&&s.fecha<=in7s;}).sort(function(a,b){return a.fecha.localeCompare(b.fecha);});
+  var pasadas=todas.filter(function(s){return s.fecha<today;}).sort(function(a,b){return b.fecha.localeCompare(a.fecha);}).slice(0,10);
+
+  function listaHtml(arr,vacio){
+    if(!arr.length) return '<div class="pa-empty">'+vacio+'</div>';
+    return arr.map(function(s){
+      var fechaTxt=new Date(s.fecha+'T12:00:00').toLocaleDateString('es-ES',{weekday:'short',day:'numeric',month:'short'});
+      return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);font-size:12.5px;">'
+        +'<div>'+s.tipo+' <span style="color:var(--text-dim);">'+escapeHtml(s.nombre||'')+'</span></div>'
+        +'<div style="color:var(--text-muted);">'+fechaTxt+'</div>'
+      +'</div>';
+    }).join('');
+  }
+  document.getElementById('pa-ent-prox').innerHTML=listaHtml(proximas,'Sin sesiones en los próximos 7 días.');
+  document.getElementById('pa-ent-hist').innerHTML=listaHtml(pasadas,'Sin sesiones registradas todavía.');
+}
+
+function paRenderWellness(wellItems){
+  var ordenados=wellItems.slice().sort(function(a,b){return (b.fecha||'').localeCompare(a.fecha||'');});
+  var tbl=document.getElementById('pa-wel-tbl');
+  if(!ordenados.length){tbl.innerHTML='<tr><td colspan="5" style="text-align:center;color:var(--text-muted);padding:18px;">Sin registros de wellness todavía.</td></tr>';}
+  else{
+    tbl.innerHTML=ordenados.slice(0,30).map(function(w){
+      return '<tr><td>'+(w.fecha||'—')+'</td><td>'+(w.fatiga!=null&&w.fatiga!==''?w.fatiga:'—')+'</td><td>'+(w.sueno!=null&&w.sueno!==''?w.sueno:'—')+'</td><td>'+(w.animo!=null&&w.animo!==''?w.animo:'—')+'</td><td>'+(w.dolor!=null&&w.dolor!==''?w.dolor:'—')+'</td></tr>';
+    }).join('');
+  }
+  var ctx=document.getElementById('pa-wel-trend');
+  if(paWelTrendChart){paWelTrendChart.destroy();paWelTrendChart=null;}
+  var ultimos=wellItems.slice().sort(function(a,b){return (a.fecha||'').localeCompare(b.fecha||'');}).slice(-21);
+  if(ultimos.length&&ctx){
+    paWelTrendChart=new Chart(ctx,{type:'line',data:{labels:ultimos.map(function(w){return w.fecha?w.fecha.slice(5):'';}),datasets:[
+      {label:'Fatiga',data:ultimos.map(function(w){return w.fatiga;}),borderColor:'#fb923c',tension:.3},
+      {label:'Sueño',data:ultimos.map(function(w){return w.sueno;}),borderColor:'#4ade80',tension:.3},
+      {label:'Ánimo',data:ultimos.map(function(w){return w.animo;}),borderColor:'#60a5fa',tension:.3},
+      {label:'Dolor',data:ultimos.map(function(w){return w.dolor;}),borderColor:'#ff4466',tension:.3}
+    ]},options:{responsive:true,maintainAspectRatio:false,scales:{y:{min:0,max:5,ticks:{color:'#888'}},x:{ticks:{color:'#888'}}},plugins:{legend:{labels:{color:'#ccc'}}}}});
+  } else if(ctx){
+    ctx.getContext('2d').clearRect(0,0,ctx.width,ctx.height);
+  }
 }
 
 function cerrarPerfilAtleta(){
