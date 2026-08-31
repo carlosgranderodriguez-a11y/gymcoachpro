@@ -795,6 +795,9 @@ td{padding:11px 14px;border-top:1px solid var(--border);font-size:13px;vertical-
     <div id="pa-pnl-cal" class="pa-pnl">
       <div class="pa-st">Entrenamiento</div>
       <div class="pa-ss">Sesiones asignadas y planificación externa de este atleta</div>
+      <div style="margin-bottom:14px;">
+        <button class="btn btn-primary btn-sm" onclick="paNuevoPlanExterno()">📋 + Plan externo</button>
+      </div>
       <div class="pa-card pa-mb"><div class="pa-ct">Próximas (7 días)</div><div id="pa-ent-prox"></div></div>
       <div class="pa-card"><div class="pa-ct">Últimas registradas</div><div id="pa-ent-hist"></div></div>
       <div style="margin-top:14px;text-align:center;">
@@ -1708,6 +1711,7 @@ async function refreshPlanExterno(){
   var r=await api({action:'getPlanExterno'});
   if(r&&r.ok) DB.planExterno=r.items||[];
   renderCalendar();
+  if(paAtletaActual) paRenderEntrenamiento(paAtletaActual);
 }
 
 // ── TEMPORADA / CARGA & RPE (portado del sistema de periodización de ESGRIMA-26) ──
@@ -2789,6 +2793,13 @@ function paAbrirCalendarioCompleto(){
   document.getElementById('cal-filter-equipo').value='';
   document.getElementById('cal-filter-atleta').value=nombre;
   renderCalendar();
+}
+
+function paNuevoPlanExterno(){
+  if(!paAtletaActual) return;
+  selectedDate=fechaLocalISO();
+  perfilAtletaActivo=paAtletaActual;
+  openNewPlanExterno();
 }
 
 function paAbrirTemporada(){
