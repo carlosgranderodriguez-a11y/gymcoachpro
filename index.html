@@ -190,6 +190,7 @@ td{padding:11px 14px;border-top:1px solid var(--border);font-size:13px;vertical-
 .cal-evt{display:block;width:100%;font-size:9.5px;line-height:1.5;padding:1px 6px;border-radius:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:600;}
 .cal-evt.fuerza{background:rgba(204,255,102,.16);color:var(--accent);}
 .cal-evt.resistencia{background:rgba(96,165,250,.16);color:var(--blue);}
+.cal-evt.plan-externo{background:rgba(255,255,255,.08);color:var(--text-dim);font-weight:500;margin-top:2px;}
 .cal-evt-more{font-size:9px;color:var(--text-muted);padding-left:6px;}
 .cal-day-drop{background:rgba(204,255,102,0.15) !important;border-color:var(--accent) !important;}
 .assign-panel{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;}
@@ -655,6 +656,21 @@ td{padding:11px 14px;border-top:1px solid var(--border);font-size:13px;vertical-
   </div>
 </div>
 
+<div class="modal-overlay" id="modal-planexterno">
+  <div class="modal">
+    <div class="modal-title" id="planexterno-modal-title">Nueva planificación externa</div>
+    <div id="planexterno-modal-date" style="font-size:12px;color:var(--text-muted);margin:-8px 0 12px;"></div>
+    <div class="form-group"><label>Atleta</label><select id="pe-atleta"></select></div>
+    <div class="form-group"><label>Disciplina / club (opcional)</label><input type="text" id="pe-disciplina" placeholder="Ej: Fútbol club, Federación esgrima..."></div>
+    <div class="form-group"><label>Qué le han planificado ese día</label><textarea id="pe-texto" rows="5" placeholder="Pega o escribe aquí lo que te ha mandado el deportista para ese día..."></textarea></div>
+    <div class="modal-actions">
+      <button class="btn btn-danger btn-sm" id="btn-del-planexterno" onclick="deletePlanExternoConfirm()" style="display:none">🗑 Eliminar</button>
+      <button class="btn btn-secondary" onclick="closeModal('planexterno')">Cancelar</button>
+      <button class="btn btn-primary" onclick="savePlanExternoUI()">Guardar</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="modal-quickmedia">
   <div class="modal" style="max-width:420px;">
     <div class="modal-title" id="qm-title">Foto / vídeo</div>
@@ -1035,7 +1051,7 @@ td{padding:11px 14px;border-top:1px solid var(--border);font-size:13px;vertical-
 <script>
 var API = 'https://script.google.com/macros/s/AKfycbzqXBcIAhrrXHXs2u1_jk8137QI17VxC_IKA3z15cm4ZKwlkTYFbB96zjKpoxk07B4yUA/exec';
 
-var DB = { atletas:[], atletasFull:[], equipos:[], ejercicios:{}, sesiones:[], templates:[], programas:[], resistencia:[], config:{tipos_contraccion:[], materiales:[], categorias:[], grupos_musculares:[], disciplinas_resistencia:[]} };
+var DB = { atletas:[], atletasFull:[], equipos:[], ejercicios:{}, sesiones:[], templates:[], programas:[], resistencia:[], planExterno:[], config:{tipos_contraccion:[], materiales:[], categorias:[], grupos_musculares:[], disciplinas_resistencia:[]} };
 
 // Fecha ISO (YYYY-MM-DD) usando componentes LOCALES, no UTC.
 // toISOString() convierte a UTC y en Madrid (UTC+2 en verano) desplaza
@@ -1095,6 +1111,7 @@ async function apiPost(b){return(await fetch(API,{method:'POST',body:JSON.string
 
 // ── UTILS ──
 function toast(msg,type){var t=document.getElementById('toast');t.textContent=msg;t.className='toast show '+(type||'ok');clearTimeout(t._t);t._t=setTimeout(function(){t.className='toast';},2800);}
+function escapeHtml(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
 function openModal(id){document.getElementById('modal-'+id).classList.add('open');}
 function closeModal(id){document.getElementById('modal-'+id).classList.remove('open');}
 function setStatus(t,c){var el=document.getElementById('status');el.textContent=t;el.style.color=c;el.style.borderColor=c;}
@@ -1105,7 +1122,7 @@ window.onload=async function(){
   try{DB.templates=JSON.parse(localStorage.getItem('gc_templates')||'[]');}catch(e){}
   try{DB.programas=JSON.parse(localStorage.getItem('gc_programas')||'[]');}catch(e){}
   try{
-    var [rA,rF,rEq,rE,rS,rC,rR]=await Promise.all([api({action:'getAtletas'}),api({action:'getAtletasFull'}),api({action:'getEquipos'}),api({action:'getEjercicios'}),api({action:'getAllSesiones'}),api({action:'getConfig'}),api({action:'getResistencia'})]);
+    var [rA,rF,rEq,rE,rS,rC,rR,rPE]=await Promise.all([api({action:'getAtletas'}),api({action:'getAtletasFull'}),api({action:'getEquipos'}),api({action:'getEjercicios'}),api({action:'getAllSesiones'}),api({action:'getConfig'}),api({action:'getResistencia'}),api({action:'getPlanExterno'})]);
     if(rA.ok) DB.atletas=rA.atletas||[];
     if(rF&&rF.ok) DB.atletasFull=rF.atletas||[];
     if(rEq&&rEq.ok) DB.equipos=rEq.equipos||[];
@@ -1113,6 +1130,7 @@ window.onload=async function(){
     if(rS.ok) DB.sesiones=rS.sesiones||[];
     if(rC.ok) DB.config=Object.assign(DB.config,rC.config||{});
     if(rR&&rR.ok) DB.resistencia=rR.items||[];
+    if(rPE&&rPE.ok) DB.planExterno=rPE.items||[];
     setStatus('✅ Conectado','var(--green)');
   }catch(e){setStatus('❌ Sin conexión','var(--red)');}
   renderAtletas();renderEjercicios();renderTemplateList();renderProgramaList();renderCalendar();renderAjustes();renderResistencia();renderEquipos();renderPanel();
@@ -1414,6 +1432,64 @@ async function refreshEquipos(){
   renderEquipos();
   renderCalendar(); // refresca el selector de equipos del calendario
   renderPanel();
+}
+
+// ── PLAN EXTERNO (planificación semanal que manda el propio deportista) ──
+var editingPlanExternoId=null;
+function openNewPlanExterno(){
+  if(!selectedDate){toast('Selecciona un día','err');return;}
+  if(!DB.atletas.length){toast('Crea un atleta primero','err');return;}
+  editingPlanExternoId=null;
+  document.getElementById('planexterno-modal-title').textContent='Nueva planificación externa';
+  document.getElementById('planexterno-modal-date').textContent=new Date(selectedDate+'T12:00:00').toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+  document.getElementById('btn-del-planexterno').style.display='none';
+  var filterAtleta=document.getElementById('cal-filter-atleta').value;
+  var defaultAtleta=perfilAtletaActivo||filterAtleta||DB.atletas[0];
+  document.getElementById('pe-atleta').innerHTML=DB.atletas.map(function(a){return '<option'+(a===defaultAtleta?' selected':'')+'>'+a+'</option>';}).join('');
+  document.getElementById('pe-disciplina').value='';
+  document.getElementById('pe-texto').value='';
+  openModal('planexterno');
+}
+function openEditPlanExterno(id){
+  var p=(DB.planExterno||[]).find(function(x){return x.id===id;});
+  if(!p) return;
+  editingPlanExternoId=id;
+  document.getElementById('planexterno-modal-title').textContent='Editar planificación externa';
+  document.getElementById('planexterno-modal-date').textContent=new Date(p.fecha+'T12:00:00').toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+  document.getElementById('btn-del-planexterno').style.display='inline-block';
+  document.getElementById('pe-atleta').innerHTML=DB.atletas.map(function(a){return '<option'+(a===p.atleta?' selected':'')+'>'+a+'</option>';}).join('');
+  document.getElementById('pe-disciplina').value=p.disciplina||'';
+  document.getElementById('pe-texto').value=p.texto||'';
+  openModal('planexterno');
+}
+async function savePlanExternoUI(){
+  var atleta=document.getElementById('pe-atleta').value;
+  var texto=document.getElementById('pe-texto').value.trim();
+  var disciplina=document.getElementById('pe-disciplina').value.trim();
+  if(!atleta){toast('Elige un atleta','err');return;}
+  if(!texto){toast('Escribe la planificación de ese día','err');return;}
+  var fecha=editingPlanExternoId?((DB.planExterno||[]).find(function(x){return x.id===editingPlanExternoId;})||{}).fecha:selectedDate;
+  var r=await apiPost({action:'savePlanExterno',atleta:atleta,fecha:fecha,disciplina:disciplina,texto:texto});
+  if(r.ok){
+    await refreshPlanExterno();
+    closeModal('planexterno');
+    toast('✅ Guardado');
+  } else toast('Error: '+r.error,'err');
+}
+async function deletePlanExternoConfirm(){
+  if(!editingPlanExternoId) return;
+  if(!confirm('¿Eliminar esta planificación externa?')) return;
+  var r=await apiPost({action:'deletePlanExterno',id:editingPlanExternoId});
+  if(r.ok){
+    await refreshPlanExterno();
+    closeModal('planexterno');
+    toast('🗑 Eliminado');
+  } else toast('Error: '+r.error,'err');
+}
+async function refreshPlanExterno(){
+  var r=await api({action:'getPlanExterno'});
+  if(r&&r.ok) DB.planExterno=r.items||[];
+  renderCalendar();
 }
 
 // ── PANEL PRINCIPAL ──
@@ -2317,6 +2393,7 @@ function renderCalMes(){
     var ds=calYear+'-'+String(calMonth+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
     var sesDelDia=DB.sesiones.filter(function(s){return s.fecha===ds&&atletaPasaFiltroCalendario(s.atleta);});
     var resDelDia=(DB.resistencia||[]).filter(function(r){return r.tipo==='sesion'&&r.fecha===ds&&atletaPasaFiltroCalendario(r.atleta);});
+    var planDelDia=(DB.planExterno||[]).filter(function(p){return p.fecha===ds&&atletaPasaFiltroCalendario(p.atleta);});
     var eventos=sesDelDia.map(function(s){return {tipo:'fuerza',nombre:s.atleta.split(' ')[0]+' · '+(s.nombre||'Fuerza')};})
       .concat(resDelDia.map(function(r){return {tipo:'resistencia',nombre:r.atleta.split(' ')[0]+' · '+(r.nombre||'Resistencia')};}));
     var total=eventos.length;
@@ -2327,7 +2404,8 @@ function renderCalMes(){
     var restantes=total-visibles.length;
     var evtHtml=visibles.map(function(ev){
       return '<span class="cal-evt '+ev.tipo+'">'+(ev.tipo==='fuerza'?'💪':'🏃')+' '+ev.nombre+'</span>';
-    }).join('')+(restantes>0?'<span class="cal-evt-more">+'+restantes+' más</span>':'');
+    }).join('')+(restantes>0?'<span class="cal-evt-more">+'+restantes+' más</span>':'')
+      +(planDelDia.length?'<span class="cal-evt plan-externo">📋 '+planDelDia.length+' plan externo'+(planDelDia.length>1?'es':'')+'</span>':'');
     el.innerHTML='<span class="cal-day-num">'+d+'</span>'+evtHtml;
     (function(date,cell){
       cell.ondragover=function(e){if(dragSesId||dragResId||dragPlantillaId){e.preventDefault();cell.classList.add('cal-day-drop');}};
@@ -2554,7 +2632,20 @@ function renderAssignPanel(){
   if(!listHtml) listHtml='<div style="color:var(--text-muted);font-size:13px;text-align:center;padding:20px 0">Sin entrenamientos</div>';
   html+='<div style="margin-bottom:14px">'+listHtml+'</div>';
   html+='<button class="btn btn-primary" style="width:100%;margin-bottom:6px" onclick="openNewSesion()">💪 + Fuerza</button>';
-  html+='<button class="btn btn-secondary" style="width:100%" onclick="openNewResistenciaWithDate()">🏃 + Resistencia</button>';
+  html+='<button class="btn btn-secondary" style="width:100%;margin-bottom:16px" onclick="openNewResistenciaWithDate()">🏃 + Resistencia</button>';
+
+  var planDelDia=(DB.planExterno||[]).filter(function(p){return p.fecha===selectedDate&&atletaPasaFiltroCalendario(p.atleta);});
+  html+='<div class="section-title" style="font-size:12px;text-transform:uppercase;letter-spacing:.03em;color:var(--text-muted);margin-bottom:8px;">📋 Planificación externa del deportista</div>';
+  var planHtml='';
+  planDelDia.forEach(function(p){
+    planHtml+='<div class="existing-session" style="cursor:pointer;background:rgba(255,255,255,0.04);align-items:flex-start;" onclick="openEditPlanExterno(\''+p.id+'\')">'
+      +'<div><strong>'+p.atleta.split(' ')[0]+'</strong>'+(p.disciplina?' · '+escapeHtml(p.disciplina):'')
+      +'<div style="font-size:11px;color:var(--text-muted);white-space:pre-wrap;margin-top:2px;">'+escapeHtml(p.texto||'').slice(0,140)+'</div></div>'
+      +'<span style="font-size:11px;color:var(--accent)">✏️</span></div>';
+  });
+  if(!planHtml) planHtml='<div style="color:var(--text-muted);font-size:12px;text-align:center;padding:10px 0">Sin planificación externa este día</div>';
+  html+='<div style="margin-bottom:10px">'+planHtml+'</div>';
+  html+='<button class="btn btn-secondary" style="width:100%" onclick="openNewPlanExterno()">📋 + Plan externo</button>';
   panel.innerHTML=html;
 }
 
