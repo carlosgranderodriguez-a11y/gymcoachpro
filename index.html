@@ -57,6 +57,29 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,san
 .fchip.mat.active{background:rgba(251,146,60,0.15);color:var(--orange);border-color:var(--orange);}
 .fchip.grupo.active{background:rgba(244,114,182,0.15);color:#f472b6;border-color:#f472b6;}
 .ms-wrap{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px;}
+
+/* ── Dashboard de atletas (tarjetas por deporte) ── */
+.atl-stat{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 15px;min-width:78px;}
+.atl-stat .n{font-weight:800;font-size:22px;line-height:1;color:var(--accent);}
+.atl-stat .l{font-size:10.5px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.08em;margin-top:5px;}
+.atl-section{margin-bottom:28px;}
+.atl-sec-head{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
+.atl-sec-stripe{width:28px;height:4px;border-radius:3px;}
+.atl-sec-head h3{font-size:14px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;color:var(--text);}
+.atl-sec-head .count{font-size:11px;color:var(--text-muted);}
+.atl-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px;}
+.atl-card{position:relative;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px 13px;overflow:hidden;cursor:pointer;transition:transform .12s ease,border-color .12s ease,background .12s ease;}
+.atl-card::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--c);}
+.atl-card:hover{transform:translateY(-2px);border-color:var(--c);background:var(--surface2);}
+.atl-card-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;}
+.atl-card .name{font-weight:700;font-size:16px;line-height:1.2;}
+.atl-card .sub{font-size:11.5px;color:var(--text-muted);margin-top:4px;}
+.atl-dot{width:10px;height:10px;border-radius:50%;flex:none;margin-top:3px;box-shadow:0 0 0 4px color-mix(in srgb, var(--s) 22%, transparent);}
+.atl-card-foot{display:flex;align-items:center;justify-content:space-between;gap:8px;border-top:1px solid var(--border);padding-top:10px;margin-top:11px;}
+.atl-go{font-size:12px;font-weight:600;color:var(--c);}
+.atl-edit{font-size:13px;color:var(--text-muted);padding:4px 7px;border-radius:7px;line-height:1;z-index:2;position:relative;}
+.atl-edit:hover{color:var(--text);background:var(--surface2);}
+.atl-empty{color:var(--text-muted);font-size:12px;padding:24px;text-align:center;background:var(--surface);border:1px dashed var(--border);border-radius:12px;}
 .ms-chips{display:flex;flex-wrap:wrap;gap:5px;}
 .ms-chip{padding:4px 11px;border-radius:14px;border:1px solid var(--border);background:var(--bg);color:var(--text-dim);font-size:11px;cursor:pointer;transition:all 0.15s;user-select:none;}
 .ms-chip.selected{background:var(--accent);color:#000;border-color:var(--accent);font-weight:600;}
@@ -333,12 +356,8 @@ td{padding:11px 14px;border-top:1px solid var(--border);font-size:13px;vertical-
       <div class="fchip" onclick="switchAtletasTab('equipos')" id="atltab-equipos">👥 Equipos</div>
     </div>
     <div id="atletas-sub-atletas">
-      <div class="table-wrap">
-        <table>
-          <thead><tr><th>Nombre</th><th>Estado</th><th>Notas</th></tr></thead>
-          <tbody id="atletas-tbody"></tbody>
-        </table>
-      </div>
+      <div id="atletas-cards-summary" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:22px;"></div>
+      <div id="atletas-cards"></div>
     </div>
     <div id="atletas-sub-equipos" style="display:none;">
       <div id="equipos-list" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;"></div>
@@ -589,6 +608,27 @@ td{padding:11px 14px;border-top:1px solid var(--border);font-size:13px;vertical-
     <div class="form-group"><label>Nombre completo</label><input type="text" id="at-nombre"></div>
     <div class="form-group"><label>Email</label><input type="email" id="at-email" placeholder="atleta@email.com"></div>
     <div class="form-group"><label>PIN (4 dígitos)</label><input type="text" id="at-pin" maxlength="4" inputmode="numeric"></div>
+    <div style="display:flex;gap:12px;">
+      <div class="form-group" style="flex:1;"><label>Deporte</label>
+        <select id="at-deporte">
+          <option value="futbol">⚽ Fútbol</option>
+          <option value="esgrima">🤺 Esgrima</option>
+          <option value="triatlon">🏊 Triatlón</option>
+          <option value="readaptacion">🩹 Readaptación</option>
+          <option value="fitness">🏋 Fitness / Fuerza</option>
+          <option value="multideporte">🏅 Multideporte</option>
+          <option value="otro">🏷️ Otro</option>
+        </select>
+      </div>
+      <div class="form-group" style="flex:1;"><label>Estado</label>
+        <select id="at-estado">
+          <option value="disponible">🟢 Disponible</option>
+          <option value="carga">🟠 En carga</option>
+          <option value="readapt">🔵 Readaptación</option>
+          <option value="lesion">🔴 Lesión</option>
+        </select>
+      </div>
+    </div>
     <div class="form-group"><label>Notas</label><textarea id="at-notas"></textarea></div>
     <div class="form-group" style="display:flex;align-items:center;gap:8px;">
       <input type="checkbox" id="at-activo" style="width:auto;" checked>
@@ -1787,20 +1827,68 @@ function renderPanel(){
 // ── ATLETAS ──
 var editingAtletaOriginal=null; // null = nuevo, string = editando (nombre original)
 
+var DISC_ATL={
+  futbol:       {label:'Fútbol',            icon:'⚽',  color:'#E5022C'},
+  esgrima:      {label:'Esgrima',           icon:'🤺',  color:'#2E6BC0'},
+  triatlon:     {label:'Triatlón',          icon:'🏊',  color:'#F5A623'},
+  readaptacion: {label:'Readaptación',      icon:'🩹',  color:'#3F9D6D'},
+  fitness:      {label:'Fitness / Fuerza',  icon:'🏋',  color:'#8B6DF0'},
+  multideporte: {label:'Multideporte',      icon:'🏅',  color:'#1FA8A0'},
+  otro:         {label:'Otro',              icon:'🏷️', color:'#888'}
+};
+var DISC_ATL_ORDER=['futbol','esgrima','triatlon','readaptacion','fitness','multideporte','otro'];
+var ESTADO_ATL={
+  disponible:{label:'Disponible',   color:'#3FB87A'},
+  carga:     {label:'En carga',     color:'#F5A623'},
+  readapt:   {label:'Readaptación', color:'#2E6BC0'},
+  lesion:    {label:'Lesión',       color:'#E5022C'}
+};
+
 function renderAtletas(){
-  var tb=document.getElementById('atletas-tbody');
+  var wrap=document.getElementById('atletas-cards');
+  var summary=document.getElementById('atletas-cards-summary');
+  if(!wrap) return;
   var full=DB.atletasFull||[];
-  if(!DB.atletas.length){tb.innerHTML='<tr><td colspan="3" style="text-align:center;color:var(--text-muted);padding:24px">Sin atletas todavía.</td></tr>';return;}
-  tb.innerHTML=DB.atletas.map(function(a){
-    var f=full.find(function(x){return x.nombre===a;});
-    var activo=f?f.activo:true;
-    var email=f&&f.email?f.email:'—';
-    return '<tr style="cursor:pointer;" onclick="openAtletaPerfil(\''+a.replace(/'/g,"\\'")+'\')">'
-      +'<td><strong>'+a+'</strong></td>'
-      +'<td><span class="badge '+(activo?'badge-green':'badge-gray')+'">'+(activo?'Activo':'Inactivo')+'</span></td>'
-      +'<td style="color:var(--text-dim);font-size:12px">'+email+' <button class="btn btn-secondary btn-xs" onclick="event.stopPropagation();openEditAtleta(\''+a.replace(/'/g,"\\'")+'\')" style="margin-left:8px;">✏️ Editar</button></td>'
-    +'</tr>';
-  }).join('');
+  var activos=full.filter(function(a){return a.activo!==false;});
+  if(!activos.length){
+    if(summary) summary.innerHTML='';
+    wrap.innerHTML='<div class="atl-empty">Sin atletas todavía. Pulsa "+ Nuevo atleta" para añadir el primero.</div>';
+    return;
+  }
+  var deportesUsados=DISC_ATL_ORDER.filter(function(d){return activos.some(function(a){return (a.deporte||'otro')===d;});});
+  if(summary){
+    summary.innerHTML=[
+      {n:activos.length,l:'Atletas'},
+      {n:deportesUsados.length,l:'Deportes'},
+      {n:full.length-activos.length,l:'Inactivos'}
+    ].map(function(s){return '<div class="atl-stat"><div class="n">'+s.n+'</div><div class="l">'+s.l+'</div></div>';}).join('');
+  }
+  var html='';
+  DISC_ATL_ORDER.forEach(function(dk){
+    var list=activos.filter(function(a){return (a.deporte||'otro')===dk;});
+    if(!list.length) return;
+    var d=DISC_ATL[dk];
+    html+='<div class="atl-section"><div class="atl-sec-head">'
+      +'<span class="atl-sec-stripe" style="background:'+d.color+';"></span>'
+      +'<h3>'+d.icon+' '+d.label+'</h3><span class="count">'+list.length+'</span>'
+    +'</div><div class="atl-grid">';
+    list.forEach(function(a){
+      var est=ESTADO_ATL[a.estado||'disponible']||ESTADO_ATL.disponible;
+      var safeName=a.nombre.replace(/'/g,"\\'");
+      html+='<div class="atl-card" style="--c:'+d.color+';--s:'+est.color+';" onclick="openAtletaPerfil(\''+safeName+'\')">'
+        +'<div class="atl-card-top">'
+          +'<div><div class="name">'+escapeHtml(a.nombre)+'</div><div class="sub">'+(a.notas?escapeHtml(a.notas):d.label)+'</div></div>'
+          +'<span class="atl-dot" title="'+est.label+'"></span>'
+        +'</div>'
+        +'<div class="atl-card-foot">'
+          +'<span class="atl-go">Ver perfil ›</span>'
+          +'<button class="atl-edit" onclick="event.stopPropagation();openEditAtleta(\''+safeName+'\')" title="Editar">✎</button>'
+        +'</div>'
+      +'</div>';
+    });
+    html+='</div></div>';
+  });
+  wrap.innerHTML=html;
 }
 
 function openAtleta(){
@@ -1808,6 +1896,8 @@ function openAtleta(){
   document.getElementById('atleta-modal-title').textContent='Nuevo atleta';
   document.getElementById('btn-del-atleta').style.display='none';
   ['at-nombre','at-email','at-pin','at-notas'].forEach(function(f){document.getElementById(f).value='';});
+  document.getElementById('at-deporte').value='futbol';
+  document.getElementById('at-estado').value='disponible';
   document.getElementById('at-activo').checked=true;
   openModal('atleta');
 }
@@ -1821,18 +1911,21 @@ function openEditAtleta(nombre){
   document.getElementById('at-email').value=f?(f.email||''):'';
   document.getElementById('at-pin').value=f?(f.pin||''):'';
   document.getElementById('at-notas').value=f?(f.notas||''):'';
+  document.getElementById('at-deporte').value=f&&f.deporte?f.deporte:'futbol';
+  document.getElementById('at-estado').value=f&&f.estado?f.estado:'disponible';
   document.getElementById('at-activo').checked=f?f.activo!==false:true;
   openModal('atleta');
 }
 
 async function saveAtleta(){
   var n=document.getElementById('at-nombre').value.trim(),em=document.getElementById('at-email').value.trim(),p=document.getElementById('at-pin').value.trim(),nt=document.getElementById('at-notas').value.trim(),activo=document.getElementById('at-activo').checked;
+  var dep=document.getElementById('at-deporte').value,est=document.getElementById('at-estado').value;
   if(!n||!em||p.length!==4){toast('Nombre, email y PIN de 4 dígitos requeridos','err');return;}
   var r;
   if(editingAtletaOriginal){
-    r=await apiPost({action:'updateAtleta',nombreOriginal:editingAtletaOriginal,nombre:n,email:em,pin:p,notas:nt,activo:activo});
+    r=await apiPost({action:'updateAtleta',nombreOriginal:editingAtletaOriginal,nombre:n,email:em,pin:p,notas:nt,activo:activo,deporte:dep,estado:est});
   } else {
-    r=await apiPost({action:'addAtleta',nombre:n,email:em,pin:p,notas:nt});
+    r=await apiPost({action:'addAtleta',nombre:n,email:em,pin:p,notas:nt,deporte:dep,estado:est});
   }
   if(r.ok){
     await refreshAtletas();
