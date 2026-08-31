@@ -255,6 +255,14 @@ input[type=range]{width:100%;}
 .ses-chip .chev{font-size:13px;color:var(--text-muted);flex-shrink:0;}
 .ses-chip .ok{font-size:14px;flex-shrink:0;}
 
+/* PLAN EXTERNO (planificación semanal que manda el propio deportista) */
+.day-plan-externo{border-top:1px dashed var(--border);padding:10px 12px 12px;background:rgba(255,255,255,.02);}
+.dpe-head{font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--text-muted);margin-bottom:6px;font-weight:700;}
+.dpe-item{background:var(--surface2);border:1px solid var(--border);border-left:3px solid #a78bfa;border-radius:10px;padding:9px 11px;margin-bottom:6px;}
+.dpe-item:last-child{margin-bottom:0;}
+.dpe-disc{font-size:11px;font-weight:700;color:#a78bfa;margin-bottom:3px;}
+.dpe-texto{font-size:12.5px;color:var(--text-dim);line-height:1.45;white-space:pre-wrap;}
+
 /* WELLNESS */
 .well-slider{margin-bottom:18px;}
 .well-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;}
@@ -417,6 +425,7 @@ var DISC={swim:{e:'🏊',n:'Natación',metric:'Pace (min/100m)',col:'var(--blue)
 // ── DATOS DE SESIONES ASIGNADAS POR EL ENTRENADOR ──
 var FUERZA_SESIONES=[];   // Sesiones (fuerza) del atleta
 var RES_SESIONES=[];      // Resistencia (tipo:'sesion') del atleta
+var PLAN_EXTERNO=[];      // Planificación semanal que el propio atleta manda (club/federación) — no la mete el coach como sesión
 
 // Fecha ISO (YYYY-MM-DD) usando componentes LOCALES, no UTC.
 // toISOString() convierte a UTC y en Madrid (UTC+2 en verano) desplaza
@@ -515,19 +524,21 @@ function enterApp(){
 
 async function loadAsignadas(){
   try{
-    var [rS,rR,rReg,rEj,rW,rC]=await Promise.all([
+    var [rS,rR,rReg,rEj,rW,rC,rPE]=await Promise.all([
       api({action:'getAllSesiones'}),
       api({action:'getResistencia'}),
       api({action:'getHistorial',atleta:ATLETA}),
       api({action:'getEjercicios'}),
       api({action:'getWellness',atleta:ATLETA}),
-      api({action:'getConfig'})
+      api({action:'getConfig'}),
+      api({action:'getPlanExterno'})
     ]);
     if(rS&&rS.ok) FUERZA_SESIONES=(rS.sesiones||[]).filter(function(s){return mismoAtleta(s.atleta,ATLETA);});
     if(rR&&rR.ok) RES_SESIONES=(rR.items||[]).filter(function(r){return r.tipo==='sesion'&&mismoAtleta(r.atleta,ATLETA);});
     if(rReg&&rReg.ok) REGISTROS=rReg.registros||[];
     if(rEj&&rEj.ok) EJERCICIOS_DB=rEj.ejercicios||{};
     if(rW&&rW.ok) WELLNESS=rW.items||[];
+    if(rPE&&rPE.ok) PLAN_EXTERNO=(rPE.items||[]).filter(function(p){return mismoAtleta(p.atleta,ATLETA);});
     if(rC&&rC.ok&&rC.config.bloques_ejercicio&&rC.config.bloques_ejercicio.length) BLOQUES=rC.config.bloques_ejercicio;
     renderSemana();
   }catch(e){toast('No se pudo cargar tu semana','err');}
@@ -556,6 +567,10 @@ function sesionesDelDia(ds){
   var r=RES_SESIONES.filter(function(s){return s.fecha===ds;}).map(function(s){return {kind:'resistencia',data:s};});
   return f.concat(r);
 }
+function planExternoDelDia(ds){
+  return PLAN_EXTERNO.filter(function(p){return p.fecha===ds;});
+}
+function escapeHtml(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
 function fuerzaCompletada(id){return REGISTROS.some(function(reg){return reg.sesion_id===id&&reg.completada;});}
 function resistenciaCompletada(r){return !!(r.duracion_real||r.distancia_real||r.rpe_real);}
 
@@ -596,7 +611,8 @@ function renderSemana(){
     var ds=fmtISO(d);
     var ses=sesionesDelDia(ds);
     var isToday=ds===todayISO;
-    var dots=ses.slice(0,3).map(function(x){return '<span class="ds-dot" style="background:'+(x.kind==='fuerza'?'#ccff66':'#60a5fa')+'"></span>';}).join('');
+    var dots=ses.slice(0,3).map(function(x){return '<span class="ds-dot" style="background:'+(x.kind==='fuerza'?'#ccff66':'#60a5fa')+'"></span>';}).join('')
+      +(planExternoDelDia(ds).length?'<span class="ds-dot" style="background:#a78bfa"></span>':'');
     return '<div class="ds-pill'+(isToday?' today':'')+'" onclick="jumpToDay('+i+')">'
       +'<span class="ds-wd">'+stripWd[i]+'</span>'
       +'<span class="ds-num">'+d.getDate()+'</span>'
@@ -623,7 +639,20 @@ function renderSemana(){
         +'</div>';
       }).join('')+'</div>';
     }
-    return '<div class="day-card'+(isToday?' today':'')+'" id="daycard-'+i+'">'+head+body+'</div>';
+    var planDia=planExternoDelDia(ds);
+    var planBody='';
+    if(planDia.length){
+      planBody='<div class="day-plan-externo">'
+        +'<div class="dpe-head">📋 Tu planificación (club/federación)</div>'
+        +planDia.map(function(p){
+          return '<div class="dpe-item">'
+            +(p.disciplina?'<div class="dpe-disc">'+escapeHtml(p.disciplina)+'</div>':'')
+            +'<div class="dpe-texto">'+escapeHtml(p.texto||'').replace(/\n/g,'<br>')+'</div>'
+          +'</div>';
+        }).join('')
+      +'</div>';
+    }
+    return '<div class="day-card'+(isToday?' today':'')+'" id="daycard-'+i+'">'+head+body+planBody+'</div>';
   }).join('');
 }
 
