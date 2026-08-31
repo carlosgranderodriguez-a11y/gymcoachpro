@@ -255,13 +255,17 @@ input[type=range]{width:100%;}
 .ses-chip .chev{font-size:13px;color:var(--text-muted);flex-shrink:0;}
 .ses-chip .ok{font-size:14px;flex-shrink:0;}
 
-/* PLAN EXTERNO (planificación semanal que manda el propio deportista) */
+/* PLAN EXTERNO (planificación semanal que manda el propio deportista) — chips estilo ESGRIMA-26 */
 .day-plan-externo{border-top:1px dashed var(--border);padding:10px 12px 12px;background:rgba(255,255,255,.02);}
-.dpe-head{font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--text-muted);margin-bottom:6px;font-weight:700;}
-.dpe-item{background:var(--surface2);border:1px solid var(--border);border-left:3px solid #a78bfa;border-radius:10px;padding:9px 11px;margin-bottom:6px;}
-.dpe-item:last-child{margin-bottom:0;}
-.dpe-disc{font-size:11px;font-weight:700;color:#a78bfa;margin-bottom:3px;}
-.dpe-texto{font-size:12.5px;color:var(--text-dim);line-height:1.45;white-space:pre-wrap;}
+.dpe-lane{border-radius:9px;padding:7px 8px 8px;display:flex;flex-direction:column;gap:6px;background:rgba(167,139,250,.045);border:1px dashed rgba(167,139,250,.28);}
+.dpe-head{display:flex;align-items:center;justify-content:space-between;font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;color:#c4b5fd;font-weight:700;}
+.dpe-chip{display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:8px;}
+.dpe-chip .ic{font-size:15px;line-height:1;flex-shrink:0;}
+.dpe-chip .body{flex:1;font-size:13.5px;line-height:1.35;color:var(--text);min-width:0;}
+.dpe-chip .body b{font-weight:700;}
+.dpe-chip .meta{font-size:11px;color:var(--text-dim);margin-top:3px;white-space:pre-wrap;line-height:1.4;}
+.dpe-pdf-link{display:inline-flex;align-items:center;gap:5px;font-size:11px;color:var(--accent);font-weight:700;text-decoration:none;margin-top:5px;}
+.dpe-pdf-link:active{opacity:.7;}
 
 /* WELLNESS */
 .well-slider{margin-bottom:18px;}
@@ -570,6 +574,29 @@ function sesionesDelDia(ds){
 function planExternoDelDia(ds){
   return PLAN_EXTERNO.filter(function(p){return p.fecha===ds;});
 }
+// Hash de color por disciplina — mismo criterio que el calendario de esgrima (ESGRIMA-26)
+var DPE_HUE={'Fútbol':140,'Futbol':140,'Baloncesto':30,'Basket':30,'Natación':195,'Natacion':195,'Atletismo':95,
+  'Tenis':95,'Pádel':95,'Padel':95,'Ciclismo':30,'Balonmano':350,'Voleibol':270,'Rugby':350,'Esgrima':95,'Colegio':220};
+var DPE_EMO={'Fútbol':'⚽','Futbol':'⚽','Baloncesto':'🏀','Basket':'🏀','Natación':'🏊','Natacion':'🏊','Atletismo':'🏃',
+  'Tenis':'🎾','Pádel':'🎾','Padel':'🎾','Ciclismo':'🚴','Balonmano':'🤾','Voleibol':'🏐','Rugby':'🏉','Esgrima':'🤺','Colegio':'🎓'};
+function dpeHue(n){
+  if(!n) return 260;
+  if(DPE_HUE[n]!=null) return DPE_HUE[n];
+  var h=0;for(var i=0;i<n.length;i++)h=(h*31+n.charCodeAt(i))%360;
+  return h;
+}
+function dpeIcono(n){ return (n&&DPE_EMO[n])||'📋'; }
+function dpeChip(p){
+  var hue=dpeHue(p.disciplina);
+  var icon=dpeIcono(p.disciplina);
+  var titulo=p.disciplina?('<b>'+escapeHtml(p.disciplina)+'</b>'):'<b>Planificación externa</b>';
+  var meta=p.texto?('<div class="meta">'+escapeHtml(p.texto).replace(/\n/g,'<br>')+'</div>'):'';
+  var pdf=p.pdf_url?('<a class="dpe-pdf-link" href="'+p.pdf_url+'" target="_blank" rel="noopener">📄 '+escapeHtml(p.pdf_nombre||'Ver PDF')+'</a>'):'';
+  return '<div class="dpe-chip" style="background:hsla('+hue+',60%,50%,.14);border:1px solid hsla('+hue+',60%,55%,.4)">'
+    +'<span class="ic">'+icon+'</span>'
+    +'<span class="body">'+titulo+meta+pdf+'</span>'
+  +'</div>';
+}
 function escapeHtml(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
 function fuerzaCompletada(id){return REGISTROS.some(function(reg){return reg.sesion_id===id&&reg.completada;});}
 function resistenciaCompletada(r){return !!(r.duracion_real||r.distancia_real||r.rpe_real);}
@@ -642,15 +669,10 @@ function renderSemana(){
     var planDia=planExternoDelDia(ds);
     var planBody='';
     if(planDia.length){
-      planBody='<div class="day-plan-externo">'
-        +'<div class="dpe-head">📋 Tu planificación (club/federación)</div>'
-        +planDia.map(function(p){
-          return '<div class="dpe-item">'
-            +(p.disciplina?'<div class="dpe-disc">'+escapeHtml(p.disciplina)+'</div>':'')
-            +'<div class="dpe-texto">'+escapeHtml(p.texto||'').replace(/\n/g,'<br>')+'</div>'
-          +'</div>';
-        }).join('')
-      +'</div>';
+      planBody='<div class="day-plan-externo"><div class="dpe-lane">'
+        +'<div class="dpe-head"><span>📋 TU PLAN (CLUB/FEDERACIÓN)</span></div>'
+        +planDia.map(dpeChip).join('')
+      +'</div></div>';
     }
     return '<div class="day-card'+(isToday?' today':'')+'" id="daycard-'+i+'">'+head+body+planBody+'</div>';
   }).join('');
