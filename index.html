@@ -401,7 +401,10 @@ td{padding:11px 14px;border-top:1px solid var(--border);font-size:13px;vertical-
       <div id="atletas-cards"></div>
     </div>
     <div id="atletas-sub-equipos" style="display:none;">
-      <div id="equipos-list" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;"></div>
+      <div id="equipos-list-wrap">
+        <div id="equipos-list" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;"></div>
+      </div>
+      <div id="equipo-roster-view" style="display:none;"></div>
     </div>
   </div>
 
@@ -1520,6 +1523,8 @@ function switchAtletasTab(sub){
   document.getElementById('atletas-sub-equipos').style.display=sub==='equipos'?'':'none';
   document.getElementById('btn-nuevo-atleta').style.display=sub==='atletas'?'':'none';
   document.getElementById('btn-nuevo-equipo').style.display=sub==='equipos'?'':'none';
+  closeEquipoRoster(); // siempre entra por la lista de equipos, no por la última plantilla vista
+  if(sub==='atletas') renderAtletas();
   if(sub==='equipos') renderEquipos();
 }
 
@@ -1531,12 +1536,65 @@ function renderEquipos(){
   if(!wrap) return;
   if(!DB.equipos.length){wrap.innerHTML='<div style="grid-column:1/-1;text-align:center;color:var(--text-muted);padding:24px;">Sin equipos todavía.<br>Crea el primero con "+ Nuevo equipo".</div>';return;}
   wrap.innerHTML=DB.equipos.map(function(eq){
-    return '<div onclick="openEditEquipo(\''+eq.id+'\')" style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;cursor:pointer;">'
-      +'<div style="font-size:15px;font-weight:700;margin-bottom:4px;">'+eq.nombre+'</div>'
+    return '<div onclick="openEquipoRoster(\''+eq.id+'\')" style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;cursor:pointer;position:relative;">'
+      +'<button class="atl-edit" onclick="event.stopPropagation();openEditEquipo(\''+eq.id+'\')" title="Editar equipo" style="position:absolute;top:10px;right:10px;">✎</button>'
+      +'<div style="font-size:15px;font-weight:700;margin-bottom:4px;padding-right:20px;">'+eq.nombre+'</div>'
       +(eq.categoria?'<div style="font-size:12px;color:var(--accent);margin-bottom:8px;">'+eq.categoria+'</div>':'')
       +'<div style="font-size:12px;color:var(--text-muted);">👥 '+(eq.jugadores||[]).length+' jugadores</div>'
     +'</div>';
   }).join('');
+}
+
+function openEquipoRoster(id){
+  var eq=DB.equipos.find(function(x){return x.id===id;});
+  if(!eq) return;
+  var listWrap=document.getElementById('equipos-list-wrap');
+  var rosterWrap=document.getElementById('equipo-roster-view');
+  if(listWrap) listWrap.style.display='none';
+  if(!rosterWrap) return;
+  rosterWrap.style.display='';
+  rosterWrap.setAttribute('data-equipo-id',id);
+  var full=DB.atletasFull||[];
+  var jugadores=(eq.jugadores||[]).map(function(n){
+    var f=full.find(function(a){return a.nombre===n;});
+    return f||{nombre:n,deporte:'otro',estado:'disponible',activo:true};
+  });
+  var html='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:10px;">'
+    +'<div style="display:flex;align-items:center;gap:12px;">'
+      +'<button class="btn btn-secondary btn-sm" onclick="closeEquipoRoster()">‹ Equipos</button>'
+      +'<div><div style="font-size:16px;font-weight:700;">'+escapeHtml(eq.nombre)+'</div>'
+        +(eq.categoria?'<div style="font-size:12px;color:var(--accent);">'+escapeHtml(eq.categoria)+'</div>':'')
+      +'</div>'
+    +'</div>'
+    +'<button class="btn btn-secondary btn-sm" onclick="openEditEquipo(\''+id+'\')">✎ Editar equipo</button>'
+  +'</div>';
+  if(!jugadores.length){
+    html+='<div class="atl-empty">Este equipo todavía no tiene atletas.<br>Pulsa "✎ Editar equipo" para añadirlos.</div>';
+  } else {
+    html+='<div class="atl-grid">'+jugadores.map(function(a){
+      var d=DISC_ATL[a.deporte||'otro']||DISC_ATL.otro;
+      var est=ESTADO_ATL[a.estado||'disponible']||ESTADO_ATL.disponible;
+      var safeName=a.nombre.replace(/'/g,"\\'");
+      return '<div class="atl-card" style="--c:'+d.color+';--s:'+est.color+';" onclick="openAtletaPerfil(\''+safeName+'\')">'
+        +'<div class="atl-card-top">'
+          +'<div><div class="name">'+escapeHtml(a.nombre)+'</div><div class="sub">'+(a.notas?escapeHtml(a.notas):d.label)+'</div></div>'
+          +'<span class="atl-dot" title="'+est.label+'"></span>'
+        +'</div>'
+        +'<div class="atl-card-foot">'
+          +'<span class="atl-go">Ver perfil ›</span>'
+          +'<button class="atl-edit" onclick="event.stopPropagation();openEditAtleta(\''+safeName+'\')" title="Editar">✎</button>'
+        +'</div>'
+      +'</div>';
+    }).join('')+'</div>';
+  }
+  rosterWrap.innerHTML=html;
+}
+
+function closeEquipoRoster(){
+  var rosterWrap=document.getElementById('equipo-roster-view');
+  var listWrap=document.getElementById('equipos-list-wrap');
+  if(rosterWrap){rosterWrap.style.display='none';rosterWrap.removeAttribute('data-equipo-id');}
+  if(listWrap) listWrap.style.display='';
 }
 
 function openEquipo(){
@@ -1613,6 +1671,13 @@ async function refreshEquipos(){
   var r=await api({action:'getEquipos'});
   if(r&&r.ok) DB.equipos=r.equipos||[];
   renderEquipos();
+  renderAtletas(); // la pertenencia a un equipo cambia quién aparece suelto en Atletas
+  var rosterWrap=document.getElementById('equipo-roster-view');
+  var openId=rosterWrap&&rosterWrap.getAttribute('data-equipo-id');
+  if(openId){
+    if(DB.equipos.some(function(e){return e.id===openId;})) openEquipoRoster(openId);
+    else closeEquipoRoster();
+  }
   renderCalendar(); // refresca el selector de equipos del calendario
   renderPanel();
 }
@@ -1971,10 +2036,21 @@ function renderAtletas(){
   var summary=document.getElementById('atletas-cards-summary');
   if(!wrap) return;
   var full=DB.atletasFull||[];
-  var activos=full.filter(function(a){return a.activo!==false;});
+  // Los atletas que ya pertenecen a algún equipo no se listan sueltos aquí:
+  // se consultan entrando en su equipo (pestaña Equipos → tarjeta del equipo).
+  var enEquipo={};
+  (DB.equipos||[]).forEach(function(eq){(eq.jugadores||[]).forEach(function(n){enEquipo[n]=true;});});
+  var activos=full.filter(function(a){return a.activo!==false && !enEquipo[a.nombre];});
+  var enEquipoCount=full.filter(function(a){return a.activo!==false && enEquipo[a.nombre];}).length;
+  var inactivosCount=full.filter(function(a){return a.activo===false;}).length;
   if(!activos.length){
-    if(summary) summary.innerHTML='';
-    wrap.innerHTML='<div class="atl-empty">Sin atletas todavía. Pulsa "+ Nuevo atleta" para añadir el primero.</div>';
+    if(summary) summary.innerHTML=enEquipoCount?[
+      {n:enEquipoCount,l:'En equipos'},
+      {n:inactivosCount,l:'Inactivos'}
+    ].map(function(s){return '<div class="atl-stat"><div class="n">'+s.n+'</div><div class="l">'+s.l+'</div></div>';}).join(''):'';
+    wrap.innerHTML=enEquipoCount
+      ? '<div class="atl-empty">Todos tus atletas están agrupados en un equipo.<br>Consúltalos en la pestaña "👥 Equipos".</div>'
+      : '<div class="atl-empty">Sin atletas todavía. Pulsa "+ Nuevo atleta" para añadir el primero.</div>';
     return;
   }
   var deportesUsados=DISC_ATL_ORDER.filter(function(d){return activos.some(function(a){return (a.deporte||'otro')===d;});});
@@ -1982,7 +2058,8 @@ function renderAtletas(){
     summary.innerHTML=[
       {n:activos.length,l:'Atletas'},
       {n:deportesUsados.length,l:'Deportes'},
-      {n:full.length-activos.length,l:'Inactivos'}
+      {n:enEquipoCount,l:'En equipos'},
+      {n:inactivosCount,l:'Inactivos'}
     ].map(function(s){return '<div class="atl-stat"><div class="n">'+s.n+'</div><div class="l">'+s.l+'</div></div>';}).join('');
   }
   var html='';
