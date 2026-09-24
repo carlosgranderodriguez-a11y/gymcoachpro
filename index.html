@@ -533,13 +533,17 @@ td{padding:11px 14px;border-top:1px solid var(--border);font-size:13px;vertical-
           <div id="pe-weeks-container"></div>
           <button class="btn btn-secondary btn-sm" onclick="addSemana()" style="margin-top:10px">+ Añadir semana</button>
           <div style="margin-top:22px;padding-top:16px;border-top:1px solid var(--border);">
-            <div style="font-size:10px;color:var(--text-dim);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;">Asignar a un atleta</div>
-            <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
-              <select id="pe-assign-atleta" style="padding:9px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;outline:none;"></select>
-              <input id="pe-assign-fecha" type="date" style="padding:9px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;outline:none;">
-              <button class="btn btn-primary btn-sm" onclick="assignProgramaToAtleta()">📅 Asignar al calendario</button>
+            <div style="font-size:10px;color:var(--text-dim);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;">Asignar al calendario</div>
+            <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:8px;">
+              <select id="pe-assign-atleta" onchange="onPeAssignAtletaChange()" style="padding:9px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;outline:none;"></select>
+              <span style="font-size:11px;color:var(--text-muted);">— o —</span>
+              <select id="pe-assign-equipo" onchange="onPeAssignEquipoChange()" style="padding:9px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;outline:none;"></select>
             </div>
-            <div style="font-size:11px;color:var(--text-muted);margin-top:6px;">La fecha marca el lunes de la semana 1. Se crea una sesión por cada día con plantilla asignada.</div>
+            <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+              <input id="pe-assign-fecha" type="date" style="padding:9px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;outline:none;">
+              <button class="btn btn-primary btn-sm" onclick="assignPrograma()">📅 Asignar al calendario</button>
+            </div>
+            <div style="font-size:11px;color:var(--text-muted);margin-top:6px;">La fecha marca el lunes de la semana 1. Se crea una sesión por cada día con plantilla asignada, para el atleta elegido o para cada atleta del equipo elegido.</div>
           </div>
         </div>
       </div>
@@ -2679,6 +2683,20 @@ function showProgramaEditor(){
   renderProgramaWeeks();
   var sel=document.getElementById('pe-assign-atleta');
   sel.innerHTML=DB.atletas.map(function(a){return '<option>'+a+'</option>';}).join('');
+  var selEq=document.getElementById('pe-assign-equipo');
+  if(selEq){
+    selEq.innerHTML='<option value="">— Equipo completo —</option>'+(DB.equipos||[]).map(function(eq){
+      return '<option value="'+eq.id+'">👥 '+escapeHtml(eq.nombre)+' ('+(eq.jugadores||[]).length+')</option>';
+    }).join('');
+  }
+}
+function onPeAssignAtletaChange(){
+  var selEq=document.getElementById('pe-assign-equipo');
+  if(selEq&&document.getElementById('pe-assign-atleta').value) selEq.value='';
+}
+function onPeAssignEquipoChange(){
+  var selEq=document.getElementById('pe-assign-equipo');
+  if(selEq&&selEq.value) document.getElementById('pe-assign-atleta').selectedIndex=-1;
 }
 function markDirtyPrograma(){isDirtyPrograma=true;}
 function addSemana(){currentPrograma.weeks.push({dias:{}});markDirtyPrograma();renderProgramaWeeks();renderProgramaList();}
@@ -2735,15 +2753,7 @@ function deletePrograma(){
   document.getElementById('pe-content').style.display='none';
   renderProgramaList();toast('🗑 Eliminado');
 }
-async function assignProgramaToAtleta(){
-  if(!currentPrograma)return;
-  var atleta=document.getElementById('pe-assign-atleta').value;
-  var fechaInicio=document.getElementById('pe-assign-fecha').value;
-  if(!atleta){toast('Selecciona un atleta','err');return;}
-  if(!fechaInicio){toast('Selecciona la fecha de inicio','err');return;}
-  var totalSesiones=currentPrograma.weeks.reduce(function(acc,w){return acc+Object.keys(w.dias||{}).length;},0);
-  if(!totalSesiones){toast('El programa no tiene ninguna sesión asignada','err');return;}
-  if(!confirm('Se crearán '+totalSesiones+' sesiones en el calendario de '+atleta+'. ¿Continuar?'))return;
+async function crearSesionesProgramaParaAtleta(atleta,fechaInicio){
   var start=new Date(fechaInicio+'T12:00:00');
   var dow=start.getDay();
   var offsetToMonday=(dow===0)?-6:(1-dow);
@@ -2770,8 +2780,43 @@ async function assignProgramaToAtleta(){
       }catch(e){fail++;}
     }
   }
+  return {ok:ok,fail:fail};
+}
+
+async function assignPrograma(){
+  if(!currentPrograma)return;
+  var equipoId=document.getElementById('pe-assign-equipo').value;
+  var fechaInicio=document.getElementById('pe-assign-fecha').value;
+  if(!fechaInicio){toast('Selecciona la fecha de inicio','err');return;}
+  var totalSesionesPorAtleta=currentPrograma.weeks.reduce(function(acc,w){return acc+Object.keys(w.dias||{}).length;},0);
+  if(!totalSesionesPorAtleta){toast('El programa no tiene ninguna sesión asignada','err');return;}
+
+  var atletas,equipoNombre='';
+  if(equipoId){
+    var eq=(DB.equipos||[]).find(function(e){return e.id===equipoId;});
+    equipoNombre=eq?eq.nombre:'';
+    atletas=getEquipoJugadores(equipoId);
+    if(!atletas.length){toast('Ese equipo todavía no tiene atletas','err');return;}
+  } else {
+    var atleta=document.getElementById('pe-assign-atleta').value;
+    if(!atleta){toast('Selecciona un atleta o un equipo','err');return;}
+    atletas=[atleta];
+  }
+
+  var confirmMsg=atletas.length>1
+    ? 'Se crearán '+totalSesionesPorAtleta+' sesiones para cada uno de los '+atletas.length+' atletas de "'+equipoNombre+'" ('+(totalSesionesPorAtleta*atletas.length)+' en total). Puede tardar un poco. ¿Continuar?'
+    : 'Se crearán '+totalSesionesPorAtleta+' sesiones en el calendario de '+atletas[0]+'. ¿Continuar?';
+  if(!confirm(confirmMsg))return;
+
+  var okTotal=0,failTotal=0;
+  for(var ai=0;ai<atletas.length;ai++){
+    var res=await crearSesionesProgramaParaAtleta(atletas[ai],fechaInicio);
+    okTotal+=res.ok;failTotal+=res.fail;
+  }
   renderCalendar();renderAssignPanel();
-  toast(fail?('✅ '+ok+' creadas, ⚠️ '+fail+' fallaron'):('✅ '+ok+' sesiones creadas en el calendario'),fail?'err':'ok');
+  var msg=failTotal?('✅ '+okTotal+' creadas, ⚠️ '+failTotal+' fallaron'):('✅ '+okTotal+' sesiones creadas en el calendario'+(atletas.length>1?' ('+atletas.length+' atletas)':''));
+  toast(msg,failTotal?'err':'ok');
+  if(atletas.length>1) toast('Revisa el calendario por si el servidor ha duplicado alguna sesión en la tanda','ok');
 }
 
 // ── CALENDARIO ──
