@@ -347,6 +347,58 @@ td{padding:11px 14px;border-top:1px solid var(--border);font-size:13px;vertical-
 </head>
 <body>
 
+<div id="access-gate" style="display:flex;position:fixed;inset:0;z-index:9999;background:var(--bg);align-items:center;justify-content:center;padding:24px;">
+  <div style="width:100%;max-width:340px;text-align:center;">
+    <div style="font-size:10px;letter-spacing:3px;color:var(--accent);text-transform:uppercase;margin-bottom:6px;">GymCoach Pro</div>
+    <div style="font-size:17px;font-weight:700;margin-bottom:20px;">🔒 Acceso al panel</div>
+    <input id="access-gate-input" type="password" placeholder="Código de acceso" autocomplete="off" style="width:100%;padding:12px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:15px;outline:none;text-align:center;margin-bottom:10px;">
+    <div id="access-gate-error" style="font-size:12px;color:var(--red);min-height:16px;margin-bottom:10px;"></div>
+    <button class="btn btn-primary" style="width:100%;" onclick="checkAccessGate()">Entrar</button>
+  </div>
+</div>
+<script>
+// Puerta de acceso al panel del entrenador: comprobación temprana y síncrona
+// para que, si este dispositivo ya quedó autorizado antes, no se vea ni un
+// parpadeo del overlay. Si no hay código configurado todavía (DB.config aún
+// no ha cargado), el overlay se queda visible hasta que window.onload decida
+// si hace falta pedirlo o no (ver aplicarCodigoAcceso más abajo).
+(function(){
+  try{
+    if(localStorage.getItem('gc_coach_ok')==='yes'){
+      document.getElementById('access-gate').style.display='none';
+    }
+  }catch(e){}
+})();
+function checkAccessGate(){
+  var val=document.getElementById('access-gate-input').value;
+  var real=(DB.config&&DB.config.codigo_acceso)||'';
+  if(val===real){
+    try{localStorage.setItem('gc_coach_ok','yes');}catch(e){}
+    document.getElementById('access-gate').style.display='none';
+  }else{
+    document.getElementById('access-gate-error').textContent='Código incorrecto';
+    document.getElementById('access-gate-input').value='';
+  }
+}
+document.addEventListener('DOMContentLoaded',function(){
+  var inp=document.getElementById('access-gate-input');
+  if(inp) inp.addEventListener('keydown',function(e){ if(e.key==='Enter') checkAccessGate(); });
+});
+// Llamada desde window.onload una vez DB.config ya está cargado de verdad.
+function aplicarCodigoAcceso(){
+  var real=(DB.config&&DB.config.codigo_acceso)||'';
+  var gate=document.getElementById('access-gate');
+  if(!real){
+    // Sin código configurado todavía: no bloquear a nadie.
+    gate.style.display='none';
+    return;
+  }
+  var ok=false;
+  try{ ok = localStorage.getItem('gc_coach_ok')==='yes'; }catch(e){}
+  gate.style.display = ok ? 'none' : 'flex';
+}
+</script>
+
 <div class="header">
   <div class="header-left">
     <div class="logo">GymCoach Pro</div>
@@ -643,6 +695,14 @@ td{padding:11px 14px;border-top:1px solid var(--border);font-size:13px;vertical-
       <div style="display:flex;gap:8px;margin-top:10px;">
         <input id="new-categoria" type="text" placeholder="Añadir nueva categoría..." style="flex:1;padding:8px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;outline:none;">
         <button class="btn btn-primary btn-sm" onclick="addConfigItem('categorias','new-categoria')">Añadir</button>
+      </div>
+    </div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;margin-top:16px;">
+      <div style="font-size:14px;font-weight:600;margin-bottom:14px;">🔒 Código de acceso al panel</div>
+      <div style="font-size:12px;color:var(--text-muted);margin-bottom:10px;">Se pide una vez por dispositivo antes de ver este panel del entrenador (no afecta al login de los atletas en su propia app). Déjalo vacío y guarda para desactivarlo.</div>
+      <div style="display:flex;gap:8px;">
+        <input id="cfg-codigo-acceso" type="text" placeholder="Sin código (desactivado)" style="flex:1;padding:8px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;outline:none;">
+        <button class="btn btn-primary btn-sm" onclick="saveCodigoAcceso()">Guardar</button>
       </div>
     </div>
   </div>
@@ -1343,6 +1403,12 @@ window.onload=async function(){
     // DB.programas se queda con lo cargado de localStorage más arriba.
     setStatus('✅ Conectado','var(--green)');
   }catch(e){setStatus('❌ Sin conexión','var(--red)');}
+  finally{
+    // Decide si hay que pedir el código de acceso, tanto si la carga fue bien
+    // como si falló (para no dejar a nadie bloqueado detrás del overlay si no
+    // hay conexión y nunca se pudo comprobar si hay código configurado).
+    aplicarCodigoAcceso();
+  }
   renderAtletas();renderEjercicios();renderTemplateList();renderProgramaList();renderCalendar();renderAjustes();renderResistencia();renderEquipos();renderPanel();
   document.addEventListener('click',function(e){if(!e.target.closest('.param-picker')&&!e.target.closest('.param-add-btn'))document.getElementById('param-picker').style.display='none';});
 };
@@ -2382,7 +2448,17 @@ function editFromDetail(){
 function toEmbedUrl(url){var yt=url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|v\/))([^&?\/\s]{11})/);if(yt)return 'https://www.youtube.com/embed/'+yt[1];var vi=url.match(/vimeo\.com\/(\d+)/);if(vi)return 'https://player.vimeo.com/video/'+vi[1];var dr=url.match(/drive\.google\.com\/file\/d\/([^\/]+)/);if(dr)return 'https://drive.google.com/file/d/'+dr[1]+'/preview';return null;}
 
 // ── AJUSTES ──
-function renderAjustes(){renderConfigList('cfg-contraccion','tipos_contraccion');renderConfigList('cfg-materiales','materiales');renderConfigList('cfg-grupos','grupos_musculares');renderConfigList('cfg-disciplinas','disciplinas_resistencia');renderConfigList('cfg-categorias','categorias');renderParamsConfig();renderBloquesConfig();}
+function renderAjustes(){renderConfigList('cfg-contraccion','tipos_contraccion');renderConfigList('cfg-materiales','materiales');renderConfigList('cfg-grupos','grupos_musculares');renderConfigList('cfg-disciplinas','disciplinas_resistencia');renderConfigList('cfg-categorias','categorias');renderParamsConfig();renderBloquesConfig();document.getElementById('cfg-codigo-acceso').value=DB.config.codigo_acceso||'';}
+async function saveCodigoAcceso(){
+  var val=document.getElementById('cfg-codigo-acceso').value.trim();
+  var r=await apiPost({action:'saveConfig',key:'codigo_acceso',value:val});
+  if(r.ok){
+    DB.config.codigo_acceso=val;
+    toast(val?'✅ Código guardado':'✅ Código desactivado');
+  }else{
+    toast('Error: '+r.error,'err');
+  }
+}
 
 function renderBloquesConfig(){
   var wrap=document.getElementById('cfg-bloques');
