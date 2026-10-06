@@ -316,7 +316,26 @@ input[type=range]{width:100%;}
       <div class="tb-hi">Atleta</div>
       <div class="tb-name cond" id="who">—</div>
     </div>
-    <button class="tb-out" onclick="logout()">Salir</button>
+    <div style="display:flex;gap:8px;">
+      <button class="tb-out" onclick="abrirCambiarPin()">🔑 PIN</button>
+      <button class="tb-out" onclick="logout()">Salir</button>
+    </div>
+  </div>
+
+  <!-- CAMBIAR PIN -->
+  <div id="pin-modal" style="display:none;position:fixed;inset:0;z-index:80;background:rgba(0,0,0,.7);align-items:center;justify-content:center;padding:24px;">
+    <div style="width:100%;max-width:320px;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:22px;text-align:center;">
+      <div style="font-size:16px;font-weight:700;margin-bottom:4px;">Cambiar mi PIN</div>
+      <div style="font-size:12px;color:var(--text-dim);margin-bottom:16px;">De 4 a 6 cifras. Úsalo la próxima vez que entres.</div>
+      <input id="pin-actual" type="tel" inputmode="numeric" maxlength="6" placeholder="PIN actual" autocomplete="off" style="width:100%;padding:11px;margin-bottom:8px;text-align:center;background:var(--surface2);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:15px;outline:none;">
+      <input id="pin-nuevo" type="tel" inputmode="numeric" maxlength="6" placeholder="PIN nuevo" autocomplete="off" style="width:100%;padding:11px;margin-bottom:8px;text-align:center;background:var(--surface2);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:15px;outline:none;">
+      <input id="pin-nuevo2" type="tel" inputmode="numeric" maxlength="6" placeholder="Repite el PIN nuevo" autocomplete="off" style="width:100%;padding:11px;margin-bottom:8px;text-align:center;background:var(--surface2);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:15px;outline:none;">
+      <div id="pin-err" style="color:var(--red);font-size:12px;min-height:16px;margin-bottom:10px;"></div>
+      <div style="display:flex;gap:8px;">
+        <button class="tb-out" style="flex:1;padding:12px;" onclick="cerrarCambiarPin()">Cancelar</button>
+        <button class="l-btn" id="pin-save" style="flex:1;margin:0;width:auto;padding:12px;" onclick="guardarNuevoPin()">Guardar</button>
+      </div>
+    </div>
   </div>
 
   <!-- SEMANA -->
@@ -516,6 +535,29 @@ async function doLogin(){
     }else{err.textContent=(r&&r.error)||'Email o PIN incorrecto';}
   }catch(e){err.textContent='Sin conexión. Reintenta.';}
   btn.disabled=false;btn.textContent='Entrar';
+}
+function abrirCambiarPin(){
+  ['pin-actual','pin-nuevo','pin-nuevo2'].forEach(function(id){document.getElementById(id).value='';});
+  document.getElementById('pin-err').textContent='';
+  document.getElementById('pin-modal').style.display='flex';
+}
+function cerrarCambiarPin(){document.getElementById('pin-modal').style.display='none';}
+async function guardarNuevoPin(){
+  var a=document.getElementById('pin-actual').value.trim();
+  var n=document.getElementById('pin-nuevo').value.trim();
+  var n2=document.getElementById('pin-nuevo2').value.trim();
+  var err=document.getElementById('pin-err');err.textContent='';
+  if(!a){err.textContent='Escribe tu PIN actual';return;}
+  if(!/^\d{4,6}$/.test(n)){err.textContent='El PIN nuevo debe tener de 4 a 6 cifras';return;}
+  if(n!==n2){err.textContent='Los dos PIN nuevos no coinciden';return;}
+  if(n===a){err.textContent='El PIN nuevo es igual al actual';return;}
+  var btn=document.getElementById('pin-save');btn.disabled=true;btn.textContent='…';
+  try{
+    var r=await apiPost({action:'cambiarPin',nombre:ATLETA,pinActual:a,pinNuevo:n});
+    if(r&&r.ok){cerrarCambiarPin();toast('✅ PIN cambiado','ok');}
+    else{err.textContent=(r&&r.error)||'No se pudo cambiar el PIN';}
+  }catch(e){err.textContent='Sin conexión. Reintenta.';}
+  btn.disabled=false;btn.textContent='Guardar';
 }
 function logout(){try{localStorage.removeItem('gc_atleta');}catch(e){}ATLETA=null;document.getElementById('app').style.display='none';document.getElementById('login').style.display='flex';document.getElementById('pin').value='';}
 function enterApp(){
