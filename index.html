@@ -375,6 +375,18 @@ td{padding:11px 14px;border-top:1px solid var(--border);font-size:13px;vertical-
 .ps-ex .param-chip input,.ps-ex .param-chip select{width:46px;}
 .ps-mini{background:transparent;border:1px solid var(--border);color:var(--text-dim);border-radius:5px;padding:1px 6px;font-size:11px;cursor:pointer;}
 .ps-mini:hover{color:var(--text);}
+.ps-ex-top{cursor:pointer;}
+.ps-thumb{width:34px;height:34px;flex:0 0 34px;border-radius:6px;overflow:hidden;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:14px;}
+.ps-thumb img{width:100%;height:100%;object-fit:cover;}
+.ps-ex-main{flex:1;min-width:0;}
+.ps-ex-sum{font-size:11px;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.ps-caret{font-size:11px;color:var(--text-muted);padding:0 2px;}
+.ps-ex.open{background:var(--surface2);margin:0 -10px;padding:8px 10px;}
+.ps-ex-detail{padding-top:8px;}
+.ps-ex-big img{width:100%;max-height:130px;object-fit:cover;border-radius:8px;cursor:zoom-in;display:block;}
+.ps-noimg{height:80px;border-radius:8px;background:var(--surface);display:flex;align-items:center;justify-content:center;font-size:26px;}
+.ps-ex-meta{font-size:11px;color:var(--text-muted);margin:6px 0;}
+.ps-ex-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;}
 .ps-foot{display:flex;gap:6px;flex-wrap:wrap;padding:8px 10px;}
 </style>
 </head>
@@ -2442,7 +2454,7 @@ async function saveEjercicio(){
   var btn=document.getElementById('btn-save-ej');btn.disabled=true;btn.innerHTML='<span class="loading-inline"></span> Guardando...';
   var r=editingEjId?await apiPost(Object.assign({action:'updateEjercicio'},data)):await apiPost(Object.assign({action:'addEjercicio'},data));
   btn.disabled=false;btn.textContent='Guardar';
-  if(r.ok){DB.ejercicios[id]=data;renderEjercicios();closeModal('ejercicio');toast('✅ Guardado');}else toast('Error: '+r.error,'err');
+  if(r.ok){DB.ejercicios[id]=data;renderEjercicios();if(currentPrograma&&typeof renderProgramaBoard==='function'&&document.getElementById('pe-content').style.display!=='none')renderProgramaBoard();closeModal('ejercicio');toast('✅ Guardado');}else toast('Error: '+r.error,'err');
 }
 async function deleteEjercicio(){
   if(!editingEjId)return;
@@ -2682,6 +2694,9 @@ function pickEjercicio(id){
     if(!currentTemplate.bloques[bloqueId])currentTemplate.bloques[bloqueId]=[];
     currentTemplate.bloques[bloqueId].push({id:id,params:[{id:'series',val:'3'},{id:'reps',val:'10'},{id:'descanso',val:'90s'}]});
     markDirty();renderBloqueExs(bloqueId);
+  } else if(ejPickerTarget.context==='programa-swap'){
+    var pw=psMat(psCtx.wi,psCtx.dk),tgt=(pw.bloques[bloqueId]||[])[psCtx.ei];
+    if(tgt){tgt.id=id;markDirtyPrograma();renderProgramaBoard();toast('🔄 Ejercicio intercambiado (se mantienen series, reps y cargas)');}
   } else if(ejPickerTarget.context==='programa'){
     var ps=psMat(psCtx.wi,psCtx.dk);
     if(!ps.bloques[bloqueId])ps.bloques[bloqueId]=[];
@@ -2803,12 +2818,12 @@ function renderProgramaList(){
 }
 function newPrograma(){
   var p={id:'prog_'+Date.now(),name:'',weeks:[{dias:{},sesiones:{}}]};
-  DB.programas.push(p);currentPrograma=p;isDirtyPrograma=true;psWeek=0;psOpen={};
+  DB.programas.push(p);currentPrograma=p;isDirtyPrograma=true;psWeek=0;psOpen={};psExOpen={};
   renderProgramaList();showProgramaEditor();
 }
 function selectPrograma(i){
   if(isDirtyPrograma&&!confirm('Hay cambios sin guardar. ¿Continuar?'))return;
-  currentPrograma=JSON.parse(JSON.stringify(DB.programas[i]));isDirtyPrograma=false;psWeek=0;psOpen={};
+  currentPrograma=JSON.parse(JSON.stringify(DB.programas[i]));isDirtyPrograma=false;psWeek=0;psOpen={};psExOpen={};
   renderProgramaList();showProgramaEditor();
 }
 function showProgramaEditor(){
@@ -2839,7 +2854,7 @@ function markDirtyPrograma(){isDirtyPrograma=true;}
 // Modelo: weeks[wi].dias[dayKey] = id de plantilla (como siempre) y, opcionalmente,
 // weeks[wi].sesiones[dayKey] = copia propia {nombre,tplId,bloques,bloqueMeta} para ese
 // día/semana: se crea al editar y la plantilla original no se toca.
-var psWeek=0, psExpandAll=false, psOpen={}, psCtx=null;
+var psWeek=0, psExpandAll=false, psOpen={}, psExOpen={}, psCtx=null;
 function psDiasActivos(week){
   var k={};
   Object.keys((week&&week.dias)||{}).forEach(function(d){if(week.dias[d])k[d]=1;});
@@ -2872,6 +2887,8 @@ function psTextColor(hex){
 function psIsOpen(wi,dk,bid){var k=wi+'|'+dk+'|'+bid;return psExpandAll?psOpen[k]!==false:!!psOpen[k];}
 function psToggle(wi,dk,bid){var k=wi+'|'+dk+'|'+bid;psOpen[k]=!psIsOpen(wi,dk,bid);renderProgramaBoard();}
 function psToggleAll(){psExpandAll=!psExpandAll;psOpen={};renderProgramaBoard();}
+function psToggleEx(wi,dk,bid,ei){var k=wi+'|'+dk+'|'+bid+'|'+ei;psExOpen[k]=!psExOpen[k];renderProgramaBoard();}
+function psSwapEx(wi,dk,bid,ei){psCtx={wi:wi,dk:dk,ei:ei};openEjPicker('programa-swap',bid);}
 function psGoWeek(n){psWeek=n;renderProgramaBoard();}
 function psChip(wi,dk,bid,ei,pi,p){
   var cat=getParamsCatalog().find(function(c){return c.id===p.id;})||{label:p.id,type:'text'};
@@ -2897,12 +2914,31 @@ function psBlockHtml(wi,dk,ses,bid){
     exs.forEach(function(ex,ei){
       var db=DB.ejercicios[ex.id]||{nombre:ex.id};
       var base=wi+','+dk+",'"+bid+"',"+ei;
-      h+='<div class="ps-ex"><div class="ps-ex-top"><div class="ps-ex-name">'+escapeHtml(db.nombre)+'</div>'
-        +'<button class="ps-mini" title="Subir" onclick="psMoveEx('+base+',-1)">▲</button>'
-        +'<button class="ps-mini" title="Bajar" onclick="psMoveEx('+base+',1)">▼</button>'
-        +'<button class="ps-mini" title="Quitar ejercicio" onclick="psDelEx('+base+')">✕</button></div>'
-        +'<div class="ex-params">'+(ex.params||[]).map(function(p,pi){return psChip(wi,dk,bid,ei,pi,p);}).join('')
-        +'<button class="param-add-btn" onclick="psShowParamPicker(event,'+base+')">+ param</button></div></div>';
+      var exOpen=!!psExOpen[wi+'|'+dk+'|'+bid+'|'+ei];
+      var thumb=db.imagen?'<img src="'+escAttr(db.imagen)+'" referrerpolicy="no-referrer" loading="lazy">':'<span>💪</span>';
+      var resumen=[];
+      var se=getParamVal(ex,'series'),re=getParamVal(ex,'reps'),kg=getParamVal(ex,'kg'),de=getParamVal(ex,'descanso');
+      if(se||re)resumen.push((se||'–')+' × '+(re||'–'));
+      if(kg)resumen.push(kg+' kg');
+      if(de)resumen.push('desc. '+de);
+      h+='<div class="ps-ex'+(exOpen?' open':'')+'"><div class="ps-ex-top" onclick="psToggleEx('+base+')">'
+        +'<div class="ps-thumb">'+thumb+'</div>'
+        +'<div class="ps-ex-main"><div class="ps-ex-name">'+escapeHtml(db.nombre)+'</div><div class="ps-ex-sum">'+escapeHtml(resumen.join(' · '))+'</div></div>'
+        +'<button class="ps-mini" title="Subir" onclick="event.stopPropagation();psMoveEx('+base+',-1)">▲</button>'
+        +'<button class="ps-mini" title="Bajar" onclick="event.stopPropagation();psMoveEx('+base+',1)">▼</button>'
+        +'<span class="ps-caret">'+(exOpen?'▾':'▸')+'</span></div>';
+      if(exOpen){
+        h+='<div class="ps-ex-detail">'
+          +'<div class="ps-ex-big">'+(db.imagen?'<img src="'+escAttr(db.imagen)+'" referrerpolicy="no-referrer" onclick="showDetail(\''+escAttr(ex.id)+'\')" title="Ver ficha completa">':'<div class="ps-noimg">💪</div>')+'</div>'
+          +'<div class="ps-ex-meta">'+escapeHtml((db.categoria||'')+(db.musculos?' · '+db.musculos:''))+'</div>'
+          +'<div class="ex-params">'+(ex.params||[]).map(function(p,pi){return psChip(wi,dk,bid,ei,pi,p);}).join('')
+          +'<button class="param-add-btn" onclick="psShowParamPicker(event,'+base+')">+ param</button></div>'
+          +'<div class="ps-ex-actions">'
+          +'<button class="btn btn-secondary btn-xs" onclick="psSwapEx('+base+')">🔄 Intercambiar</button>'
+          +'<button class="btn btn-secondary btn-xs" onclick="showDetail(\''+escAttr(ex.id)+'\')">👁 Ver ficha / editar</button>'
+          +'<button class="btn btn-danger btn-xs" onclick="psDelEx('+base+')">✕ Quitar</button></div></div>';
+      }
+      h+='</div>';
     });
     h+='<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;"><button class="btn btn-secondary btn-xs" onclick="psAddEx('+wi+','+dk+",'"+bid+"')\">+ Ejercicio</button>"
       +'<button class="btn btn-danger btn-xs" onclick="psDelBloque('+wi+','+dk+",'"+bid+"')\">✕ Quitar bloque</button></div></div>";
@@ -3006,12 +3042,12 @@ function psDelBloque(wi,dk,bid){
 function psMoveEx(wi,dk,bid,ei,dir){
   var s=psMat(wi,dk),arr=s.bloques[bid]||[],j=ei+dir;
   if(j<0||j>=arr.length)return;
-  var t=arr[ei];arr[ei]=arr[j];arr[j]=t;
+  var t=arr[ei];arr[ei]=arr[j];arr[j]=t;psExOpen={};
   markDirtyPrograma();renderProgramaBoard();
 }
 function psDelEx(wi,dk,bid,ei){
-  var s=psMat(wi,dk);s.bloques[bid].splice(ei,1);
-  markDirtyPrograma();renderProgramaBoard();
+  var s=psMat(wi,dk);s.bloques[bid].splice(ei,1);psExOpen={};
+  markDirtyPrograma();renderProgramaBoard();renderProgramaList();
 }
 function psParam(wi,dk,bid,ei,pi,v){
   var s=psMat(wi,dk),ex=(s.bloques[bid]||[])[ei];
