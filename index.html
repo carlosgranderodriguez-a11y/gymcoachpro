@@ -172,7 +172,7 @@ td{padding:11px 14px;border-top:1px solid var(--border);font-size:13px;vertical-
 .detail-section{margin-bottom:14px;}
 .detail-label{font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--text-muted);margin-bottom:4px;}
 .detail-val{font-size:13px;color:var(--text-dim);line-height:1.6;}
-.template-layout{display:grid;grid-template-columns:260px 1fr;gap:20px;min-height:600px;}
+.template-layout{display:grid;grid-template-columns:260px minmax(0,1fr);gap:20px;min-height:600px;}
 .template-list-panel{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;}
 .tlp-header{padding:14px 16px;border-bottom:1px solid var(--border);}
 .tlp-title{font-size:13px;font-weight:600;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;}
@@ -182,7 +182,7 @@ td{padding:11px 14px;border-top:1px solid var(--border);font-size:13px;vertical-
 .template-item-name{font-size:14px;font-weight:600;}
 .template-item-meta{font-size:11px;color:var(--text-muted);margin-top:2px;}
 .template-empty{padding:32px 16px;text-align:center;color:var(--text-muted);font-size:13px;}
-.template-editor{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;}
+.template-editor{min-width:0;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;}
 .te-no-selection{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:var(--text-muted);font-size:14px;gap:8px;}
 .te-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid var(--border);}
 .te-name-input{font-size:18px;font-weight:700;background:transparent;border:none;color:var(--text);outline:none;flex:1;margin-right:16px;}
@@ -343,6 +343,39 @@ td{padding:11px 14px;border-top:1px solid var(--border);font-size:13px;vertical-
 .toast.err{border-color:var(--red);color:var(--red);}
 .loading-inline{display:inline-block;width:14px;height:14px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 0.7s linear infinite;margin-right:6px;vertical-align:middle;}
 @keyframes spin{to{transform:rotate(360deg);}}
+
+.content:has(#page-programas.active){max-width:none;}
+#page-programas .template-layout{grid-template-columns:200px minmax(0,1fr);}
+.ps-day{flex:0 0 280px !important;}
+@media(max-width:900px){#page-programas .template-layout{grid-template-columns:minmax(0,1fr);}}
+/* ── Programas: tablero semanal ── */
+.ps-toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px;}
+.ps-toolbar select{padding:8px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;outline:none;}
+.ps-board{display:flex;gap:10px;overflow-x:auto;padding-bottom:12px;align-items:flex-start;}
+.ps-day{flex:0 0 310px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;overflow:hidden;}
+.ps-day-head{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-bottom:1px solid var(--border);font-size:13px;font-weight:700;}
+.ps-day-head small{color:var(--text-muted);font-weight:500;font-size:11px;}
+.ps-day-tpl{padding:8px 10px;border-bottom:1px solid var(--border);}
+.ps-day-tpl select{width:100%;padding:6px 8px;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;outline:none;}
+.ps-ses-row{display:flex;gap:6px;align-items:center;margin-top:6px;}
+.ps-ses-name{flex:1;min-width:0;padding:6px 8px;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;outline:none;}
+.ps-badge{font-size:10px;color:var(--text-muted);white-space:nowrap;}
+.ps-rest{padding:26px 12px;text-align:center;color:var(--text-muted);font-size:12px;}
+.ps-block{border-bottom:1px solid var(--border);}
+.ps-block-head{display:flex;align-items:center;gap:8px;padding:10px 12px;cursor:pointer;font-size:12px;font-weight:700;user-select:none;}
+.ps-block-head .ps-bn{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.ps-block-head .ps-bc{font-weight:500;opacity:.8;font-size:11px;white-space:nowrap;}
+.ps-block-body{background:var(--surface);padding:8px 10px;}
+.ps-bname{width:100%;margin-bottom:8px;padding:5px 8px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;outline:none;box-sizing:border-box;}
+.ps-ex{padding:8px 0;border-bottom:1px dashed var(--border);}
+.ps-ex:last-of-type{border-bottom:none;}
+.ps-ex-top{display:flex;align-items:center;gap:4px;margin-bottom:6px;}
+.ps-ex-name{flex:1;min-width:0;font-size:12px;font-weight:600;}
+.ps-ex .ex-params{display:flex;flex-wrap:wrap;gap:4px;}
+.ps-ex .param-chip input,.ps-ex .param-chip select{width:46px;}
+.ps-mini{background:transparent;border:1px solid var(--border);color:var(--text-dim);border-radius:5px;padding:1px 6px;font-size:11px;cursor:pointer;}
+.ps-mini:hover{color:var(--text);}
+.ps-foot{display:flex;gap:6px;flex-wrap:wrap;padding:8px 10px;}
 </style>
 </head>
 <body>
@@ -2649,6 +2682,12 @@ function pickEjercicio(id){
     if(!currentTemplate.bloques[bloqueId])currentTemplate.bloques[bloqueId]=[];
     currentTemplate.bloques[bloqueId].push({id:id,params:[{id:'series',val:'3'},{id:'reps',val:'10'},{id:'descanso',val:'90s'}]});
     markDirty();renderBloqueExs(bloqueId);
+  } else if(ejPickerTarget.context==='programa'){
+    var ps=psMat(psCtx.wi,psCtx.dk);
+    if(!ps.bloques[bloqueId])ps.bloques[bloqueId]=[];
+    ps.bloques[bloqueId].push({id:id,params:[{id:'series',val:'3'},{id:'reps',val:'10'},{id:'kg',val:''},{id:'descanso',val:'90s'}]});
+    psOpen[psCtx.wi+'|'+psCtx.dk+'|'+bloqueId]=true;
+    markDirtyPrograma();renderProgramaBoard();renderProgramaList();
   } else {
     if(!editingSesion.bloques[bloqueId])editingSesion.bloques[bloqueId]=[];
     editingSesion.bloques[bloqueId].push({id:id,params:[{id:'series',val:'3'},{id:'reps',val:'10'},{id:'kg',val:''},{id:'descanso',val:'90s'}]});
@@ -2758,18 +2797,18 @@ function renderProgramaList(){
   var list=document.getElementById('programa-list');if(!list)return;
   if(!DB.programas.length){list.innerHTML='<div class="template-empty">Sin programas.<br>Crea el primero.</div>';return;}
   list.innerHTML=DB.programas.map(function(p,i){
-    var totalSesiones=(p.weeks||[]).reduce(function(acc,w){return acc+Object.keys(w.dias||{}).length;},0);
+    var totalSesiones=(p.weeks||[]).reduce(function(acc,w){return acc+psDiasActivos(w).length;},0);
     return '<div class="template-item'+(currentPrograma&&currentPrograma.id===p.id?' active':'')+'" onclick="selectPrograma('+i+')"><div class="template-item-name">'+(p.name||'(sin nombre)')+'</div><div class="template-item-meta">'+(p.weeks||[]).length+' semanas · '+totalSesiones+' sesiones</div></div>';
   }).join('');
 }
 function newPrograma(){
-  var p={id:'prog_'+Date.now(),name:'',weeks:[{dias:{}}]};
-  DB.programas.push(p);currentPrograma=p;isDirtyPrograma=true;
+  var p={id:'prog_'+Date.now(),name:'',weeks:[{dias:{},sesiones:{}}]};
+  DB.programas.push(p);currentPrograma=p;isDirtyPrograma=true;psWeek=0;psOpen={};
   renderProgramaList();showProgramaEditor();
 }
 function selectPrograma(i){
   if(isDirtyPrograma&&!confirm('Hay cambios sin guardar. ¿Continuar?'))return;
-  currentPrograma=JSON.parse(JSON.stringify(DB.programas[i]));isDirtyPrograma=false;
+  currentPrograma=JSON.parse(JSON.stringify(DB.programas[i]));isDirtyPrograma=false;psWeek=0;psOpen={};
   renderProgramaList();showProgramaEditor();
 }
 function showProgramaEditor(){
@@ -2795,35 +2834,212 @@ function onPeAssignEquipoChange(){
   if(selEq&&selEq.value) document.getElementById('pe-assign-atleta').selectedIndex=-1;
 }
 function markDirtyPrograma(){isDirtyPrograma=true;}
-function addSemana(){currentPrograma.weeks.push({dias:{}});markDirtyPrograma();renderProgramaWeeks();renderProgramaList();}
+
+// ── Tablero semanal del programa (días en columnas, bloques plegables, ejercicios editables) ──
+// Modelo: weeks[wi].dias[dayKey] = id de plantilla (como siempre) y, opcionalmente,
+// weeks[wi].sesiones[dayKey] = copia propia {nombre,tplId,bloques,bloqueMeta} para ese
+// día/semana: se crea al editar y la plantilla original no se toca.
+var psWeek=0, psExpandAll=false, psOpen={}, psCtx=null;
+function psDiasActivos(week){
+  var k={};
+  Object.keys((week&&week.dias)||{}).forEach(function(d){if(week.dias[d])k[d]=1;});
+  Object.keys((week&&week.sesiones)||{}).forEach(function(d){k[d]=1;});
+  return Object.keys(k);
+}
+function psTpl(id){return DB.templates.find(function(t){return t.id===id;});}
+function psSesion(wi,dk){
+  var w=currentPrograma.weeks[wi];
+  if(w.sesiones&&w.sesiones[dk])return w.sesiones[dk];
+  var t=psTpl((w.dias||{})[dk]);
+  return t?{nombre:t.name,tplId:t.id,bloques:t.bloques||{},bloqueMeta:t.bloqueMeta||{},_tpl:true}:null;
+}
+function psMat(wi,dk){
+  var w=currentPrograma.weeks[wi];
+  if(!w.sesiones)w.sesiones={};
+  if(!w.dias)w.dias={};
+  if(!w.sesiones[dk]){
+    var t=psTpl(w.dias[dk]);
+    w.sesiones[dk]={nombre:t?t.name:'Sesión',tplId:t?t.id:'',bloques:JSON.parse(JSON.stringify((t&&t.bloques)||{})),bloqueMeta:JSON.parse(JSON.stringify((t&&t.bloqueMeta)||{}))};
+    if(!w.dias[dk])w.dias[dk]=t?t.id:'__custom__';
+  }
+  return w.sesiones[dk];
+}
+function psTextColor(hex){
+  var m=/^#?([0-9a-f]{6})$/i.exec(hex||'');if(!m)return '#fff';
+  var n=parseInt(m[1],16),r=(n>>16)&255,g=(n>>8)&255,b=n&255;
+  return (0.299*r+0.587*g+0.114*b)/255>0.6?'#111':'#fff';
+}
+function psIsOpen(wi,dk,bid){var k=wi+'|'+dk+'|'+bid;return psExpandAll?psOpen[k]!==false:!!psOpen[k];}
+function psToggle(wi,dk,bid){var k=wi+'|'+dk+'|'+bid;psOpen[k]=!psIsOpen(wi,dk,bid);renderProgramaBoard();}
+function psToggleAll(){psExpandAll=!psExpandAll;psOpen={};renderProgramaBoard();}
+function psGoWeek(n){psWeek=n;renderProgramaBoard();}
+function psChip(wi,dk,bid,ei,pi,p){
+  var cat=getParamsCatalog().find(function(c){return c.id===p.id;})||{label:p.id,type:'text'};
+  var base=wi+','+dk+",'"+bid+"',"+ei+','+pi;
+  var input;
+  if(cat.type==='select'){
+    input='<select onchange="psParam('+base+',this.value)">'+(cat.options||[]).map(function(o){return '<option'+(p.val===o?' selected':'')+'>'+escapeHtml(o)+'</option>';}).join('')+'</select>';
+  } else {
+    input='<input type="'+(cat.type==='number'?'number':'text')+'" value="'+escAttr(p.val||'')+'" oninput="psParam('+base+',this.value)">';
+  }
+  var lbl=cat.label+(cat.unidad?' ('+cat.unidad+')':'');
+  return '<div class="param-chip"><label>'+escapeHtml(lbl)+'</label>'+input+'<button type="button" class="param-chip-remove" title="Quitar parámetro" onclick="psDelParam('+base+')">✕</button></div>';
+}
+function psBlockHtml(wi,dk,ses,bid){
+  var meta=resolveBloqueMeta(bid,ses);
+  var exs=ses.bloques[bid]||[];
+  var open=psIsOpen(wi,dk,bid);
+  var tc=psTextColor(meta.color);
+  var h='<div class="ps-block"><div class="ps-block-head" style="background:'+meta.color+';color:'+tc+'" onclick="psToggle('+wi+','+dk+",'"+bid+"')\">"
+    +'<span>'+(open?'▾':'▸')+'</span><span class="ps-bn">'+escapeHtml(meta.name)+'</span><span class="ps-bc">'+exs.length+(exs.length===1?' ejercicio':' ejercicios')+'</span></div>';
+  if(open){
+    h+='<div class="ps-block-body"><input class="ps-bname" value="'+escAttr(meta.name)+'" placeholder="Nombre del bloque" oninput="psRenBloque('+wi+','+dk+",'"+bid+"',this.value)\">";
+    exs.forEach(function(ex,ei){
+      var db=DB.ejercicios[ex.id]||{nombre:ex.id};
+      var base=wi+','+dk+",'"+bid+"',"+ei;
+      h+='<div class="ps-ex"><div class="ps-ex-top"><div class="ps-ex-name">'+escapeHtml(db.nombre)+'</div>'
+        +'<button class="ps-mini" title="Subir" onclick="psMoveEx('+base+',-1)">▲</button>'
+        +'<button class="ps-mini" title="Bajar" onclick="psMoveEx('+base+',1)">▼</button>'
+        +'<button class="ps-mini" title="Quitar ejercicio" onclick="psDelEx('+base+')">✕</button></div>'
+        +'<div class="ex-params">'+(ex.params||[]).map(function(p,pi){return psChip(wi,dk,bid,ei,pi,p);}).join('')
+        +'<button class="param-add-btn" onclick="psShowParamPicker(event,'+base+')">+ param</button></div></div>';
+    });
+    h+='<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;"><button class="btn btn-secondary btn-xs" onclick="psAddEx('+wi+','+dk+",'"+bid+"')\">+ Ejercicio</button>"
+      +'<button class="btn btn-danger btn-xs" onclick="psDelBloque('+wi+','+dk+",'"+bid+"')\">✕ Quitar bloque</button></div></div>";
+  }
+  return h+'</div>';
+}
+function psDayHtml(wi,di){
+  var dk=di+1, week=currentPrograma.weeks[wi];
+  var ses=psSesion(wi,dk);
+  var custom=!!(week.sesiones&&week.sesiones[dk]);
+  var total=ses?Object.keys(ses.bloques).reduce(function(a,b){return a+(ses.bloques[b]||[]).length;},0):0;
+  var tplId=(week.dias||{})[dk]||'';
+  var sel='<option value="">— Descanso —</option><option value="__custom__"'+(tplId==='__custom__'?' selected':'')+'>✚ Sesión en blanco</option>'
+    +DB.templates.map(function(t){return '<option value="'+escAttr(t.id)+'"'+(t.id===tplId?' selected':'')+'>'+escapeHtml(t.name)+'</option>';}).join('');
+  var h='<div class="ps-day"><div class="ps-day-head"><span>Día '+dk+' · '+DIAS_SEMANA[di]+'</span><small>'+(ses?total+' ej.':'')+'</small></div>'
+    +'<div class="ps-day-tpl"><select onchange="psSetTpl('+wi+','+dk+',this.value)">'+sel+'</select>';
+  if(ses){
+    h+='<div class="ps-ses-row"><input class="ps-ses-name" value="'+escAttr(ses.nombre||'')+'" placeholder="Nombre de la sesión" oninput="psRename('+wi+','+dk+',this.value)">'
+      +(custom?'<span class="ps-badge" title="Copia propia de este día; la plantilla original no cambia">✎ propia</span>':'<span class="ps-badge">plantilla</span>')
+      +'</div>';
+    if(custom&&ses.tplId&&psTpl(ses.tplId))h+='<div style="margin-top:6px"><button class="ps-mini" onclick="psRestore('+wi+','+dk+')">↺ Volver a la plantilla original</button></div>';
+  }
+  h+='</div>';
+  if(!ses){h+='<div class="ps-rest">Descanso</div>';}
+  else{
+    var ids=Object.keys(ses.bloques);
+    if(!ids.length)h+='<div class="ps-rest">Sin bloques todavía</div>';
+    ids.forEach(function(bid){h+=psBlockHtml(wi,dk,ses,bid);});
+    h+='<div class="ps-foot"><button class="btn btn-secondary btn-xs" onclick="psAddBloque('+wi+','+dk+')">+ Añadir bloque</button></div>';
+  }
+  return h+'</div>';
+}
+function renderProgramaBoard(){
+  var c=document.getElementById('pe-weeks-container');if(!c||!currentPrograma)return;
+  var old=c.querySelector('.ps-board');var sl=old?old.scrollLeft:0;
+  var n=currentPrograma.weeks.length;
+  if(psWeek>=n)psWeek=n-1;if(psWeek<0)psWeek=0;
+  var week=currentPrograma.weeks[psWeek];if(!week.dias)week.dias={};
+  var opts='';for(var i=0;i<n;i++)opts+='<option value="'+i+'"'+(i===psWeek?' selected':'')+'>Semana '+(i+1)+' de '+n+'</option>';
+  var h='<div class="ps-toolbar">'
+    +'<button class="btn btn-secondary btn-sm" onclick="psGoWeek('+(psWeek-1)+')"'+(psWeek===0?' disabled':'')+'>‹</button>'
+    +'<select onchange="psGoWeek(parseInt(this.value,10))">'+opts+'</select>'
+    +'<button class="btn btn-secondary btn-sm" onclick="psGoWeek('+(psWeek+1)+')"'+(psWeek>=n-1?' disabled':'')+'>›</button>'
+    +'<span style="flex:1"></span>'
+    +'<button class="btn btn-secondary btn-sm" onclick="psToggleAll()">'+(psExpandAll?'Contraer bloques':'Expandir bloques')+'</button>'
+    +'<button class="btn btn-secondary btn-sm" onclick="addSemana()">+ Semana</button>'
+    +'<button class="btn btn-secondary btn-sm" onclick="duplicarSemana('+psWeek+')">⧉ Duplicar semana</button>'
+    +'<button class="btn btn-danger btn-sm" onclick="removeSemana('+psWeek+')">✕ Quitar semana</button></div>'
+    +'<div class="ps-board">';
+  for(var di=0;di<7;di++)h+=psDayHtml(psWeek,di);
+  h+='</div>';
+  c.innerHTML=h;
+  var nb=c.querySelector('.ps-board');if(nb)nb.scrollLeft=sl;
+}
+function renderProgramaWeeks(){renderProgramaBoard();}
+function addSemana(){currentPrograma.weeks.push({dias:{},sesiones:{}});psWeek=currentPrograma.weeks.length-1;markDirtyPrograma();renderProgramaBoard();renderProgramaList();}
+function duplicarSemana(wi){
+  var copia=JSON.parse(JSON.stringify(currentPrograma.weeks[wi]));
+  currentPrograma.weeks.splice(wi+1,0,copia);psWeek=wi+1;
+  markDirtyPrograma();renderProgramaBoard();renderProgramaList();toast('Semana duplicada');
+}
 function removeSemana(wi){
   if(currentPrograma.weeks.length<=1){toast('Debe quedar al menos una semana','err');return;}
   if(!confirm('¿Quitar la semana '+(wi+1)+'?'))return;
-  currentPrograma.weeks.splice(wi,1);markDirtyPrograma();renderProgramaWeeks();renderProgramaList();
+  currentPrograma.weeks.splice(wi,1);if(psWeek>=currentPrograma.weeks.length)psWeek=currentPrograma.weeks.length-1;
+  markDirtyPrograma();renderProgramaBoard();renderProgramaList();
 }
-function setDiaPrograma(wi,dayKey,tplId){
-  if(!currentPrograma.weeks[wi].dias)currentPrograma.weeks[wi].dias={};
-  if(tplId)currentPrograma.weeks[wi].dias[dayKey]=tplId;else delete currentPrograma.weeks[wi].dias[dayKey];
-  markDirtyPrograma();renderProgramaList();
+function psSetTpl(wi,dk,val){
+  var w=currentPrograma.weeks[wi];if(!w.dias)w.dias={};
+  var tieneCopia=!!(w.sesiones&&w.sesiones[dk]);
+  if(tieneCopia&&!confirm('Este día tiene cambios propios. Si cambias de plantilla se perderán. ¿Continuar?')){renderProgramaBoard();return;}
+  if(w.sesiones)delete w.sesiones[dk];
+  if(!val){delete w.dias[dk];}
+  else if(val==='__custom__'){
+    if(!w.sesiones)w.sesiones={};
+    w.dias[dk]='__custom__';
+    w.sesiones[dk]={nombre:'Sesión',tplId:'',bloques:{},bloqueMeta:{}};
+  } else w.dias[dk]=val;
+  markDirtyPrograma();renderProgramaBoard();renderProgramaList();
 }
-function renderProgramaWeeks(){
-  var c=document.getElementById('pe-weeks-container');c.innerHTML='';
-  currentPrograma.weeks.forEach(function(week,wi){
-    if(!week.dias)week.dias={};
-    var div=document.createElement('div');
-    div.style.cssText='background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:12px;';
-    var header='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;"><div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text-dim)">Semana '+(wi+1)+'</div><button class="btn btn-danger btn-xs" onclick="removeSemana('+wi+')">✕ Quitar semana</button></div>';
-    var days='<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:8px;">';
-    DIAS_SEMANA.forEach(function(dname,di){
-      var dayKey=di+1;
-      var tplId=week.dias[dayKey]||'';
-      var options='<option value="">— Descanso —</option>'+DB.templates.map(function(t){return '<option value="'+t.id+'"'+(t.id===tplId?' selected':'')+'>'+t.name+'</option>';}).join('');
-      days+='<div><label style="font-size:10px;color:var(--text-muted);display:block;margin-bottom:4px;">'+dname+'</label><select onchange="setDiaPrograma('+wi+','+dayKey+',this.value)" style="width:100%;padding:6px 8px;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:11px;outline:none;">'+options+'</select></div>';
-    });
-    days+='</div>';
-    div.innerHTML=header+days;
-    c.appendChild(div);
-  });
+function psRename(wi,dk,v){psMat(wi,dk).nombre=v;markDirtyPrograma();}
+function psRestore(wi,dk){
+  if(!confirm('Se descartan los cambios de este día y vuelve a la plantilla original. ¿Continuar?'))return;
+  var w=currentPrograma.weeks[wi];if(w.sesiones)delete w.sesiones[dk];
+  markDirtyPrograma();renderProgramaBoard();
+}
+function psRenBloque(wi,dk,bid,v){
+  var s=psMat(wi,dk);if(!s.bloqueMeta)s.bloqueMeta={};
+  var prev=resolveBloqueMeta(bid,s).color;
+  s.bloqueMeta[bid]={name:(v||'').trim()||baseTipoName(bid),color:prev};
+  markDirtyPrograma();
+}
+function psAddEx(wi,dk,bid){psCtx={wi:wi,dk:dk};openEjPicker('programa',bid);}
+function psAddBloque(wi,dk){psCtx={wi:wi,dk:dk};openNewBloque('programa');}
+function psDelBloque(wi,dk,bid){
+  var s=psMat(wi,dk);
+  if((s.bloques[bid]||[]).length&&!confirm('Este bloque tiene ejercicios. ¿Quitarlo?'))return;
+  delete s.bloques[bid];if(s.bloqueMeta)delete s.bloqueMeta[bid];
+  markDirtyPrograma();renderProgramaBoard();renderProgramaList();
+}
+function psMoveEx(wi,dk,bid,ei,dir){
+  var s=psMat(wi,dk),arr=s.bloques[bid]||[],j=ei+dir;
+  if(j<0||j>=arr.length)return;
+  var t=arr[ei];arr[ei]=arr[j];arr[j]=t;
+  markDirtyPrograma();renderProgramaBoard();
+}
+function psDelEx(wi,dk,bid,ei){
+  var s=psMat(wi,dk);s.bloques[bid].splice(ei,1);
+  markDirtyPrograma();renderProgramaBoard();
+}
+function psParam(wi,dk,bid,ei,pi,v){
+  var s=psMat(wi,dk),ex=(s.bloques[bid]||[])[ei];
+  if(ex&&ex.params&&ex.params[pi])ex.params[pi].val=v;
+  markDirtyPrograma();
+}
+function psDelParam(wi,dk,bid,ei,pi){
+  var s=psMat(wi,dk),ex=(s.bloques[bid]||[])[ei];
+  if(ex&&ex.params)ex.params.splice(pi,1);
+  markDirtyPrograma();renderProgramaBoard();
+}
+function psShowParamPicker(e,wi,dk,bid,ei){
+  e.stopPropagation();
+  var s=psSesion(wi,dk),ex=s&&(s.bloques[bid]||[])[ei];if(!ex)return;
+  var picker=document.getElementById('param-picker');
+  var existing=(ex.params||[]).map(function(p){return p.id;});
+  var available=getParamsCatalog().filter(function(p){return existing.indexOf(p.id)===-1;});
+  if(!available.length){toast('Todos los parámetros añadidos');return;}
+  picker.innerHTML=available.map(function(p){return '<div class="param-picker-item" onclick="psAddParam('+wi+','+dk+",'"+bid+"',"+ei+",'"+p.id+"')\">"+escapeHtml(p.label)+(p.unidad?' <span style="color:var(--text-muted);">('+escapeHtml(p.unidad)+')</span>':'')+'</div>';}).join('');
+  positionPicker(picker,e.target.getBoundingClientRect());
+}
+function psAddParam(wi,dk,bid,ei,pid){
+  var cat=getParamsCatalog().find(function(c){return c.id===pid;});
+  var val=cat&&cat.type==='select'&&cat.options?cat.options[0]:'';
+  var s=psMat(wi,dk);if(!s.bloques[bid][ei].params)s.bloques[bid][ei].params=[];
+  s.bloques[bid][ei].params.push({id:pid,val:val});
+  document.getElementById('param-picker').style.display='none';
+  markDirtyPrograma();renderProgramaBoard();
 }
 async function savePrograma(){
   var name=document.getElementById('pe-name').value.trim();
@@ -2836,7 +3052,7 @@ async function savePrograma(){
   try{
     var r=await apiPost({action:'saveProgram',program:currentPrograma});
     if(r&&r.ok)toast('✅ Guardado');
-    else toast('⚠️ Guardado en este navegador. Aún no sincroniza con el servidor (falta soporte en el backend).','err');
+    else toast('⚠️ Guardado solo en este navegador: '+((r&&r.error)||'el servidor no lo aceptó')+'. Si el programa es muy grande hace falta actualizar el backend (Código.gs).','err');
   }catch(e){toast('⚠️ Guardado en este navegador. Sin conexión con el servidor.','err');}
 }
 function deletePrograma(){
@@ -2856,9 +3072,11 @@ async function crearSesionesProgramaParaAtleta(atleta,fechaInicio){
   var monday=new Date(start);monday.setDate(monday.getDate()+offsetToMonday);
   var ok=0,fail=0;
   for(var wi=0;wi<currentPrograma.weeks.length;wi++){
-    var dias=currentPrograma.weeks[wi].dias||{};
-    for(var dayKey in dias){
-      var tpl=DB.templates.find(function(t){return t.id===dias[dayKey];});
+    var semana=currentPrograma.weeks[wi];
+    var diasActivos=psDiasActivos(semana);
+    for(var di2=0;di2<diasActivos.length;di2++){
+      var dayKey=diasActivos[di2];
+      var tpl=psSesion(wi,dayKey);
       if(!tpl)continue;
       var fecha=new Date(monday);fecha.setDate(fecha.getDate()+wi*7+(parseInt(dayKey,10)-1));
       var fechaStr=fecha.getFullYear()+'-'+String(fecha.getMonth()+1).padStart(2,'0')+'-'+String(fecha.getDate()).padStart(2,'0');
@@ -2868,7 +3086,7 @@ async function crearSesionesProgramaParaAtleta(atleta,fechaInicio){
           ejercicios.push({id:ex.id,bloque:tipoDeBloqueKey(bId),bloqueInstancia:(bId.indexOf('::')>-1?bId.split('::')[1]:''),sets:getParamVal(ex,'series')||'3',reps:getParamVal(ex,'reps')||'10',load:getParamVal(ex,'kg')||'—',rest:getParamVal(ex,'descanso')||'90s',params:ex.params});
         });
       });
-      var nombreSesion=currentPrograma.name+' · S'+(wi+1)+' · '+tpl.name;
+      var nombreSesion=currentPrograma.name+' · S'+(wi+1)+' · '+(tpl.nombre||'Sesión');
       try{
         var r=await apiPost({action:'addSesion',atleta:atleta,fecha:fechaStr,nombre:nombreSesion,ejercicios:ejercicios});
         if(r&&r.ok){ok++;DB.sesiones.push({id:r.id,atleta:atleta,fecha:fechaStr,nombre:nombreSesion,ejercicios:ejercicios});}
@@ -2881,10 +3099,11 @@ async function crearSesionesProgramaParaAtleta(atleta,fechaInicio){
 
 async function assignPrograma(){
   if(!currentPrograma)return;
+  var nmIn=document.getElementById('pe-name');if(nmIn&&nmIn.value.trim())currentPrograma.name=nmIn.value.trim();
   var equipoId=document.getElementById('pe-assign-equipo').value;
   var fechaInicio=document.getElementById('pe-assign-fecha').value;
   if(!fechaInicio){toast('Selecciona la fecha de inicio','err');return;}
-  var totalSesionesPorAtleta=currentPrograma.weeks.reduce(function(acc,w){return acc+Object.keys(w.dias||{}).length;},0);
+  var totalSesionesPorAtleta=currentPrograma.weeks.reduce(function(acc,w){return acc+psDiasActivos(w).length;},0);
   if(!totalSesionesPorAtleta){toast('El programa no tiene ninguna sesión asignada','err');return;}
 
   var atletas,equipoNombre='';
@@ -3593,7 +3812,7 @@ async function confirmAddBloque(){
   var preId=document.getElementById('nb-predef').value;
   var name=document.getElementById('nb-name').value.trim();
   if(!name&&!preId){toast('Pon nombre o elige predefinido','err');return;}
-  var target=nbTarget==='template'?currentTemplate.bloques:editingSesion.bloques;
+  var target=nbTarget==='template'?currentTemplate.bloques:(nbTarget==='programa'?psMat(psCtx.wi,psCtx.dk).bloques:editingSesion.bloques);
   var bloqueId,bloqueName,bloqueColor;
   if(preId){
     var def=getBloques().find(function(b){return b.id===preId;});
@@ -3618,6 +3837,15 @@ async function confirmAddBloque(){
     markDirty();
     closeModal('newbloque');
     renderBloques();
+  } else if(nbTarget==='programa'){
+    var psS=psMat(psCtx.wi,psCtx.dk);
+    if(!psS.bloques[bloqueId])psS.bloques[bloqueId]=[];
+    if(!psS.bloqueMeta)psS.bloqueMeta={};
+    psS.bloqueMeta[bloqueId]={name:bloqueName,color:bloqueColor};
+    psOpen[psCtx.wi+'|'+psCtx.dk+'|'+bloqueId]=true;
+    markDirtyPrograma();
+    closeModal('newbloque');
+    renderProgramaBoard();
   } else {
     if(!editingSesion.bloques[bloqueId])editingSesion.bloques[bloqueId]=[];
     if(!editingSesion.bloqueMeta)editingSesion.bloqueMeta={};
