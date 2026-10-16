@@ -214,6 +214,18 @@ td{padding:11px 14px;border-top:1px solid var(--border);font-size:13px;vertical-
 .bloque{background:var(--surface2);border:1px solid var(--border);border-radius:10px;margin-bottom:12px;overflow:hidden;}
 .bloque-header{padding:10px 14px;display:flex;align-items:center;gap:10px;cursor:pointer;}
 .bloque-color{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+.ex-count{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:-4px 0 14px;font-size:13px;color:var(--text-dim);}
+.ex-count b{color:var(--text);font-size:15px;}
+.ex-count .pill{font-size:12px;padding:3px 10px;border-radius:999px;background:var(--surface);border:1px solid var(--border);}
+.bloque-drag{cursor:grab;color:var(--text-muted);font-size:16px;line-height:1;padding:2px 2px;user-select:none;}
+.bloque-drag:active{cursor:grabbing;}
+.bloque-move{display:flex;gap:2px;}
+.bloque-move button{width:24px;height:24px;border:1px solid var(--border);background:var(--surface);border-radius:6px;cursor:pointer;font-size:12px;line-height:1;color:var(--text-dim);padding:0;}
+.bloque-move button:hover:not(:disabled){border-color:var(--accent-ink);color:var(--text);}
+.bloque-move button:disabled{opacity:.35;cursor:default;}
+.bloque.bloque-dragging{opacity:.45;}
+.bloque.bloque-drop-before{box-shadow:0 -3px 0 0 var(--accent-ink);}
+.bloque.bloque-drop-after{box-shadow:0 3px 0 0 var(--accent-ink);}
 .bloque-name{font-size:13px;font-weight:700;flex:1;}
 .bloque-name-input{font-size:13px;font-weight:700;flex:1;min-width:0;background:transparent;border:1px solid transparent;border-radius:6px;padding:5px 7px;color:var(--text);outline:none;font-family:inherit;}
 .bloque-name-input:hover{border-color:var(--border);}
@@ -372,7 +384,7 @@ td{padding:11px 14px;border-top:1px solid var(--border);font-size:13px;vertical-
 .content:has(#page-programas.active){max-width:none;}
 #page-programas .template-layout{grid-template-columns:200px minmax(0,1fr);}
 .ps-day{flex:0 0 280px !important;}
-@media(max-width:900px){#page-programas .template-layout{grid-template-columns:minmax(0,1fr);}}
+@media(max-width:900px){#page-programas .template-layout,.template-layout{grid-template-columns:minmax(0,1fr)!important;}.bloque-type-badge{display:none;}.bloque-header{gap:6px;}.bloque-name-input{min-width:0;}}
 @media(max-width:900px){.te-header{flex-wrap:wrap;gap:10px;}.te-name-input{flex:1 1 100%;min-width:0;}}
 
 /* ── Tema claro: componentes ── */
@@ -695,6 +707,7 @@ function aplicarCodigoAcceso(){
         </div>
       </div>
       <div id="ex-filters" style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:16px;"></div>
+      <div id="ex-count" class="ex-count"></div>
       <div class="ex-grid" id="ejercicios-grid"></div>
     </div>
 
@@ -2494,6 +2507,17 @@ function renderEjercicios(){
   if(filterContr) keys=keys.filter(function(id){return (DB.ejercicios[id].tipo_contraccion||[]).includes(filterContr);});
   if(filterMat) keys=keys.filter(function(id){return (DB.ejercicios[id].material||[]).includes(filterMat);});
   if(filterGrupo) keys=keys.filter(function(id){return (DB.ejercicios[id].grupos_musculares||[]).includes(filterGrupo);});
+  var cnt=document.getElementById('ex-count');
+  if(cnt){
+    var all=Object.keys(DB.ejercicios).map(function(id){return DB.ejercicios[id];});
+    var conVideo=all.filter(function(e){return e.video;}).length;
+    var sinClasif=all.filter(function(e){return !(e.patron&&e.rol);}).length;
+    var filtrando=keys.length!==all.length;
+    cnt.innerHTML='<span><b>'+all.length+'</b> ejercicios en total</span>'
+      +'<span class="pill">▶ '+conVideo+' con vídeo</span>'
+      +'<span class="pill">⚠ '+sinClasif+' sin clasificar</span>'
+      +(filtrando?'<span class="pill" style="border-color:var(--accent-ink);color:var(--text)">Mostrando '+keys.length+'</span>':'');
+  }
   if(!keys.length){grid.innerHTML='<div class="ex-empty">Sin resultados</div>';return;}
   grid.innerHTML=keys.map(function(id){
     var e=DB.ejercicios[id];
@@ -2938,12 +2962,35 @@ function renderBloques(){
   if(!idsUsados.length){
     c.innerHTML='<div style="text-align:center;color:var(--text-muted);font-size:12px;padding:20px;">Añade tu primer bloque (Activación, Fuerza, Potencia... o uno propio).</div>';
   }
-  idsUsados.forEach(function(bloqueId){
+  idsUsados.forEach(function(bloqueId,bi){
     var meta=resolveBloqueMeta(bloqueId,currentTemplate);
     var tipoBase=baseTipoName(bloqueId);
     var exs=currentTemplate.bloques[bloqueId]||[];
     var div=document.createElement('div');div.className='bloque';
-    div.innerHTML='<div class="bloque-header"><div class="bloque-color" style="background:'+meta.color+'"></div><input class="bloque-name-input" value="'+escAttr(meta.name)+'" placeholder="Nombre del bloque" oninput="renameBloqueTemplate(\''+bloqueId+'\',this.value)"><span class="bloque-type-badge" title="Tipo de bloque">'+escAttr(tipoBase)+'</span><div class="bloque-count">'+exs.length+' ej.</div><button class="btn btn-danger btn-xs" onclick="removeBloqueFromTemplate(\''+bloqueId+'\')">✕</button></div><div class="bloque-body"><div class="bloque-add"><button class="btn btn-secondary btn-sm" onclick="openEjPicker(\'template\',\''+bloqueId+'\')">+ Añadir ejercicio</button></div><div id="blist-'+bloqueId+'"></div></div>';
+    div.innerHTML='<div class="bloque-header"><span class="bloque-drag" title="Arrastra para mover el bloque">⠿</span><div class="bloque-color" style="background:'+meta.color+'"></div><input class="bloque-name-input" value="'+escAttr(meta.name)+'" placeholder="Nombre del bloque" oninput="renameBloqueTemplate(\''+bloqueId+'\',this.value)"><span class="bloque-type-badge" title="Tipo de bloque">'+escAttr(tipoBase)+'</span><div class="bloque-count">'+exs.length+' ej.</div><div class="bloque-move"><button title="Subir bloque" onclick="moveBloqueTemplate(\''+bloqueId+'\',-1)"'+(bi===0?' disabled':'')+'>▲</button><button title="Bajar bloque" onclick="moveBloqueTemplate(\''+bloqueId+'\',1)"'+(bi===idsUsados.length-1?' disabled':'')+'>▼</button></div><button class="btn btn-danger btn-xs" onclick="removeBloqueFromTemplate(\''+bloqueId+'\')">✕</button></div><div class="bloque-body"><div class="bloque-add"><button class="btn btn-secondary btn-sm" onclick="openEjPicker(\'template\',\''+bloqueId+'\')">+ Añadir ejercicio</button></div><div id="blist-'+bloqueId+'"></div></div>';
+    div.setAttribute('data-bid',bloqueId);
+    var handle=div.querySelector('.bloque-drag');
+    handle.onmousedown=function(){div.draggable=true;};
+    handle.ontouchstart=function(){div.draggable=true;};
+    div.ondragstart=function(e){
+      if(e.target!==div)return; // arrastre de un ejercicio, no del bloque
+      dragBloqueSrc=bloqueId;dragSrc=null;div.classList.add('bloque-dragging');
+      try{e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('text/plain',bloqueId);}catch(_){}
+    };
+    div.ondragend=function(){div.draggable=false;dragBloqueSrc=null;document.querySelectorAll('#bloques-container .bloque').forEach(function(b){b.classList.remove('bloque-dragging','bloque-drop-before','bloque-drop-after');});};
+    div.ondragover=function(e){
+      if(!dragBloqueSrc||dragBloqueSrc===bloqueId)return;
+      e.preventDefault();
+      var r=div.getBoundingClientRect();var after=(e.clientY-r.top)>r.height/2;
+      div.classList.toggle('bloque-drop-after',after);div.classList.toggle('bloque-drop-before',!after);
+    };
+    div.ondragleave=function(e){if(!div.contains(e.relatedTarget))div.classList.remove('bloque-drop-before','bloque-drop-after');};
+    div.ondrop=function(e){
+      if(!dragBloqueSrc||dragBloqueSrc===bloqueId)return;
+      e.preventDefault();e.stopPropagation();
+      var after=div.classList.contains('bloque-drop-after');
+      reorderBloqueTemplate(dragBloqueSrc,bloqueId,after);
+    };
     c.appendChild(div);renderBloqueExs(bloqueId);
   });
   var addBtn=document.createElement('button');
@@ -2952,6 +2999,21 @@ function renderBloques(){
   addBtn.textContent='+ Añadir bloque';
   addBtn.onclick=function(){openNewBloque('template');};
   c.appendChild(addBtn);
+}
+var dragBloqueSrc=null;
+function setOrdenBloquesTemplate(ids){
+  var nuevo={};ids.forEach(function(id){nuevo[id]=currentTemplate.bloques[id];});
+  currentTemplate.bloques=nuevo;markDirty();renderBloques();
+}
+function moveBloqueTemplate(bloqueId,dir){
+  var ids=Object.keys(currentTemplate.bloques);var i=ids.indexOf(bloqueId),j=i+dir;
+  if(i<0||j<0||j>=ids.length)return;
+  ids.splice(i,1);ids.splice(j,0,bloqueId);setOrdenBloquesTemplate(ids);
+}
+function reorderBloqueTemplate(srcId,targetId,after){
+  var ids=Object.keys(currentTemplate.bloques).filter(function(k){return k!==srcId;});
+  var t=ids.indexOf(targetId);if(t<0)return;
+  ids.splice(after?t+1:t,0,srcId);setOrdenBloquesTemplate(ids);
 }
 function removeBloqueFromTemplate(bloqueId){
   if(!confirm('¿Quitar este bloque de la plantilla? Se perderán los ejercicios que tenga dentro.'))return;
@@ -2968,8 +3030,8 @@ function renderBloqueExs(bloqueId){
     var row=document.createElement('div');row.className='ex-row';row.draggable=true;
     row.ondragstart=function(){dragSrc={bloque:bloqueId,idx:idx,context:'template'};row.classList.add('dragging');};
     row.ondragend=function(){row.classList.remove('dragging');document.querySelectorAll('.ex-row').forEach(function(r){r.classList.remove('drag-over');});};
-    row.ondragover=function(e){e.preventDefault();row.classList.add('drag-over');};
-    row.ondrop=function(e){e.preventDefault();row.classList.remove('drag-over');dropEx(bloqueId,idx);};
+    row.ondragover=function(e){if(dragBloqueSrc)return;e.preventDefault();row.classList.add('drag-over');};
+    row.ondrop=function(e){if(dragBloqueSrc)return;e.preventDefault();e.stopPropagation();row.classList.remove('drag-over');dropEx(bloqueId,idx);};
     var paramsHtml=ex.params.map(function(p,pi){return buildParamChip(p,bloqueId,idx,pi);}).join('');
     row.innerHTML='<div class="ex-drag-handle">⠿</div><div class="ex-row-info"><div class="ex-row-name">'+db.nombre+'</div><div class="ex-params">'+paramsHtml+'<button class="param-add-btn" onclick="showParamPicker(event,\''+bloqueId+'\','+idx+')">+ param</button></div></div><button class="btn btn-danger btn-xs" onclick="removeEx(\''+bloqueId+'\','+idx+')">✕</button>';
     list.appendChild(row);
@@ -3950,12 +4012,13 @@ function openNewSesion(){
 }
 function editSesion(sesId){
   var s=DB.sesiones.find(function(x){return x.id===sesId;});if(!s)return;
-  var bloques={};getBloques().forEach(function(b){bloques[b.id]=[];});
+  var bloques={};
   (s.ejercicios||[]).forEach(function(ex){
     var bid=(ex.bloque||'fuerza')+(ex.bloqueInstancia?('::'+ex.bloqueInstancia):'');
     if(!bloques[bid])bloques[bid]=[];
     bloques[bid].push({id:ex.id,params:ex.params||[{id:'series',val:String(ex.sets||3)},{id:'reps',val:ex.reps||'10'},{id:'kg',val:ex.load||''},{id:'descanso',val:ex.rest||'90s'}]});
   });
+  getBloques().forEach(function(b){if(!bloques[b.id])bloques[b.id]=[];});
   editingSesion={id:s.id,atleta:s.atleta,fecha:s.fecha,nombre:s.nombre,bloques:bloques};
   renderSesionEditor();openModal('sesion');
 }
@@ -4087,7 +4150,7 @@ async function confirmAddBloque(){
     renderSesionBloques();
   }
 }
-function applyTemplateToSesion(tplId){var tpl=DB.templates.find(function(t){return t.id===tplId;});if(!tpl)return;if(Object.values(editingSesion.bloques).some(function(b){return b.length;})&&!confirm('Esto sobreescribirá los ejercicios. ¿Continuar?'))return;editingSesion.bloques={};editingSesion.bloqueMeta=editingSesion.bloqueMeta||{};getBloques().forEach(function(b){editingSesion.bloques[b.id]=[];});Object.keys(tpl.bloques).forEach(function(bId){editingSesion.bloques[bId]=JSON.parse(JSON.stringify(tpl.bloques[bId]));if(tpl.bloqueMeta&&tpl.bloqueMeta[bId])editingSesion.bloqueMeta[bId]=JSON.parse(JSON.stringify(tpl.bloqueMeta[bId]));});if(!editingSesion.nombre)editingSesion.nombre=tpl.name;document.getElementById('sesion-nombre').value=editingSesion.nombre;renderSesionBloques();toast('Template aplicado');}
+function applyTemplateToSesion(tplId){var tpl=DB.templates.find(function(t){return t.id===tplId;});if(!tpl)return;if(Object.values(editingSesion.bloques).some(function(b){return b.length;})&&!confirm('Esto sobreescribirá los ejercicios. ¿Continuar?'))return;editingSesion.bloques={};editingSesion.bloqueMeta=editingSesion.bloqueMeta||{};Object.keys(tpl.bloques).forEach(function(bId){editingSesion.bloques[bId]=JSON.parse(JSON.stringify(tpl.bloques[bId]));if(tpl.bloqueMeta&&tpl.bloqueMeta[bId])editingSesion.bloqueMeta[bId]=JSON.parse(JSON.stringify(tpl.bloqueMeta[bId]));});getBloques().forEach(function(b){if(!editingSesion.bloques[b.id])editingSesion.bloques[b.id]=[];});if(!editingSesion.nombre)editingSesion.nombre=tpl.name;document.getElementById('sesion-nombre').value=editingSesion.nombre;renderSesionBloques();toast('Template aplicado');}
 async function saveSesion(){
   editingSesion.atleta=document.getElementById('sesion-atleta').value;
   editingSesion.nombre=document.getElementById('sesion-nombre').value.trim();

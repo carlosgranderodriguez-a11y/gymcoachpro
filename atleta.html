@@ -747,9 +747,10 @@ function renderDetalleFuerza(s,activo){
   html+='<div class="det-sub">'+fecha+'</div>';
   var bloques={};
   (s.ejercicios||[]).forEach(function(ex){var b=ex.bloque||'otros';if(!bloques[b])bloques[b]=[];bloques[b].push(ex);});
-  var idsConocidos=BLOQUES.map(function(b){return b.id;});
-  var extraIds=Object.keys(bloques).filter(function(k){return idsConocidos.indexOf(k)<0;});
-  var listaBloques=BLOQUES.concat(extraIds.map(function(k){return {id:k,name:k,color:'#a3a3a3'};}));
+  // Los bloques salen en el orden en que el entrenador los colocó en la plantilla/sesión
+  var listaBloques=Object.keys(bloques).map(function(k){
+    return BLOQUES.find(function(b){return b.id===k;})||{id:k,name:k,color:'#a3a3a3'};
+  });
   listaBloques.forEach(function(bDef){
     var exs=bloques[bDef.id];if(!exs||!exs.length)return;
     html+='<div class="bloque-h" style="background:'+bDef.color+'">'+bDef.name+'</div>';
