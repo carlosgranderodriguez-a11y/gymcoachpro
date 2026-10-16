@@ -1147,7 +1147,7 @@ function aplicarCodigoAcceso(){
     </div>
     <div class="modal-actions">
       <button class="btn btn-secondary" onclick="closeModal('quickmedia')">Cancelar</button>
-      <button class="btn btn-primary" onclick="saveQuickMedia()">💾 Guardar</button>
+      <button class="btn btn-primary" id="btn-save-qm" onclick="saveQuickMedia()">💾 Guardar</button>
     </div>
   </div>
 </div>
@@ -2623,7 +2623,21 @@ async function handleQuickVideoSelect(input){
     else{textEl.textContent='❌ '+resp.error;progress.style.display='none';}
   }catch(err){textEl.textContent='❌ Error de conexión';progress.style.display='none';}
 }
+// Si se pulsa Guardar mientras la foto/vídeo aún se está subiendo a Drive, antes se
+// guardaba la imagen ANTIGUA (la vista previa ya mostraba la nueva, pero la URL de
+// Drive todavía no había llegado). Ahora Guardar espera a que terminen las subidas.
+var subidasPendientes=0;
+function conSubida(fn){return async function(){subidasPendientes++;try{return await fn.apply(this,arguments);}finally{subidasPendientes--;}};}
+async function esperarSubidas(btn){
+  if(!subidasPendientes)return;
+  var txt=btn?btn.innerHTML:'';
+  if(btn){btn.disabled=true;btn.innerHTML='⏳ Esperando a que termine la subida…';}
+  var t0=Date.now();
+  while(subidasPendientes>0&&Date.now()-t0<120000) await new Promise(function(r){setTimeout(r,300);});
+  if(btn){btn.disabled=false;btn.innerHTML=txt;}
+}
 async function saveQuickMedia(){
+  await esperarSubidas(document.getElementById('btn-save-qm'));
   var e=DB.ejercicios[quickMediaExId];if(!e)return;
   var data=Object.assign({},e,{imagen:quickMediaImgUrl,video:document.getElementById('qm-video').value.trim()});
   var r=await apiPost(Object.assign({action:'updateEjercicio'},data));
@@ -2668,6 +2682,7 @@ async function handleImageSelect(input){
 }
 
 async function saveEjercicio(){
+  await esperarSubidas(document.getElementById('btn-save-ej'));
   var n=document.getElementById('ej-nombre').value.trim();
   if(!n){toast('Nombre requerido','err');return;}
   var id=editingEjId||n.toLowerCase().replace(/\s+/g,'-').replace(/[^a-z0-9-]/g,'');
@@ -6168,6 +6183,8 @@ if('serviceWorker' in navigator){
     navigator.serviceWorker.register('sw.js').catch(function(){});
   });
 }
+
+handleImageSelect=conSubida(handleImageSelect);handleVideoSelect=conSubida(handleVideoSelect);handleQuickImageSelect=conSubida(handleQuickImageSelect);handleQuickVideoSelect=conSubida(handleQuickVideoSelect);
 </script>
 </body>
 </html>
