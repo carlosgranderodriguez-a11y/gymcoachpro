@@ -599,6 +599,11 @@ input:focus,select:focus,textarea:focus{border-color:#8aa0d6 !important;box-shad
 .ps-day-head{background:#f6f8fc;}
 .ps-ex.open{background:#f3f6fb !important;}
 .ps-foot{display:flex;gap:6px;flex-wrap:wrap;padding:8px 10px;}
+.bib-nav{margin-bottom:18px;}
+.bib-nav-in{display:flex;gap:8px;flex-wrap:wrap;}
+.bib-nav .fchip{padding:9px 18px;border-radius:99px;}
+.bib-nav .fchip.active{background:var(--accent-ink,#14230a);color:var(--accent,#c4f135);font-weight:600;}
+.bib-nav .bib-gen:not(.active){background:#f1fbd0;color:#3d6a00;border:1px solid #c4f135;font-weight:600;}
 </style>
 </head>
 <body>
@@ -667,9 +672,7 @@ function aplicarCodigoAcceso(){
     <div class="tab" onclick="switchTab('atletas',this)"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg><span>Atletas / Equipos</span></div>
     <div class="tab" onclick="switchTab('calendario',this)"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg><span>Calendario</span></div>
     <div class="sb-group">Entrenamiento</div>
-    <div class="tab" onclick="switchTab('programas',this)"><svg viewBox="0 0 24 24"><path d="M12 2 2 7l10 5 10-5-10-5z"/><path d="m2 17 10 5 10-5"/><path d="m2 12 10 5 10-5"/></svg><span>Programas</span></div>
     <div class="tab" onclick="switchTab('biblioteca',this)"><svg viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg><span>Biblioteca</span></div>
-    <div class="tab" onclick="switchTab('generador',this)"><svg viewBox="0 0 24 24"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 15l.9 2.1L22 18l-2.1.9L19 21l-.9-2.1L16 18l2.1-.9z"/></svg><span>Generador</span></div>
     <div class="sb-group">Sistema</div>
     <div class="tab" onclick="switchTab('ajustes',this)"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg><span>Ajustes</span></div>
   </nav>
@@ -764,11 +767,7 @@ function aplicarCodigoAcceso(){
   <!-- BIBLIOTECA (Ejercicios + Plantillas de fuerza + Resistencia) -->
   <div id="page-biblioteca" class="page">
     <div class="section-header"><div class="section-title">Biblioteca</div></div>
-    <div style="display:flex;gap:8px;margin-bottom:18px;">
-      <div class="fchip active" onclick="switchBiblioteca('ejercicios')" id="bibtab-ejercicios">🏋️ Ejercicios</div>
-      <div class="fchip" onclick="switchBiblioteca('templates')" id="bibtab-templates">📋 Plantillas de fuerza</div>
-      <div class="fchip" onclick="switchBiblioteca('resistencia')" id="bibtab-resistencia">🏃 Resistencia</div>
-    </div>
+    <div class="bib-nav"></div>
 
     <!-- EJERCICIOS -->
     <div id="page-ejercicios" class="subpage active">
@@ -787,7 +786,7 @@ function aplicarCodigoAcceso(){
     <!-- PLANTILLAS DE FUERZA (antes "Templates") -->
     <div id="page-templates" class="subpage">
       <div class="section-header">
-        <div class="section-title">Plantillas de sesión de fuerza</div>
+        <div class="section-title">Bloques y plantillas de sesión</div>
         <button class="btn btn-primary" onclick="newTemplate()">+ Nueva plantilla</button>
       </div>
       <div class="template-layout">
@@ -840,6 +839,8 @@ function aplicarCodigoAcceso(){
 
   <!-- PROGRAMAS -->
   <div id="page-programas" class="page">
+    <div class="section-header"><div class="section-title">Biblioteca</div></div>
+    <div class="bib-nav"></div>
     <div class="section-header">
       <div><div class="section-title">Programas</div><div style="font-size:13px;color:var(--text-muted);margin-top:2px;">Planes de varias semanas: elige un programa, ajusta cada día y asígnalo al calendario.</div></div>
       <button class="btn btn-primary" onclick="newPrograma()">+ Nuevo programa</button>
@@ -883,6 +884,8 @@ function aplicarCodigoAcceso(){
 
   <!-- ── GENERADOR ASISTIDO ──────────────────────────────── -->
   <div id="page-generador" class="page">
+    <div class="section-header"><div class="section-title">Biblioteca</div></div>
+    <div class="bib-nav"></div>
     <div class="section-header">
       <div class="section-title">Generador de bloques de fuerza</div>
     </div>
@@ -1714,6 +1717,12 @@ function switchTab(tab,el){
   if(tab==='panel') renderPanel();
   if(tab==='calendario') renderCalendar();
   if(tab==='generador') initGenerador();
+  if(tab==='programas'||tab==='generador'||tab==='biblioteca'){
+    if(tab!=='biblioteca')bibActual=tab;
+    var bt=document.querySelector('.tab[onclick*="\'biblioteca\'"]');
+    if(bt){bt.classList.add('active');var tt2=document.getElementById('tb-title');if(tt2)tt2.textContent='Biblioteca';}
+    bibNavRender();
+  }
 }
 function goTab(tab){switchTab(tab,document.querySelector('.tab[onclick*="\''+tab+'\'"]'));}
 function toggleSidebar(){document.body.classList.toggle('sb-open');}
@@ -1893,11 +1902,26 @@ async function aprobarPlan(){
 }
 
 
+var BIB_TABS=[['programas','📚 Programas'],['templates','📋 Bloques'],['ejercicios','🏋️ Ejercicios'],['resistencia','🏃 Resistencia'],['generador','✨ Generador']];
+var bibActual='ejercicios';
+function bibNavRender(){
+  var h='<div class="bib-nav-in">'+BIB_TABS.map(function(t){
+    return '<div class="fchip'+(t[0]===bibActual?' active':'')+(t[0]==='generador'?' bib-gen':'')+'" onclick="bibGo(\''+t[0]+'\')" data-bib="'+t[0]+'">'+t[1]+'</div>';
+  }).join('')+'</div>';
+  document.querySelectorAll('.bib-nav').forEach(function(n){n.innerHTML=h;});
+}
+function bibGo(x){
+  bibActual=x;
+  if(x==='programas'||x==='generador'){switchTab(x);return;}
+  switchTab('biblioteca');
+  switchBiblioteca(x);
+}
 function switchBiblioteca(sub){
+  bibActual=sub;
   ['ejercicios','templates','resistencia'].forEach(function(s){
-    document.getElementById('bibtab-'+s).classList.toggle('active',s===sub);
     document.getElementById('page-'+s).classList.toggle('active',s===sub);
   });
+  bibNavRender();
 }
 
 function switchAtletasTab(sub){
