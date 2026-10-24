@@ -927,14 +927,12 @@ function aplicarCodigoAcceso(){
         <div class="form-group"><label>Objetivo</label>
           <select id="gen-objetivo"><option value="hipertrofia">Hipertrofia</option></select>
         </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-          <div class="form-group"><label>Enfoque de fuerza</label><select id="gen-enfoque"><option value="">Según el objetivo</option><option value="fuerza_maxima">Fuerza máxima</option><option value="submaxima">Fuerza submáxima</option><option value="potencia">Potencia</option></select></div>
-          <div class="form-group"><label>Mesociclo</label><select id="gen-mesociclo"><option value="">Estándar</option><option value="acumulacion">Acumulación</option><option value="carga">Carga</option></select></div>
-        </div>
+        <div class="form-group"><label>Mesociclo</label><select id="gen-mesociclo"><option value="">Según el objetivo</option><option value="acumulacion">Acumulación</option><option value="transformacion">Transformación</option><option value="realizacion">Realización</option></select></div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
           <div class="form-group"><label>Semanas</label><input type="number" id="gen-semanas" value="4" min="1" max="12"></div>
-          <div class="form-group"><label>Sesiones/sem</label><input type="number" id="gen-dias" value="2" min="1" max="6"></div>
+          <div class="form-group"><label>Sesiones/sem</label><input type="number" id="gen-dias" value="2" min="1" max="6" oninput="genTiposRender()"></div>
         </div>
+        <div class="form-group"><label>Tipo de cada sesión</label><div id="gen-tipos"></div></div>
         <div class="form-group"><label>Notas para el generador</label>
           <textarea id="gen-notas" rows="3" placeholder="Ej: evitar impacto en tobillo derecho; priorizar tren superior..."></textarea>
         </div>
@@ -1792,11 +1790,25 @@ function closeSidebar(){document.body.classList.remove('sb-open');}
 // ══════════════════════════════════════════════════════════
 var planGenerado=null;
 
+var GEN_TIPOS=[['','Según el mesociclo'],['fuerza_maxima','Fuerza máxima'],['submaxima','Fuerza submáxima'],['potencia','Potencia'],['velocidad','Velocidad'],['potencia_resistencia','Potencia resistencia'],['hipertrofia','Hipertrofia'],['readaptacion','Readaptación'],['trabajo_neuronal','Trabajo neuronal'],['regeneracion','Regeneración']];
+function genTiposRender(){
+  var box=document.getElementById('gen-tipos');if(!box)return;
+  var n=Math.max(1,Math.min(6,parseInt(document.getElementById('gen-dias').value)||1));
+  var prev=genTiposValores(true);
+  var h='';for(var i=0;i<n;i++){h+='<div style="display:flex;gap:8px;align-items:center;margin-bottom:6px"><span style="font-size:12px;color:var(--text-muted);width:70px">Sesión '+(i+1)+'</span><select class="gen-tipo" style="flex:1">'+GEN_TIPOS.map(function(t){return '<option value="'+t[0]+'"'+(prev[i]===t[0]?' selected':'')+'>'+t[1]+'</option>';}).join('')+'</select></div>';}
+  box.innerHTML=h;
+}
+function genTiposValores(todos){
+  var v=[].slice.call(document.querySelectorAll('.gen-tipo')).map(function(s){return s.value;});
+  return todos||v.some(Boolean)?v:[];
+}
+
 function initGenerador(){
   var sel=document.getElementById('gen-atleta');
   if(!sel.options.length){
     sel.innerHTML=(DB.atletas||[]).map(function(a){return '<option>'+a+'</option>';}).join('');
   }
+  genTiposRender();
   cargarEstadoAtleta();
 }
 
@@ -1858,7 +1870,7 @@ async function generarBloque(){
       action:'generarBloqueFuerza',
       atleta:document.getElementById('gen-atleta').value,
       objetivo:document.getElementById('gen-objetivo').value,
-      enfoque:document.getElementById('gen-enfoque').value,
+      tipos_sesion:genTiposValores(),
       mesociclo:document.getElementById('gen-mesociclo').value,
       semanas:document.getElementById('gen-semanas').value,
       dias_por_semana:document.getElementById('gen-dias').value,
@@ -1988,14 +2000,21 @@ var NR_DEF={
     sueloVolumen:0.5,sueloIntensidad:0.85
   }
 };
-NR_DEF.ENFOQUES={
+NR_DEF.TIPOS_SESION={
   fuerza_maxima:{etiqueta:'Fuerza máxima',fuerza:{series:[4,5],reps:[5,3],rpe:[8,9],descansoSeg:180},extras:[]},
   submaxima:{etiqueta:'Fuerza submáxima',fuerza:{series:[3,4],reps:[8,6],rpe:[7,8],descansoSeg:120},extras:[]},
-  potencia:{etiqueta:'Potencia',fuerza:{series:[3,5],reps:[5,3],rpe:[6,8],descansoSeg:150},extras:[{patron:'CD',rol:'Accesorio',bloque:'potencia'}]}
+  potencia:{etiqueta:'Potencia',fuerza:{series:[3,5],reps:[5,3],rpe:[6,8],descansoSeg:150},extras:[{patron:'CD',rol:'Accesorio',bloque:'potencia'}]},
+  velocidad:{etiqueta:'Velocidad',fuerza:{series:[4,6],reps:[3,2],rpe:[5,7],descansoSeg:180},extras:[{patron:'RD',rol:'Accesorio',bloque:'pliometria'}]},
+  potencia_resistencia:{etiqueta:'Potencia resistencia',fuerza:{series:[3,4],reps:[12,8],rpe:[6,8],descansoSeg:60},extras:[{patron:'RD',rol:'Accesorio',bloque:'pot-resistida'}]},
+  hipertrofia:{etiqueta:'Hipertrofia',fuerza:{series:[3,5],reps:[12,8],rpe:[7,9],descansoSeg:90},extras:[]},
+  readaptacion:{etiqueta:'Readaptación',fuerza:{series:[2,3],reps:[15,10],rpe:[4,6],descansoSeg:60},extras:[]},
+  trabajo_neuronal:{etiqueta:'Trabajo neuronal',fuerza:{series:[3,5],reps:[3,1],rpe:[5,7],descansoSeg:180},extras:[{patron:'CD',rol:'Accesorio',bloque:'potencia'}]},
+  regeneracion:{etiqueta:'Regeneración',fuerza:{series:[2,2],reps:[12,10],rpe:[3,4],descansoSeg:45},extras:[{patron:'MOV',rol:'Accesorio',bloque:'vuelta-calma'}]}
 };
 NR_DEF.MESOCICLOS={
   acumulacion:{etiqueta:'Acumulación',semanas:4,patronCarga:[1,1.1,1.2,0.6],patronIntensidad:[1,1,1.03,0.9]},
-  carga:{etiqueta:'Carga',semanas:4,patronCarga:[1,1.05,1.1,0.6],patronIntensidad:[1,1.05,1.1,0.9]}
+  transformacion:{etiqueta:'Transformación',semanas:4,patronCarga:[1,1.05,1.1,0.6],patronIntensidad:[1,1.05,1.1,0.9]},
+  realizacion:{etiqueta:'Realización',semanas:4,patronCarga:[1,0.9,0.8,0.6],patronIntensidad:[1,1.05,1.08,0.9]}
 };
 var NR={val:null};
 var NR_PAT=[['RD','Rodilla dominante'],['CD','Cadera dominante'],['EH','Empuje horizontal'],['EV','Empuje vertical'],['TH','Tracción horizontal'],['TV','Tracción vertical'],['CAE','Core anti-extensión'],['CAR','Core anti-rotación'],['AIS','Aislamiento'],['MOV','Movilidad']];
@@ -2047,17 +2066,17 @@ function nrRender(){
   h+=nrCard('1 · Estructura del mesociclo','Cuántas semanas dura y qué días se entrena. El volumen y la intensidad de cada semana son un multiplicador (1 = normal; 0,6 = semana de descarga).',
     nrFila([nrIn('MESOCICLO.semanas','Semanas',{w:70}),nrIn('MESOCICLO.patronCarga','Volumen por semana',{t:'list',w:200}),nrIn('MESOCICLO.patronIntensidad','Intensidad por semana',{t:'list',w:200})])
     +nrFila([nrDias('MESOCICLO.diasFuerza','Días de fuerza'),nrDias('MESOCICLO.diasResistencia','Días de resistencia')]));
-  var enfs=[['fuerza_maxima','Fuerza máxima'],['submaxima','Fuerza submáxima'],['potencia','Potencia']];
-  h+=nrCard('2 · Enfoque de fuerza (máxima · submáxima · potencia)','Se elige en el Generador. Sustituye las series, repeticiones, RPE y descanso de la fase. En "Bloque extra" puedes añadir al inicio de la sesión ejercicios de otro bloque (por ejemplo potencia o pliometría).',
-    enfs.map(function(f){var b='ENFOQUES.'+f[0];var ex=nrGet(b+'.extras')||[];return '<div style="background:var(--surface2);border-radius:10px;padding:12px;margin-bottom:10px"><div style="font-weight:700;font-size:13px;margin-bottom:8px">'+f[1]+'</div>'
+  var mesos=[['acumulacion','Mesociclo de acumulación'],['transformacion','Mesociclo de transformación'],['realizacion','Mesociclo de realización']];
+  h+=nrCard('2 · Mesociclo (acumulación · transformación · realización)','Se elige en el Generador. Fija la duración y cómo cambian el volumen y la intensidad semana a semana (1 = normal, 0,6 = descarga). Las series y repeticiones base de cada mesociclo están en el apartado Fases.',
+    mesos.map(function(f){var b='MESOCICLOS.'+f[0];return '<div style="background:var(--surface2);border-radius:10px;padding:12px;margin-bottom:10px"><div style="font-weight:700;font-size:13px;margin-bottom:8px">'+f[1]+'</div>'
+      +nrFila([nrIn(b+'.etiqueta','Nombre',{t:'text',w:140}),nrIn(b+'.semanas','Semanas',{w:70}),nrIn(b+'.patronCarga','Volumen por semana',{t:'list',w:200}),nrIn(b+'.patronIntensidad','Intensidad por semana',{t:'list',w:200})])+'</div>';}).join(''));
+  var enfs=Object.keys(NR_DEF.TIPOS_SESION).map(function(k){return [k,NR_DEF.TIPOS_SESION[k].etiqueta];});
+  h+=nrCard('3 · Tipos de sesión','Cada sesión de la semana se elige en el Generador. Cada tipo fija las series, repeticiones, RPE y descanso de la sesión. En "Bloque extra" puedes añadir al inicio de la sesión ejercicios de otro bloque (por ejemplo potencia o pliometría).',
+    enfs.map(function(f){var b='TIPOS_SESION.'+f[0];var ex=nrGet(b+'.extras')||[];return '<div style="background:var(--surface2);border-radius:10px;padding:12px;margin-bottom:10px"><div style="font-weight:700;font-size:13px;margin-bottom:8px">'+f[1]+'</div>'
       +nrFila([nrIn(b+'.etiqueta','Nombre en el programa',{t:'text',w:150}),nrIn(b+'.fuerza.series.0','Series desde',{w:60}),nrIn(b+'.fuerza.series.1','hasta',{w:60}),nrIn(b+'.fuerza.reps.0','Reps inicio',{w:60}),nrIn(b+'.fuerza.reps.1','Reps final',{w:60}),nrIn(b+'.fuerza.rpe.0','RPE desde',{w:60}),nrIn(b+'.fuerza.rpe.1','hasta',{w:60}),nrIn(b+'.fuerza.descansoSeg','Descanso (s)',{w:80})])
       +'<div style="font-size:11px;color:var(--text-muted);margin:2px 0 6px">Bloque extra al inicio de la sesión</div>'
       +ex.map(function(r,i){var bb=b+'.extras.'+i;return '<div style="display:flex;gap:8px;align-items:flex-end;margin-bottom:6px;flex-wrap:wrap">'+nrIn(bb+'.patron','',{t:'sel',opts:NR_PAT,w:150})+nrIn(bb+'.rol','',{t:'sel',opts:NR_ROL,w:110})+nrIn(bb+'.bloque','',{t:'sel',opts:getBloques().map(function(x){return [x.id,x.name];}),w:150})+'<button class="btn btn-danger btn-xs" style="margin-bottom:6px" onclick="nrQuitaFila(\''+b+'.extras\','+i+')">✕</button></div>';}).join('')
       +'<button class="btn btn-secondary btn-xs" onclick="nrGet(\''+b+'.extras\').push({patron:\'CD\',rol:\'Accesorio\',bloque:\'potencia\'});nrRender()">+ Bloque extra</button></div>';}).join(''));
-  var mesos=[['acumulacion','Mesociclo de acumulación'],['carga','Mesociclo de carga']];
-  h+=nrCard('3 · Tipo de mesociclo (acumulación · carga)','Se elige en el Generador. Fija la duración y cómo suben el volumen y la intensidad semana a semana (1 = normal, 0,6 = descarga). Acumulación: más volumen para construir base. Carga: más intensidad.',
-    mesos.map(function(f){var b='MESOCICLOS.'+f[0];return '<div style="background:var(--surface2);border-radius:10px;padding:12px;margin-bottom:10px"><div style="font-weight:700;font-size:13px;margin-bottom:8px">'+f[1]+'</div>'
-      +nrFila([nrIn(b+'.etiqueta','Nombre',{t:'text',w:140}),nrIn(b+'.semanas','Semanas',{w:70}),nrIn(b+'.patronCarga','Volumen por semana',{t:'list',w:200}),nrIn(b+'.patronIntensidad','Intensidad por semana',{t:'list',w:200})])+'</div>';}).join(''));
   var fases=[['acumulacion','Base / Acumulación'],['transformacion','Transformación'],['realizacion','Competitivo / Realización'],['readaptacion','Readaptación']];
   h+=nrCard('4 · Fases de entrenamiento','Cada fase fija las series, repeticiones y RPE. Se parte del valor inicial y se llega al final a lo largo del mesociclo. Repeticiones: primero el valor de la semana 1 y luego el de la última.',
     fases.map(function(f){var b='FASES.'+f[0];return '<div style="background:var(--surface2);border-radius:10px;padding:12px;margin-bottom:10px"><div style="font-weight:700;font-size:13px;margin-bottom:8px">'+f[1]+'</div>'
