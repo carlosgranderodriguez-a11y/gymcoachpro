@@ -916,6 +916,7 @@ function aplicarCodigoAcceso(){
     <div class="bib-nav"></div>
     <div class="section-header">
       <div class="section-title">Generador de bloques de fuerza</div>
+      <button class="btn btn-secondary btn-sm" onclick="openNormas()">📐 Normas del generador</button>
     </div>
 
     <div style="display:grid;grid-template-columns:340px 1fr;gap:16px;align-items:start;">
@@ -1228,8 +1229,22 @@ function aplicarCodigoAcceso(){
       <div class="pa-card" style="text-align:center;padding:40px 20px;">
         <button class="btn btn-primary" onclick="paEditar()">✏️ Editar datos del atleta</button>
       </div>
+      <div class="pa-card" style="margin-top:14px;display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap">
+        <div><div style="font-weight:700">📐 Normas de generación de programas</div><div class="pa-ms">Series, repeticiones, RPE, días, plantillas de sesión y ajustes diarios. Editables.</div></div>
+        <button class="btn btn-primary" onclick="openNormas()">Editar normas</button>
+      </div>
     </div>
 
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-normas">
+  <div class="modal" style="max-width:920px;padding:0;display:flex;flex-direction:column;height:90vh;">
+    <div style="padding:18px 22px 14px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
+      <div><div class="modal-title" style="margin:0;">Normas del generador</div><div style="font-size:12px;color:var(--text-muted);margin-top:3px">Las reglas con las que se crean los programas. Valen para todos los atletas.</div></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-secondary btn-sm" onclick="nrRestaurar()">↺ Valores originales</button><button class="btn btn-secondary btn-sm" onclick="closeModal('normas')">Cerrar</button><button class="btn btn-primary btn-sm" onclick="nrGuardar()">💾 Guardar normas</button></div>
+    </div>
+    <div id="nr-body" style="flex:1;overflow-y:auto;padding:18px 22px;"></div>
   </div>
 </div>
 
@@ -1939,6 +1954,122 @@ async function aprobarPlan(){
   renderTemplateList&&renderTemplateList();
 }
 
+
+// ══ NORMAS DEL GENERADOR (se guardan en Config → normas_motor; el motor las lee del servidor) ══
+var NR_DEF={
+  MESOCICLO:{semanas:4,patronCarga:[1,1.08,1.15,0.6],patronIntensidad:[1,1.03,1.06,0.92],diasFuerza:[1,4],diasResistencia:[2,5,6]},
+  FASES:{
+    acumulacion:{etiqueta:'Base',fuerza:{series:[3,4],reps:[12,8],rpe:[6,8],descansoSeg:90},resistencia:{distribucion:{Z2:0.6,Z3:0.2,Z4:0.2}}},
+    transformacion:{etiqueta:'Transformación',fuerza:{series:[4,5],reps:[8,5],rpe:[7,9],descansoSeg:150},resistencia:{distribucion:{Z2:0.4,Z4:0.4,Z5:0.2}}},
+    realizacion:{etiqueta:'Competitivo',fuerza:{series:[3,4],reps:[5,3],rpe:[7,9],descansoSeg:180},resistencia:{distribucion:{Z2:0.5,Z4:0.25,Z5:0.25}}},
+    readaptacion:{etiqueta:'Readaptación',fuerza:{series:[3,4],reps:[15,10],rpe:[5,6],descansoSeg:60},resistencia:{distribucion:{Z1:0.4,Z2:0.6}}}
+  },
+  PLANTILLAS:{
+    A:[{patron:'RD',rol:'Principal',bloque:'fuerza',principal:true},{patron:'EH',rol:'Principal',bloque:'fuerza',principal:true},{patron:'CD',rol:'Secundario',bloque:'fuerza'},{patron:'TH',rol:'Secundario',bloque:'fuerza'},{patron:'CAE',rol:'Accesorio',bloque:'fuerza'}],
+    B:[{patron:'CD',rol:'Principal',bloque:'fuerza',principal:true},{patron:'TV',rol:'Principal',bloque:'fuerza',principal:true},{patron:'RD',rol:'Secundario',bloque:'fuerza',unilateral:true},{patron:'TH',rol:'Accesorio',bloque:'fuerza'},{patron:'CAR',rol:'Accesorio',bloque:'fuerza'}],
+    activacion:[{patron:'CD',rol:'Accesorio',bloque:'activacion'},{patron:'MOV',rol:'Accesorio',bloque:'activacion'}],
+    rotarCada:2,factorSeriesAccesorio:0.75,repsAccesorio:10
+  },
+  DESCANSO:{porRPE:[{rpeHasta:6,seg:45},{rpeHasta:10,seg:60}],activacionSeg:45},
+  LIMITES_REPS:{'nordico':[6,8]},
+  RESISTENCIA:{minDiasEntreAltaIntensidad:2,evitarAltaTrasFuerzaPesada:true,tipos:{Z1:{nombre:'Recuperación activa',min:30,tssPorMin:0.55,rpe:3},Z2:{nombre:'Rodaje aeróbico',min:50,tssPorMin:0.85,rpe:4},Z3:{nombre:'Tempo',min:40,tssPorMin:1.3,rpe:6},Z4:{nombre:'Series a umbral',min:35,tssPorMin:1.7,rpe:8},Z5:{nombre:'Intervalos VO2max',min:30,tssPorMin:2.1,rpe:9}}},
+  AJUSTE_DIARIO:{
+    acwr:[{min:1.5,max:99,vol:0.7,int:0.9,motivo:'ACWR por encima de 1,50: riesgo alto'},{min:1.3,max:1.5,vol:0.85,int:1,motivo:'ACWR entre 1,30 y 1,50: carga aguda elevada'},{min:0.8,max:1.3,vol:1,int:1,motivo:'ACWR en zona óptima'},{min:0,max:0.8,vol:1.1,int:1,motivo:'ACWR por debajo de 0,80: margen para progresar'}],
+    wellness:[{caida:0.15,vol:0.7,int:0.9,motivo:'Wellness 15 % por debajo de su línea base'},{caida:0.08,vol:0.85,int:1,motivo:'Wellness 8 % por debajo de su línea base'}],
+    rpeDesviado:{umbral:2,vol:0.85},
+    dolor:{cancelarFuerza:4,degradar:3},
+    sueno:{minimo:2},
+    sueloVolumen:0.5,sueloIntensidad:0.85
+  }
+};
+var NR={val:null};
+var NR_PAT=[['RD','Rodilla dominante'],['CD','Cadera dominante'],['EH','Empuje horizontal'],['EV','Empuje vertical'],['TH','Tracción horizontal'],['TV','Tracción vertical'],['CAE','Core anti-extensión'],['CAR','Core anti-rotación'],['AIS','Aislamiento'],['MOV','Movilidad']];
+var NR_ROL=['Principal','Secundario','Accesorio'];
+function nrClon(o){return JSON.parse(JSON.stringify(o));}
+function nrMerge(d,o){ // o sobre d: objetos se funden, arrays y valores se sustituyen
+  if(o==null)return nrClon(d);
+  if(Array.isArray(d)||typeof d!=='object'||d===null)return nrClon(o);
+  var r={};Object.keys(d).forEach(function(k){r[k]=(k in o)?nrMerge(d[k],o[k]):nrClon(d[k]);});
+  Object.keys(o).forEach(function(k){if(!(k in r))r[k]=nrClon(o[k]);});
+  return r;
+}
+function nrGet(p){return p.split('.').reduce(function(o,k){return o==null?o:o[k];},NR.val);}
+function nrSet(p,v){var ks=p.split('.'),o=NR.val;for(var i=0;i<ks.length-1;i++)o=o[ks[i]];o[ks[ks.length-1]]=v;}
+function nrIn(p,label,o){
+  o=o||{};var v=nrGet(p),t=o.t||'num',w=o.w||80;
+  var lab=label?'<label style="font-size:11px;color:var(--text-muted);display:block;margin-bottom:3px">'+label+'</label>':'';
+  var st='padding:7px 9px;background:var(--surface);border:1px solid var(--border);border-radius:7px;color:var(--text);font-size:13px;width:'+w+'px';
+  var inner;
+  if(t==='bool')inner='<input type="checkbox" '+(v?'checked':'')+' onchange="nrSet(\''+p+'\',this.checked)">';
+  else if(t==='list')inner='<input value="'+escAttr((v||[]).join(', '))+'" style="'+st+'" onchange="nrSet(\''+p+'\',this.value.split(/[ ,;]+/).filter(Boolean).map(Number).filter(function(x){return !isNaN(x);}))">';
+  else if(t==='text')inner='<input value="'+escAttr(v)+'" style="'+st+'" oninput="nrSet(\''+p+'\',this.value)">';
+  else if(t==='sel')inner='<select style="'+st+'" onchange="nrSet(\''+p+'\',this.value)">'+o.opts.map(function(x){var a=Array.isArray(x)?x:[x,x];return '<option value="'+a[0]+'"'+(a[0]===v?' selected':'')+'>'+a[1]+'</option>';}).join('')+'</select>';
+  else inner='<input type="number" step="any" value="'+(v==null?'':v)+'" style="'+st+'" onchange="nrSet(\''+p+'\',this.value===\'\'?0:Number(this.value))">';
+  return '<div>'+lab+inner+'</div>';
+}
+function nrDias(p,label){
+  var v=nrGet(p)||[],N=['L','M','X','J','V','S','D'];
+  return '<div><label style="font-size:11px;color:var(--text-muted);display:block;margin-bottom:3px">'+label+'</label><div style="display:flex;gap:5px">'+N.map(function(n,i){var on=v.indexOf(i+1)>-1;
+    return '<span onclick="nrDia(\''+p+'\','+(i+1)+')" style="cursor:pointer;width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;border:1px solid var(--border);background:'+(on?'var(--accent)':'var(--surface)')+';color:'+(on?'#14230a':'var(--text-dim)')+'">'+n+'</span>';}).join('')+'</div></div>';
+}
+function nrDia(p,d){var v=(nrGet(p)||[]).slice(),i=v.indexOf(d);if(i>-1)v.splice(i,1);else v.push(d);v.sort();nrSet(p,v);nrRender();}
+function nrCard(t,desc,body){return '<div style="border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:14px"><div style="font-weight:700;font-size:15px">'+t+'</div><div style="font-size:12px;color:var(--text-muted);margin:2px 0 12px">'+desc+'</div>'+body+'</div>';}
+function nrFila(items){return '<div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;margin-bottom:10px">'+items.join('')+'</div>';}
+function nrPlantilla(clave,titulo){
+  var arr=nrGet('PLANTILLAS.'+clave)||[];
+  return '<div style="margin-bottom:14px"><div style="font-size:12px;font-weight:700;margin-bottom:6px">'+titulo+'</div>'+arr.map(function(r,i){var b='PLANTILLAS.'+clave+'.'+i;
+    return '<div style="display:flex;gap:8px;align-items:flex-end;margin-bottom:6px;flex-wrap:wrap">'+nrIn(b+'.patron',i?'':'Patrón',{t:'sel',opts:NR_PAT,w:150})+nrIn(b+'.rol',i?'':'Rol',{t:'sel',opts:NR_ROL,w:110})
+      +'<label style="font-size:12px;display:flex;gap:4px;align-items:center;padding-bottom:8px">'+nrIn(b+'.principal','',{t:'bool'})+'Principal</label>'
+      +'<label style="font-size:12px;display:flex;gap:4px;align-items:center;padding-bottom:8px">'+nrIn(b+'.unilateral','',{t:'bool'})+'Unilateral</label>'
+      +'<button class="btn btn-danger btn-xs" style="margin-bottom:6px" onclick="nrQuitaFila(\'PLANTILLAS.'+clave+'\','+i+')">✕</button></div>';}).join('')
+    +'<button class="btn btn-secondary btn-xs" onclick="nrAddPlantilla(\''+clave+'\')">+ Ejercicio a la sesión</button></div>';
+}
+function nrAddPlantilla(c){nrGet('PLANTILLAS.'+c).push({patron:'RD',rol:'Secundario',bloque:c==='activacion'?'activacion':'fuerza'});nrRender();}
+function nrQuitaFila(p,i){nrGet(p).splice(i,1);nrRender();}
+function nrRender(){
+  var body=document.getElementById('nr-body');if(!body)return;var sc=body.scrollTop;
+  var h='';
+  h+=nrCard('1 · Estructura del mesociclo','Cuántas semanas dura y qué días se entrena. El volumen y la intensidad de cada semana son un multiplicador (1 = normal; 0,6 = semana de descarga).',
+    nrFila([nrIn('MESOCICLO.semanas','Semanas',{w:70}),nrIn('MESOCICLO.patronCarga','Volumen por semana',{t:'list',w:200}),nrIn('MESOCICLO.patronIntensidad','Intensidad por semana',{t:'list',w:200})])
+    +nrFila([nrDias('MESOCICLO.diasFuerza','Días de fuerza'),nrDias('MESOCICLO.diasResistencia','Días de resistencia')]));
+  var fases=[['acumulacion','Base / Acumulación'],['transformacion','Transformación'],['realizacion','Competitivo / Realización'],['readaptacion','Readaptación']];
+  h+=nrCard('2 · Fases de entrenamiento','Cada fase fija las series, repeticiones y RPE. Se parte del valor inicial y se llega al final a lo largo del mesociclo. Repeticiones: primero el valor de la semana 1 y luego el de la última.',
+    fases.map(function(f){var b='FASES.'+f[0];return '<div style="background:var(--surface2);border-radius:10px;padding:12px;margin-bottom:10px"><div style="font-weight:700;font-size:13px;margin-bottom:8px">'+f[1]+'</div>'
+      +nrFila([nrIn(b+'.etiqueta','Nombre',{t:'text',w:140}),nrIn(b+'.fuerza.series.0','Series desde',{w:60}),nrIn(b+'.fuerza.series.1','hasta',{w:60}),nrIn(b+'.fuerza.reps.0','Reps inicio',{w:60}),nrIn(b+'.fuerza.reps.1','Reps final',{w:60}),nrIn(b+'.fuerza.rpe.0','RPE desde',{w:60}),nrIn(b+'.fuerza.rpe.1','hasta',{w:60}),nrIn(b+'.fuerza.descansoSeg','Descanso (s)',{w:80})])
+      +'<div style="font-size:11px;color:var(--text-muted);margin:4px 0 6px">Reparto de resistencia por zonas (suma 1; 0,6 = 60 %)</div>'
+      +nrFila(Object.keys(nrGet(b+'.resistencia.distribucion')).map(function(z){return nrIn(b+'.resistencia.distribucion.'+z,z,{w:60});}))+'</div>';}).join(''));
+  h+=nrCard('3 · Plantillas de sesión de fuerza','Qué ejercicios lleva cada sesión: el patrón de movimiento y su rol. El motor elige de tu base de ejercicios uno que encaje con cada hueco.',
+    nrPlantilla('A','Sesión A')+nrPlantilla('B','Sesión B')+nrPlantilla('activacion','Activación (se añade al principio de cada sesión)')
+    +nrFila([nrIn('PLANTILLAS.rotarCada','Cambiar ejercicios cada (semanas)',{w:80}),nrIn('PLANTILLAS.factorSeriesAccesorio','Series de accesorios (× las del principal)',{w:90}),nrIn('PLANTILLAS.repsAccesorio','Reps de accesorios',{w:80})]));
+  h+=nrCard('4 · Descansos','Los ejercicios principales usan el descanso de la fase. Aquí van los descansos de accesorios y activación según su RPE.',
+    '<div style="font-size:12px;font-weight:700;margin-bottom:6px">Accesorios por RPE</div>'+(nrGet('DESCANSO.porRPE')||[]).map(function(r,i){return '<div style="display:flex;gap:8px;align-items:flex-end;margin-bottom:6px">'+nrIn('DESCANSO.porRPE.'+i+'.rpeHasta',i?'':'Si el RPE es hasta',{w:90})+nrIn('DESCANSO.porRPE.'+i+'.seg',i?'':'descanso (s)',{w:90})+'<button class="btn btn-danger btn-xs" style="margin-bottom:6px" onclick="nrQuitaFila(\'DESCANSO.porRPE\','+i+')">✕</button></div>';}).join('')
+    +'<button class="btn btn-secondary btn-xs" style="margin-bottom:10px" onclick="nrGet(\'DESCANSO.porRPE\').push({rpeHasta:10,seg:60});nrRender()">+ Tramo</button>'
+    +nrFila([nrIn('DESCANSO.activacionSeg','Descanso de activación (s)',{w:110})]));
+  var lr=nrGet('LIMITES_REPS')||{};
+  h+=nrCard('5 · Límite de repeticiones por ejercicio','Para ejercicios concretos que no deben salirse de un rango (por ejemplo el nórdico).',
+    Object.keys(lr).map(function(id){return '<div style="display:flex;gap:8px;align-items:center;margin-bottom:6px"><div style="width:220px;font-size:13px">'+escapeHtml((DB.ejercicios[id]&&DB.ejercicios[id].nombre)||id)+'</div>'+nrIn('LIMITES_REPS.'+id+'.0','',{w:60})+'<span>a</span>'+nrIn('LIMITES_REPS.'+id+'.1','',{w:60})+'<button class="btn btn-danger btn-xs" onclick="delete NR.val.LIMITES_REPS[\''+id+'\'];nrRender()">✕</button></div>';}).join('')
+    +'<select onchange="nrAddLimite(this)" style="padding:8px 10px;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);max-width:100%"><option value="">+ Añadir ejercicio…</option>'+Object.keys(DB.ejercicios).sort(function(a,b){return (DB.ejercicios[a].nombre||a).localeCompare(DB.ejercicios[b].nombre||b);}).map(function(id){return '<option value="'+id+'">'+escapeHtml(DB.ejercicios[id].nombre||id)+'</option>';}).join('')+'</select>');
+  h+=nrCard('6 · Resistencia','Separación entre sesiones duras y características de cada zona.',
+    nrFila([nrIn('RESISTENCIA.minDiasEntreAltaIntensidad','Días mínimos entre sesiones de alta intensidad',{w:90}),'<label style="font-size:12px;display:flex;gap:6px;align-items:center;padding-bottom:8px">'+nrIn('RESISTENCIA.evitarAltaTrasFuerzaPesada','',{t:'bool'})+'Sin Z4/Z5 el día después de fuerza pesada (RPE ≥ 8)</label>'])
+    +Object.keys(nrGet('RESISTENCIA.tipos')).map(function(z){var b='RESISTENCIA.tipos.'+z;return nrFila([nrIn(b+'.nombre',z,{t:'text',w:170}),nrIn(b+'.min','Minutos',{w:70}),nrIn(b+'.tssPorMin','TSS/min',{w:70}),nrIn(b+'.rpe','RPE',{w:60})]);}).join(''));
+  h+=nrCard('7 · Ajuste diario','Cómo se rebaja o sube la sesión de hoy según la carga reciente (ACWR), el bienestar, el RPE y el dolor. Vol = multiplicador de volumen, Int = de intensidad.',
+    '<div style="font-size:12px;font-weight:700;margin-bottom:6px">Según el ratio agudo:crónico (ACWR)</div>'+(nrGet('AJUSTE_DIARIO.acwr')||[]).map(function(r,i){var b='AJUSTE_DIARIO.acwr.'+i;return nrFila([nrIn(b+'.min',i?'':'Desde',{w:70}),nrIn(b+'.max',i?'':'Hasta',{w:70}),nrIn(b+'.vol',i?'':'Vol ×',{w:70}),nrIn(b+'.int',i?'':'Int ×',{w:70}),nrIn(b+'.motivo',i?'':'Motivo que se mostrará',{t:'text',w:300})]);}).join('')
+    +'<div style="font-size:12px;font-weight:700;margin:12px 0 6px">Según el wellness (caída frente a su línea base)</div>'+(nrGet('AJUSTE_DIARIO.wellness')||[]).map(function(r,i){var b='AJUSTE_DIARIO.wellness.'+i;return nrFila([nrIn(b+'.caida',i?'':'Caída (0,15 = 15 %)',{w:110}),nrIn(b+'.vol',i?'':'Vol ×',{w:70}),nrIn(b+'.int',i?'':'Int ×',{w:70}),nrIn(b+'.motivo',i?'':'Motivo',{t:'text',w:300})]);}).join('')
+    +'<div style="font-size:12px;font-weight:700;margin:12px 0 6px">Otros avisos</div>'
+    +nrFila([nrIn('AJUSTE_DIARIO.rpeDesviado.umbral','Si el RPE real supera el previsto en',{w:90}),nrIn('AJUSTE_DIARIO.rpeDesviado.vol','Vol ×',{w:70}),nrIn('AJUSTE_DIARIO.sueno.minimo','Sueño igual o menor a (retira potencia)',{w:110})])
+    +nrFila([nrIn('AJUSTE_DIARIO.dolor.degradar','Dolor desde (rebaja principales)',{w:110}),nrIn('AJUSTE_DIARIO.dolor.cancelarFuerza','Dolor desde (pasa a descarga)',{w:110}),nrIn('AJUSTE_DIARIO.sueloVolumen','Volumen mínimo ×',{w:90}),nrIn('AJUSTE_DIARIO.sueloIntensidad','Intensidad mínima ×',{w:90})])
+    +'<div style="font-size:11px;color:var(--text-muted)">En tu hoja de wellness 5 = mucho dolor.</div>');
+  h+='<div style="font-size:12px;color:var(--text-muted);padding:4px 2px 20px">Los cambios se aplican a los programas que generes a partir de ahora. Los ya creados no cambian. Para que el generador use estas normas, el backend debe tener el archivo <b>Normas.gs</b> instalado.</div>';
+  body.innerHTML=h;body.scrollTop=sc;
+}
+function nrAddLimite(sel){if(!sel.value)return;NR.val.LIMITES_REPS[sel.value]=[6,10];nrRender();}
+function openNormas(){NR.val=nrMerge(NR_DEF,DB.config.normas_motor||null);openModal('normas');nrRender();}
+async function nrGuardar(){
+  try{var r=await apiPost({action:'saveConfig',key:'normas_motor',value:NR.val});
+    if(r&&r.ok){DB.config.normas_motor=nrClon(NR.val);toast('✅ Normas guardadas');}else toast('No se pudo guardar: '+((r&&r.error)||'sin respuesta'),'err');
+  }catch(e){toast('No se pudo guardar','err');}
+}
+function nrRestaurar(){if(!confirm('¿Volver a los valores originales? Se pierden tus cambios no guardados.'))return;NR.val=nrClon(NR_DEF);nrRender();}
 
 var BIB_TABS=[['templates','📋 Programas'],['bloques','🧱 Bloques'],['ejercicios','🏋️ Ejercicios'],['resistencia','🏃 Resistencia'],['planes','📚 Planes'],['generador','✨ Generador']];
 var bibActual='ejercicios';
