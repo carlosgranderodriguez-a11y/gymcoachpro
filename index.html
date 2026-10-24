@@ -193,6 +193,9 @@ table.pa-tbl tr:last-child td{border-bottom:none;}
 .cx-px{display:flex;justify-content:space-between;gap:8px;font-size:12px;padding:3px 0;border-bottom:1px solid var(--border);}
 .cx-px:last-child{border-bottom:none;}
 .cx-px span:last-child{font-family:'DM Mono',monospace;color:var(--text-muted);white-space:nowrap;font-size:11px;}
+.cx-ft{font-family:'DM Mono',monospace;font-size:9px;color:#b45309;text-align:center;}
+.cx-nt{font-size:10px;line-height:1.3;color:var(--blue);background:rgba(59,130,246,.07);border-radius:6px;padding:4px 6px;overflow-wrap:anywhere;margin-top:auto;}
+.cx-qb{font-family:'DM Mono',monospace;font-size:10px;padding:4px 8px;border-radius:6px;border:1px solid transparent;cursor:pointer;}
 /* Partidos */
 .pt-g{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px;margin-bottom:14px;}
 .pt-t{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 14px;}
@@ -3570,7 +3573,7 @@ var paAtletaActual=null, paTabActiva='res', paTrendChart=null, paWelTrendChart=n
 
 /* ═══ Calendario del atleta + Partidos (unificación con ATLETAS-26) ═══ */
 var CX_HUE={'clase':140,'asaltos':95,'tecnica':180,'tactica':220,'fuerza':210,'potencia':0,'metabolico':330,'prevencion':160,'movilidad':300,'core':240,'recuperacion':190,
-  'pliometria':125,'activacion':165,'velocidad':15,'fuerza complementaria':250,'potencia resistida':40,'pot-resistida':40,'resistencia':190,'vuelta a la calma':120,'vuelta-calma':120,'calentamiento':35,'entrenamiento':150,'partido':140,'plan externo':260};
+  'pliometria':125,'activacion':165,'velocidad':15,'fuerza complementaria':250,'potencia resistida':40,'pot-resistida':40,'resistencia':190,'vuelta a la calma':120,'vuelta-calma':120,'calentamiento':35,'entrenamiento':150,'partido':140,'plan externo':260,'jumps and drops':125,'fuerza 1':210,'fuerza 2':250};
 var CX={mes:null,tem:[],reg:[],cargando:false};
 var CX_MESES=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
 var CX_MES3={ene:0,feb:1,mar:2,abr:3,may:4,jun:5,jul:6,ago:7,sep:8,sept:8,oct:9,nov:10,dic:11};
@@ -3609,19 +3612,6 @@ function cxFaseDe(iso){
   var t=null;(CX.tem||[]).forEach(function(w){if(w.fecha_inicio&&w.fecha_inicio<=iso&&iso<=fechaLocalISO(sumaDias(new Date(w.fecha_inicio+'T12:00:00'),6)))t=w;});
   return t;
 }
-function cxDatosDia(iso){
-  var nombre=paAtletaActual,out={iso:iso,ses:[],res:[],ext:[],par:[],ua:0};
-  DB.sesiones.filter(function(s){return cxMismo(s.atleta,nombre)&&s.fecha===iso;}).forEach(function(s){
-    var bl=cxBloques(s),dur=bl.reduce(function(a,b){return a+b.dur;},0),plan=bl.reduce(function(a,b){return a+b.ua;},0),reg=cxRegDe(s.id),real=null;
-    if(reg&&reg.datos&&parseFloat(reg.datos.rpe))real=Math.round(dur*parseFloat(reg.datos.rpe));
-    out.ses.push({s:s,bl:bl,dur:dur,plan:plan,real:real,hecha:!!reg,rpeReal:reg&&reg.datos?parseFloat(reg.datos.rpe)||null:null});
-    out.ua+=(real!=null?real:plan);
-  });
-  (DB.resistencia||[]).filter(function(r){return r.tipo==='sesion'&&cxMismo(r.atleta,nombre)&&r.fecha===iso;}).forEach(function(r){var u=calcResistenciaLoad(r);out.res.push({r:r,ua:u});out.ua+=u;});
-  (DB.planExterno||[]).filter(function(p){return cxMismo(p.atleta,nombre)&&p.fecha===iso;}).forEach(function(p){out.ext.push(p);});
-  cxPartidosDe(nombre).forEach(function(p){var f=cxParseFecha(p.fecha);if(f&&f===iso)out.par.push(p);});
-  return out;
-}
 // ── partidos (datos de partidos.js) ──
 function cxParseFecha(txt){var m=String(txt||'').toLowerCase().match(/(\d{1,2})\s+([a-záéíóú]+)\.?\s+(\d{4})/);if(!m)return null;var mi=CX_MES3[cxNorm(m[2])];if(mi==null)return null;return m[3]+'-'+String(mi+1).padStart(2,'0')+'-'+String(+m[1]).padStart(2,'0');}
 function cxParData(nombre){
@@ -3634,24 +3624,6 @@ function cxRival(p){if(p.rival)return p.rival;var pt=String(p.partido||'').split
 function cxFmt(v,d){d=d||0;var s=Number(v).toFixed(d),pr=s.split('.'),i=pr[0];if(i.length>=5)i=i.replace(/\B(?=(\d{3})+(?!\d))/g,'.');return pr[1]?i+','+pr[1]:i;}
 // ── render del calendario mensual ──
 function cxChip(nombre,emo,det,color,extra,key){return '<div class="cx-c'+(extra?' ext':'')+'" style="'+cxChipStyle(key||nombre,color)+'"><div class="cx-cn"><span>'+emo+'</span><span>'+escapeHtml(nombre)+'</span></div>'+(det?'<div class="cx-cd">'+escapeHtml(det)+'</div>':'')+'</div>';}
-function cxDiaHTML(iso,fuera,hoy){
-  var d=cxDatosDia(iso),dt=new Date(iso+'T12:00:00'),wi=(dt.getDay()+6)%7,tem=cxFaseDe(iso),fase=tem&&tem.fase?tem.fase:'';
-  var dep=cxDeporte(),vacio=!d.ses.length&&!d.res.length&&!d.ext.length&&!d.par.length;
-  var depCh=d.par.map(function(p){return cxChip((p.jornada?p.jornada+' · ':'')+'vs '+cxRival(p),'⚽',[p.min?p.min+"'":'',p.m&&p.m.dt?cxFmt(p.m.dt.v)+' m':''].filter(Boolean).join(' · '),null,false,'Partido');}).join('')
-    +d.ext.map(function(p){return cxChip(p.disciplina||'Plan externo','📋',(p.texto||'').slice(0,60),null,true,'Plan externo');}).join('');
-  var fisCh=d.ses.map(function(x){
-    return '<div class="cx-sh">'+(x.hecha?'✅ ':'🏋️ ')+escapeHtml(x.s.nombre||'Sesión')+'</div>'+x.bl.map(function(b){
-      return cxChip(b.nombre,'💪',b.ex.length+' ej · '+b.dur+"' × "+cxRpe1(b.rpe)+(b.est?'*':'')+' · '+b.ua+' UA',b.color,false);}).join('');
-  }).join('')+d.res.map(function(x){return cxChip(x.r.nombre||'Resistencia','🏃',(x.r.duracion_real||x.r.duracion_min||'')+"' · "+x.ua+' UA',null,false);}).join('');
-  var uaBox='';
-  if(d.ua){var rp=rpeDeUA(d.ua,UA_DIA);uaBox='<div class="cx-ua"><b>⚡ '+d.ua+' UA</b><span style="color:'+RPE_COL[rp]+'">RPE '+rp+'</span></div>';}
-  return '<div class="cx-d'+(fuera?' off':'')+(hoy?' hoy':'')+(d.par.length?' par':'')+(vacio?' vacio':'')+'" onclick="cxDia(\''+iso+'\')">'
-    +'<div class="cx-dh"><span><span class="cx-n">'+dt.getDate()+'</span><span class="cx-wd">'+CX_WD[wi]+'</span></span>'+(fase?'<span class="cx-f" style="color:'+(FASE_COL[fase]||'#888')+'">'+escapeHtml(fase)+'</span>':'')+'</div>'
-    +uaBox
-    +'<div class="cx-lane dep"><div class="cx-lh"><span>'+dep.icon+' '+escapeHtml(dep.label.toUpperCase())+'</span></div>'+(depCh||'<div class="cx-e">—</div>')+'</div>'
-    +'<div class="cx-lane fis"><div class="cx-lh"><span>💪 FÍSICA</span></div>'+(fisCh||'<div class="cx-e">—</div>')+'</div>'
-  +'</div>';
-}
 function cxRender(){
   var body=document.getElementById('cx-body');if(!body||!paAtletaActual)return;
   if(!CX.mes){var h=new Date();CX.mes=new Date(h.getFullYear(),h.getMonth(),1);}
@@ -3689,8 +3661,67 @@ async function cxRefrescar(){
   cxRender();toast('✅ Calendario al día');
 }
 // ── detalle de un día ──
+var CX_EMO={'Fuerza':'🏋️','Potencia':'⚡','Movilidad':'🧘','Core':'🧩','Entrenamiento':'🎽','Calentamiento':'🔥','Técnica':'🎯','Táctica':'🧠','Rondos':'🔁','Vídeo':'🎬','Recuperación':'🌙','Recuperación activa':'🌙','Prevención':'🛡️','Metabólico':'🫁'};
+var CX_QUICK={dep:['Entrenamiento','Calentamiento','Técnica','Táctica','Rondos','Vídeo','Recuperación activa'],fis:['Movilidad','Activación','Pliometría','Potencia','Fuerza','Fuerza complementaria','Core','Prevención','Metabólico','Recuperación']};
+var CXE={iso:null,cont:[]};
+// ── datos manuales por día (se guardan en la hoja Config del servidor, una clave por atleta y mes) ──
+function cxSlug(){return cxNorm(paAtletaActual).replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');}
+function cxKey(iso){return 'cal_'+cxSlug()+'_'+iso.slice(0,7);}
+function cxMan(iso){var o=DB.config[cxKey(iso)];return (o&&o.days&&o.days[iso])||{};}
+function cxFuerzaDe(nombre,iso){var d=cxParData(nombre);return ((d&&d.fuerza)||[]).filter(function(f){return cxParseFecha(f.fecha)===iso;});}
+function cxUA(x){return (x.dur&&x.int)?Math.round(x.dur*x.int):0;}
+async function cxGuardaDia(iso,data){
+  var k=cxKey(iso),o=JSON.parse(JSON.stringify(DB.config[k]&&DB.config[k].days?DB.config[k]:{days:{}}));
+  var vacio=!(data.cont&&data.cont.length)&&!data.nota&&!data.fp&&!data.fq;
+  if(vacio)delete o.days[iso];else o.days[iso]=data;
+  var r=await apiPost({action:'saveConfig',key:k,value:o});
+  if(r&&r.ok){DB.config[k]=o;return true;}
+  return false;
+}
+function cxDatosDia(iso){
+  var nombre=paAtletaActual,out={iso:iso,ses:[],res:[],ext:[],par:[],fz:[],man:{},ua:0};
+  DB.sesiones.filter(function(s){return cxMismo(s.atleta,nombre)&&s.fecha===iso;}).forEach(function(s){
+    var bl=cxBloques(s),dur=bl.reduce(function(a,b){return a+b.dur;},0),plan=bl.reduce(function(a,b){return a+b.ua;},0),reg=cxRegDe(s.id),real=null;
+    if(reg&&reg.datos&&parseFloat(reg.datos.rpe))real=Math.round(dur*parseFloat(reg.datos.rpe));
+    out.ses.push({s:s,bl:bl,dur:dur,plan:plan,real:real,hecha:!!reg,rpeReal:reg&&reg.datos?parseFloat(reg.datos.rpe)||null:null});
+    out.ua+=(real!=null?real:plan);
+  });
+  (DB.resistencia||[]).filter(function(r){return r.tipo==='sesion'&&cxMismo(r.atleta,nombre)&&r.fecha===iso;}).forEach(function(r){var u=calcResistenciaLoad(r);out.res.push({r:r,ua:u});out.ua+=u;});
+  (DB.planExterno||[]).filter(function(p){return cxMismo(p.atleta,nombre)&&p.fecha===iso;}).forEach(function(p){out.ext.push(p);});
+  cxPartidosDe(nombre).forEach(function(p){var f=cxParseFecha(p.fecha);if(f&&f===iso)out.par.push(p);});
+  out.fz=cxFuerzaDe(nombre,iso);
+  out.man=cxMan(iso);
+  (out.man.cont||[]).forEach(function(x){out.ua+=cxUA(x);});
+  return out;
+}
+function cxManChip(x){var ua=cxUA(x),det=[x.m||'',(x.dur?x.dur+"'":'')+(x.dur&&x.int?' × ':'')+(x.int||''),ua?ua+' UA':''].filter(Boolean).join(' · ');return cxChip(x.n,CX_EMO[x.n]||(x.t==='fis'?'💪':'🎯'),det,null,false);}
+function cxFatTxt(d){var pre=d.man.fp||'',post=d.man.fq||'';d.fz.forEach(function(f){pre=pre||f.fatigaPre||'';post=post||f.fatigaPost||'';});return (pre||post)?'Fatiga '+(pre||'—')+' → '+(post||'—'):'';}
+function cxDiaHTML(iso,fuera,hoy){
+  var d=cxDatosDia(iso),dt=new Date(iso+'T12:00:00'),wi=(dt.getDay()+6)%7,tem=cxFaseDe(iso),fase=tem&&tem.fase?tem.fase:'';
+  var dep=cxDeporte(),cont=d.man.cont||[],ft=cxFatTxt(d);
+  var vacio=!d.ses.length&&!d.res.length&&!d.ext.length&&!d.par.length&&!d.fz.length&&!cont.length&&!d.man.nota&&!ft;
+  var depCh=d.par.map(function(p){return cxChip((p.jornada?p.jornada+' · ':'')+'vs '+cxRival(p),'⚽',[p.min?p.min+"'":'',p.m&&p.m.dt?cxFmt(p.m.dt.v)+' m':''].filter(Boolean).join(' · '),null,false,'Partido');}).join('')
+    +cont.filter(function(x){return x.t==='dep';}).map(cxManChip).join('')
+    +d.ext.map(function(p){return cxChip(p.disciplina||'Plan externo','📋',(p.texto||'').slice(0,60),null,true,'Plan externo');}).join('');
+  var fisCh=d.ses.map(function(x){
+    return '<div class="cx-sh">'+(x.hecha?'✅ ':'🏋️ ')+escapeHtml(x.s.nombre||'Sesión')+'</div>'+x.bl.map(function(b){
+      return cxChip(b.nombre,'💪',b.ex.length+' ej · '+b.dur+"' × "+cxRpe1(b.rpe)+(b.est?'*':'')+' · '+b.ua+' UA',b.color,false);}).join('');
+  }).join('')+d.fz.map(function(f){
+    return '<div class="cx-sh">🏋️ '+escapeHtml(f.sesion||'Fuerza')+'</div>'+(f.bloques||[]).map(function(b){return cxChip(b.n,'💪',(b.series?b.series+' series · ':'')+b.ej.length+' ej',null,false);}).join('');
+  }).join('')+cont.filter(function(x){return x.t==='fis';}).map(cxManChip).join('')
+    +d.res.map(function(x){return cxChip(x.r.nombre||'Resistencia','🏃',(x.r.duracion_real||x.r.duracion_min||'')+"' · "+x.ua+' UA',null,false);}).join('');
+  var uaBox='';
+  if(d.ua){var rp=rpeDeUA(d.ua,UA_DIA);uaBox='<div class="cx-ua"><b>⚡ '+d.ua+' UA</b><span style="color:'+RPE_COL[rp]+'">RPE '+rp+'</span></div>';}
+  return '<div class="cx-d'+(fuera?' off':'')+(hoy?' hoy':'')+(d.par.length?' par':'')+(vacio?' vacio':'')+'" onclick="cxDia(\''+iso+'\')">'
+    +'<div class="cx-dh"><span><span class="cx-n">'+dt.getDate()+'</span><span class="cx-wd">'+CX_WD[wi]+'</span></span>'+(fase?'<span class="cx-f" style="color:'+(FASE_COL[fase]||'#888')+'">'+escapeHtml(fase)+'</span>':'')+'</div>'
+    +uaBox+(ft?'<div class="cx-ft">'+escapeHtml(ft)+'</div>':'')
+    +'<div class="cx-lane dep"><div class="cx-lh"><span>'+dep.icon+' '+escapeHtml(dep.label.toUpperCase())+'</span></div>'+(depCh||'<div class="cx-e">—</div>')+'</div>'
+    +'<div class="cx-lane fis"><div class="cx-lh"><span>💪 FÍSICA</span></div>'+(fisCh||'<div class="cx-e">—</div>')+'</div>'
+    +(d.man.nota?'<div class="cx-nt">📝 '+escapeHtml(d.man.nota)+'</div>':'')
+  +'</div>';
+}
 function cxDia(iso){
-  var d=cxDatosDia(iso),h='<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px"><div><div class="pa-st">'+cxFechaTxt(iso)+'</div><div class="pa-ss" style="margin-bottom:6px">'+(d.ua?'⚡ '+d.ua+' UA · RPE '+rpeDeUA(d.ua,UA_DIA):'Sin carga registrada')+'</div></div><button class="btn btn-secondary btn-sm" onclick="cxCierra()">✕</button></div>';
+  var d=cxDatosDia(iso),h='<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px"><div><div class="pa-st">'+cxFechaTxt(iso)+'</div><div class="pa-ss" style="margin-bottom:6px">'+(d.ua?'⚡ '+d.ua+' UA · RPE '+rpeDeUA(d.ua,UA_DIA):'Sin carga registrada')+(cxFatTxt(d)?' · '+escapeHtml(cxFatTxt(d)):'')+'</div></div><button class="btn btn-secondary btn-sm" onclick="cxCierra()">✕</button></div>';
   d.par.forEach(function(p){h+='<div class="cx-pb" style="border-color:#3F9D6D"><div class="cx-pbh" style="color:#2f7d56"><span>⚽ '+escapeHtml((p.jornada||'')+' · '+p.partido)+'</span><span>'+(p.min||'')+"'</span></div>"+(p.m?'<div style="font-size:12px;color:var(--text-dim);margin-top:4px">'+PAR_METS.filter(function(k){return p.m[k.k];}).map(function(k){return k.l+': <b>'+cxFmt(p.m[k.k].v,k.d)+(k.u?' '+k.u:'')+'</b>';}).join(' · ')+'</div>':'')+'</div>';});
   d.ses.forEach(function(x){
     h+='<div class="cx-pb"><div class="cx-pbh"><span>'+(x.hecha?'✅ ':'🏋️ ')+escapeHtml(x.s.nombre||'Sesión')+'</span><span>'+x.dur+"' · "+(x.real!=null?x.real+' UA real (RPE '+x.rpeReal+')':x.plan+' UA prevista')+'</span></div>';
@@ -3701,12 +3732,48 @@ function cxDia(iso){
     });
     h+='<div style="margin-top:10px"><button class="btn btn-secondary btn-sm" onclick="cxCierra();editSesion(\''+x.s.id+'\')">✏️ Editar sesión</button></div></div>';
   });
+  d.fz.forEach(function(f){
+    h+='<div class="cx-pb"><div class="cx-pbh"><span>🏋️ '+escapeHtml(f.sesion||'Fuerza')+'</span><span>'+escapeHtml(f.fatigaPre||f.fatigaPost?'Fatiga '+(f.fatigaPre||'—')+' → '+(f.fatigaPost||'—'):'')+'</span></div>'
+      +(f.bloques||[]).map(function(b){return '<div style="margin-top:8px"><div style="font-family:\'DM Mono\',monospace;font-size:10px;font-weight:700;letter-spacing:.05em;color:hsl('+cxHue(b.n)+',60%,32%)">'+escapeHtml(b.n.toUpperCase())+(b.series?' · '+b.series+' series':'')+'</div>'
+        +b.ej.map(function(e){return '<div class="cx-px"><span>'+escapeHtml(e.n)+'</span><span>'+escapeHtml(e.r||'')+'</span></div>';}).join('')+'</div>';}).join('')+'</div>';
+  });
   d.res.forEach(function(x){h+='<div class="cx-pb"><div class="cx-pbh"><span>🏃 '+escapeHtml(x.r.nombre||'Resistencia')+'</span><span>'+x.ua+' UA</span></div></div>';});
   d.ext.forEach(function(p){h+='<div class="cx-pb" style="border-style:dashed"><div class="cx-pbh"><span>📋 '+escapeHtml(p.disciplina||'Plan externo')+'</span></div><div style="font-size:12px;margin-top:4px">'+escapeHtml(p.texto||'')+'</div></div>';});
-  if(!d.par.length&&!d.ses.length&&!d.res.length&&!d.ext.length)h+='<div class="pa-empty">Nada planificado este día.</div>';
-  h+='<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px"><button class="btn btn-primary btn-sm" onclick="cxNueva(\''+iso+'\')">+ Sesión de fuerza</button><button class="btn btn-secondary btn-sm" onclick="cxNuevoExt(\''+iso+'\')">📋 + Plan externo</button></div>';
+  // editor manual
+  CXE.iso=iso;CXE.cont=JSON.parse(JSON.stringify(d.man.cont||[]));
+  var dep=cxDeporte();
+  h+='<div class="cx-pb" style="border-style:dashed;background:var(--surface2)"><div class="cx-pbh"><span>✍️ CONTENIDOS MANUALES, FATIGA Y NOTA</span></div>'
+    +'<div id="cxe-list" style="display:flex;flex-direction:column;gap:4px;margin:8px 0"></div>'
+    +'<div style="display:flex;gap:5px;flex-wrap:wrap"><select id="cxe-tipo" onchange="cxeQuick()" style="flex:0 0 auto"><option value="fis">💪 Física</option><option value="dep">'+dep.icon+' '+escapeHtml(dep.label)+'</option></select>'
+    +'<input id="cxe-nom" placeholder="Contenido" style="flex:1;min-width:110px" onkeydown="if(event.key===\'Enter\'){event.preventDefault();cxeAdd();}"><input id="cxe-hora" type="time" style="flex:0 0 auto;min-width:96px"><input id="cxe-dur" type="number" min="0" step="5" placeholder="min" style="flex:0 0 58px"><input id="cxe-int" type="number" min="1" max="10" step="0.5" placeholder="1-10" style="flex:0 0 58px"><button class="btn btn-primary btn-sm" onclick="cxeAdd()">+</button></div>'
+    +'<div id="cxe-quick" style="display:flex;flex-wrap:wrap;gap:4px;margin-top:6px"></div>'
+    +'<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"><label style="font-size:11px;color:var(--text-muted)">Fatiga antes<br><input id="cxe-fp" placeholder="ej. 3-4" value="'+escapeHtml(d.man.fp||'')+'" style="width:90px"></label><label style="font-size:11px;color:var(--text-muted)">Fatiga después<br><input id="cxe-fq" placeholder="ej. 5-6" value="'+escapeHtml(d.man.fq||'')+'" style="width:90px"></label><label style="font-size:11px;color:var(--text-muted);flex:1;min-width:160px">Nota del día<br><input id="cxe-nota" placeholder="Sensaciones, incidencias…" value="'+escapeHtml(d.man.nota||'')+'" style="width:100%"></label></div>'
+    +'<div style="margin-top:10px"><button class="btn btn-primary btn-sm" onclick="cxeGuardar()">💾 Guardar día</button></div></div>';
+  h+='<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px"><button class="btn btn-secondary btn-sm" onclick="cxNueva(\''+iso+'\')">+ Sesión de fuerza (GymCoach)</button><button class="btn btn-secondary btn-sm" onclick="cxNuevoExt(\''+iso+'\')">📋 + Plan externo</button></div>';
   document.getElementById('cx-pop-in').innerHTML=h;document.getElementById('cx-pop').classList.add('on');
+  cxeList();cxeQuick();
 }
+function cxeList(){
+  var el=document.getElementById('cxe-list');if(!el)return;
+  el.innerHTML=CXE.cont.length?CXE.cont.map(function(x,i){var ua=cxUA(x);return '<div class="cx-c" style="'+cxChipStyle(x.n)+';flex-direction:row;align-items:center;justify-content:space-between;gap:8px"><span><b>'+(x.t==='dep'?'⚽ ':'💪 ')+escapeHtml(x.n)+'</b>'+(x.m?' · '+escapeHtml(x.m):'')+(x.dur||x.int?' · '+(x.dur||'—')+"' × "+(x.int||'—'):'')+(ua?' · '+ua+' UA':'')+'</span><span style="cursor:pointer" onclick="cxeDel('+i+')">✕</span></div>';}).join(''):'<div class="cx-e">Sin contenidos manuales</div>';
+}
+function cxeQuick(){
+  var t=document.getElementById('cxe-tipo').value,el=document.getElementById('cxe-quick');
+  el.innerHTML=CX_QUICK[t].map(function(n){return '<button type="button" class="cx-qb" style="'+cxChipStyle(n)+'" onclick="cxeAddN(\''+n.replace(/'/g,"\\'")+'\')">'+(CX_EMO[n]||'+')+' '+escapeHtml(n)+'</button>';}).join('');
+}
+function cxeRead(n){
+  var o={t:document.getElementById('cxe-tipo').value,n:n},m=document.getElementById('cxe-hora').value,du=parseInt(document.getElementById('cxe-dur').value)||null,it=parseFloat(document.getElementById('cxe-int').value)||null;
+  if(m)o.m=m;if(du)o.dur=du;if(it)o.int=it;return o;
+}
+function cxeAddN(n){CXE.cont.push(cxeRead(n));cxeList();}
+function cxeAdd(){var n=document.getElementById('cxe-nom').value.trim();if(!n)return;CXE.cont.push(cxeRead(n));['cxe-nom','cxe-hora','cxe-dur','cxe-int'].forEach(function(id){document.getElementById(id).value='';});cxeList();}
+function cxeDel(i){CXE.cont.splice(i,1);cxeList();}
+async function cxeGuardar(){
+  var data={cont:CXE.cont,nota:document.getElementById('cxe-nota').value.trim(),fp:document.getElementById('cxe-fp').value.trim(),fq:document.getElementById('cxe-fq').value.trim()};
+  var ok=await cxGuardaDia(CXE.iso,data);
+  if(ok){cxCierra();cxRender();toast('✅ Día guardado');}else toast('No se pudo guardar el día','err');
+}
+
 function cxCierra(){document.getElementById('cx-pop').classList.remove('on');}
 function cxNueva(iso){cxCierra();selectedDate=iso;perfilAtletaActivo=paAtletaActual;openNewSesion();}
 function cxNuevoExt(iso){cxCierra();selectedDate=iso;perfilAtletaActivo=paAtletaActual;openNewPlanExterno();}
