@@ -416,6 +416,14 @@ input[type=range]{width:100%;}
     </div>
   </div>
 
+  <!-- ENTRENO PLANIFICADO -->
+  <div id="page-entreno" class="page">
+    <div class="wrap">
+      <div class="sec-h cond">Mi entrenamiento <button class="mini" onclick="loadAsignadas()">↻ Actualizar</button></div>
+      <div id="entreno-list"></div>
+    </div>
+  </div>
+
   <!-- PROGRESO -->
   <div id="page-progreso" class="page">
     <div class="wrap" id="progreso-content"></div>
@@ -428,6 +436,7 @@ input[type=range]{width:100%;}
 
   <div class="nav">
     <button class="active" id="nav-semana" onclick="showPage('semana',this)"><span class="ni">📅</span>Semana</button>
+    <button id="nav-entreno" onclick="showPage('entreno',this)"><span class="ni">🏋️</span>Entreno</button>
     <button id="nav-wellness" onclick="showPage('wellness',this)"><span class="ni">❤️</span>Wellness</button>
     <button id="nav-progreso" onclick="showPage('progreso',this)"><span class="ni">📈</span>Progreso</button>
     <button id="nav-reg" onclick="showPage('reg',this)"><span class="ni">➕</span>Registrar</button>
@@ -587,6 +596,7 @@ async function loadAsignadas(){
     if(rPE&&rPE.ok) PLAN_EXTERNO=(rPE.items||[]).filter(function(p){return mismoAtleta(p.atleta,ATLETA);});
     if(rC&&rC.ok&&rC.config.bloques_ejercicio&&rC.config.bloques_ejercicio.length) BLOQUES=rC.config.bloques_ejercicio;
     renderSemana();
+    var _pe=document.getElementById('page-entreno');if(_pe&&_pe.classList.contains('active'))renderEntreno();
   }catch(e){toast('No se pudo cargar tu semana','err');}
 }
 
@@ -599,9 +609,44 @@ function showPage(p,el){
   if(p==='hist')renderHist();
   if(p==='semana')renderSemana();
   if(p==='progreso')renderProgreso();
+  if(p==='entreno')renderEntreno();
   if(p==='wellness')renderWellness();
   window.scrollTo(0,0);
 }
+
+
+/* ── ENTRENO PLANIFICADO ── */
+function renderEntreno(){
+  var box=document.getElementById('entreno-list');if(!box)return;
+  var hoy=fechaLocalISO();
+  var lista=FUERZA_SESIONES.filter(function(s){return s.fecha>=hoy;}).map(function(s){return {kind:'fuerza',data:s};})
+    .concat(RES_SESIONES.filter(function(s){return s.fecha>=hoy;}).map(function(s){return {kind:'resistencia',data:s};}))
+    .sort(function(a,b){return a.data.fecha.localeCompare(b.data.fecha);}).slice(0,10);
+  if(!lista.length){box.innerHTML='<div class="card" style="text-align:center;color:var(--text-dim)">Todavía no tienes sesiones planificadas.<br>Cuando tu entrenador las programe aparecerán aquí.</div>';return;}
+  box.innerHTML=lista.map(function(x){
+    var s=x.data,d=new Date(s.fecha+'T12:00:00');
+    var fecha=d.toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'long'});
+    var head='<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:10px"><div><div class="cond" style="font-size:20px;font-weight:700">'+(x.kind==='fuerza'?'💪 ':'🏃 ')+escHtmlE(s.nombre||'Sesión')+'</div><div style="font-size:12px;color:var(--text-dim)">'+(s.fecha===hoy?'Hoy · ':'')+fecha.charAt(0).toUpperCase()+fecha.slice(1)+'</div></div>'+((x.kind==='fuerza'?fuerzaCompletada(s.id):resistenciaCompletada(s))?'<span class="done-badge" style="margin:0">✅ Hecha</span>':'<span style="color:var(--accent);font-size:18px">›</span>')+'</div>';
+    var body='';
+    if(x.kind==='fuerza'){
+      var bl={},orden=[];
+      (s.ejercicios||[]).forEach(function(ex){var b=ex.bloque||'otros';if(!bl[b]){bl[b]=[];orden.push(b);}bl[b].push(ex);});
+      body=orden.map(function(k){
+        var def=BLOQUES.find(function(b){return b.id===k;})||{name:k,color:'#a3a3a3'};
+        return '<div style="border-left:4px solid '+def.color+';padding:2px 0 2px 10px;margin:8px 0"><div style="font-size:12px;font-weight:800;color:'+def.color+';text-transform:uppercase;letter-spacing:.5px">'+escHtmlE(def.name)+'</div>'
+          +bl[k].map(function(ex){
+            var db=EJERCICIOS_DB[ex.id]||{nombre:ex.id};
+            var det=[(ex.sets||ex.reps)?((ex.sets||'')+'×'+(ex.reps||'')):'',(ex.load&&ex.load!=='—')?ex.load+' kg':''].filter(Boolean).join(' · ');
+            return '<div style="display:flex;justify-content:space-between;gap:8px;font-size:13px;padding:3px 0"><span>'+escHtmlE(db.nombre)+'</span><span style="color:var(--text-dim);white-space:nowrap">'+det+'</span></div>';
+          }).join('')+'</div>';
+      }).join('');
+    } else {
+      body='<div style="font-size:13px;color:var(--text-dim)">'+escHtmlE(s.descripcion||s.tipo||'Toca para ver el detalle')+'</div>';
+    }
+    return '<div class="card" style="cursor:pointer" onclick="abrirDetalle(\''+x.kind+'\',\''+s.id+'\')">'+head+body+'</div>';
+  }).join('');
+}
+function escHtmlE(t){return String(t==null?'':t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 
 /* ── MI SEMANA ── */
 function getMonday(d){var x=new Date(d);var day=x.getDay()||7;if(day!==1)x.setDate(x.getDate()-day+1);x.setHours(0,0,0,0);return x;}
