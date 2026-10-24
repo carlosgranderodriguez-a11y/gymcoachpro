@@ -1,10 +1,11 @@
 // GymCoach Pro — Service Worker
 // Cachea el "app shell" (HTML/CSS/JS/iconos) para que la app abra al instante
 // aunque haya poca cobertura, y deja pasar las llamadas a la API siempre a red.
-const CACHE_VERSION = 'gcp-v23';
+const CACHE_VERSION = 'gcp-v24';
 const APP_SHELL = [
   './atleta.html',
   './index.html',
+  './partidos.js',
   './manifest.json',
   './manifest-coach.json',
   './icons/icon-192.png',
