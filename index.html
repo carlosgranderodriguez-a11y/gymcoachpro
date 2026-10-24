@@ -1133,6 +1133,8 @@ function aplicarCodigoAcceso(){
     <div class="pa-tabs">
       <div class="pa-tab on" data-pa="res" onclick="paTab('res')">Resumen</div>
       <div class="pa-tab" data-pa="cal" onclick="paTab('cal')">Calendario</div>
+      <div class="pa-tab" data-pa="pla" onclick="paTab('pla')">Planificado</div>
+      <div class="pa-tab" data-pa="evo" onclick="paTab('evo')">Evolución</div>
       <div class="pa-tab" data-pa="tmp" onclick="paTab('tmp')">Temporada</div>
       <div class="pa-tab" data-pa="wel" onclick="paTab('wel')">Wellness</div>
       <div class="pa-tab" data-pa="par" id="pa-tab-par" style="display:none" onclick="paTab('par')">Partidos</div>
@@ -1170,6 +1172,12 @@ function aplicarCodigoAcceso(){
       <div class="cx-leg"><span>⚡ UA = minutos × RPE</span><span>* RPE estimado (sin RPE en los ejercicios)</span><span>✅ sesión completada (carga real)</span><span>⚽ partido</span><span>📋 plan externo</span></div>
       <div id="cx-body"></div>
     </div>
+
+    <!-- ENTRENAMIENTO PLANIFICADO -->
+    <div id="pa-pnl-pla" class="pa-pnl"><div class="pa-st">Entrenamiento planificado</div><div class="pa-ss">Lo que has programado en GymCoach, con sus bloques, ejercicios y carga.</div><div id="pa-pla-body"></div></div>
+
+    <!-- EVOLUCIÓN -->
+    <div id="pa-pnl-evo" class="pa-pnl"><div class="pa-st">Evolución del entrenamiento</div><div class="pa-ss">Progreso de cargas, volumen y cumplimiento.</div><div id="pa-evo-body"></div></div>
 
     <!-- PARTIDOS -->
     <div id="pa-pnl-par" class="pa-pnl">
@@ -3936,7 +3944,7 @@ async function openAtletaPerfil(nombre){
   document.getElementById('pa-pnl-res').classList.add('on');
   document.getElementById('pa-overlay').classList.add('on');
 
-  CX.mes=null;CX.tem=[];CX.reg=[];PAR_SEL=null;
+  CX.mes=null;CX.tem=[];CX.reg=[];PAR_SEL=null;paEvoEj=null;
   var _tp=document.getElementById('pa-tab-par');if(_tp)_tp.style.display=cxPartidosDe(nombre).length?'':'none';
   cxRender();paRenderPartidos(nombre);
 
@@ -3952,6 +3960,8 @@ async function openAtletaPerfil(nombre){
   var tempItems=(rt&&rt.ok)?(rt.items||[]):[];
   paRenderResumen(nombre,f,dep,wellItems,tempItems);
   paRenderWellness(wellItems);
+  if(paTabActiva==='pla')paRenderPlan(nombre);
+  if(paTabActiva==='evo')paRenderEvo(nombre);
 }
 
 function paTab(tab){
@@ -3960,6 +3970,8 @@ function paTab(tab){
   document.querySelectorAll('.pa-pnl').forEach(function(p){p.classList.remove('on');});
   document.getElementById('pa-pnl-'+tab).classList.add('on');
   if(tab==='cal')cxRender();
+  if(tab==='pla')paRenderPlan(paAtletaActual);
+  if(tab==='evo')paRenderEvo(paAtletaActual);
 }
 
 function paCerrar(){
@@ -4100,6 +4112,73 @@ function paRenderCarga(nombre){
     +kpi('Esta semana / media',ratio==null?'—':cxFmt(ratio,2).replace('.',','),ratio==null?'sin semanas previas':(ratio<0.8?'por debajo: puedes subir':ratio>1.3?'por encima: vigila':'en rango'))
     +'</div><div class="pa-g2" style="margin-top:14px"><div class="pa-card"><div class="pa-ct">Carga semanal (UA)</div><div style="display:flex;align-items:flex-end;gap:10px;height:190px;border-bottom:1px solid var(--border);padding-top:8px">'+barras+'</div><div class="pa-ct" style="margin-top:16px">Reparto por bloque</div>'+filasB+'</div>'
     +'<div class="pa-card"><div class="pa-ct">Ejercicios que va realizando</div><div style="display:grid;grid-template-columns:minmax(0,2fr) 44px 1fr 70px 24px;gap:8px;font-size:10.5px;color:var(--text-muted);padding:4px 0"><span>EJERCICIO</span><span>VECES</span><span>ÚLTIMA CARGA</span><span>S×R</span><span></span></div>'+filasE+'</div></div>';
+}
+
+
+// ── Pestaña Planificado ──
+function paSesAt(nombre){var nm=(nombre||'').trim();return DB.sesiones.filter(function(s){return (s.atleta||'').trim()===nm&&s.fecha;});}
+function paExNombre(id){return (DB.ejercicios[id]&&DB.ejercicios[id].nombre)||id;}
+function paRenderPlan(nombre){
+  var el=document.getElementById('pa-pla-body');if(!el)return;
+  var hoy=fechaLocalISO(),ses=paSesAt(nombre);
+  var prox=ses.filter(function(s){return s.fecha>=hoy;}).sort(function(a,b){return a.fecha.localeCompare(b.fecha);}).slice(0,8);
+  var ult=ses.filter(function(s){return s.fecha<hoy;}).sort(function(a,b){return b.fecha.localeCompare(a.fecha);}).slice(0,2);
+  function card(s,pasada){
+    var bl=cxBloques(s),ua=bl.reduce(function(p,b){return p+b.ua;},0),min=bl.reduce(function(p,b){return p+b.dur;},0),reg=cxRegDe(s.id);
+    var f=new Date(s.fecha+'T12:00:00').toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'short'});
+    var bh=bl.map(function(b){
+      return '<div style="border-left:4px solid '+b.color+';padding:6px 0 6px 12px;margin:8px 0"><div style="display:flex;justify-content:space-between;font-size:12.5px;font-weight:700"><span>'+escapeHtml(b.nombre)+'</span><span style="color:var(--text-muted);font-weight:500">'+b.dur+"' · "+cxRpe1(b.rpe)+(b.est?'*':'')+' RPE · '+b.ua+' UA</span></div>'
+       +b.ex.map(function(ex){
+         var se=getParamVal(ex,'series')||ex.sets||'',re=getParamVal(ex,'reps')||ex.reps||'',kg=getParamVal(ex,'kg'),rp=getParamVal(ex,'rpe'),de=getParamVal(ex,'descanso')||ex.rest||'';
+         return '<div style="display:flex;justify-content:space-between;gap:10px;font-size:12.5px;padding:3px 0;color:var(--text-dim)"><span>'+escapeHtml(paExNombre(ex.id))+'</span><span style="color:var(--text-muted);white-space:nowrap">'+[(se||re)?(se+'×'+re):'',kg?kg+' kg':'',rp?'RPE '+rp:'',de?'desc. '+de:''].filter(Boolean).join(' · ')+'</span></div>';
+       }).join('')+'</div>';
+    }).join('');
+    return '<div class="pa-card" style="margin-bottom:12px"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px"><div><div style="font-weight:700;font-size:15px">'+escapeHtml(s.nombre||'Sesión')+'</div><div class="pa-ms" style="text-transform:capitalize">'+f+'</div></div><div style="text-align:right"><div style="font-weight:700">'+ua+' UA</div><div class="pa-ms">'+min+" min"+(reg?' · ✅ completada':(pasada?' · sin completar':''))+'</div></div></div>'+bh+'</div>';
+  }
+  el.innerHTML=(prox.length?prox.map(function(s){return card(s,false);}).join(''):'<div class="pa-empty">No hay sesiones planificadas a partir de hoy.</div>')
+    +(ult.length?'<div class="pa-ct" style="margin:18px 0 8px">Últimas sesiones</div>'+ult.map(function(s){return card(s,true);}).join(''):'');
+}
+// ── Pestaña Evolución ──
+var paEvoCharts=[],paEvoEj=null;
+function paRenderEvo(nombre){
+  var el=document.getElementById('pa-evo-body');if(!el)return;
+  paEvoCharts.forEach(function(c){try{c.destroy();}catch(e){}});paEvoCharts=[];
+  var hoy=fechaLocalISO(),ses=paSesAt(nombre).sort(function(a,b){return a.fecha.localeCompare(b.fecha);});
+  if(!ses.length){el.innerHTML='<div class="pa-empty">Aún no hay sesiones de fuerza planificadas.</div>';return;}
+  var ejs={};
+  ses.forEach(function(s){(s.ejercicios||[]).forEach(function(ex){
+    var kg=parseFloat(getParamVal(ex,'kg'))||0,se=parseInt(getParamVal(ex,'series')||ex.sets)||0,re=parseInt(getParamVal(ex,'reps')||ex.reps)||0;
+    var o=ejs[ex.id]=ejs[ex.id]||{id:ex.id,h:[]};o.h.push({f:s.fecha,kg:kg,vol:se*re*kg,ser:se,reps:re});
+  });});
+  var lista=Object.keys(ejs).map(function(k){return ejs[k];}).sort(function(a,b){return b.h.length-a.h.length;});
+  var conKg=lista.filter(function(o){return o.h.some(function(x){return x.kg;});});
+  if(!paEvoEj||!ejs[paEvoEj])paEvoEj=(conKg[0]||lista[0]).id;
+  // semanal
+  var lun0=paLunes(ses[0].fecha),lunHoy=paLunes(hoy),sem=[];
+  for(var w=lun0;w<=lunHoy&&sem.length<16;w=fechaLocalISO(sumaDias(new Date(w+'T12:00:00'),7)))sem.push(w);
+  var uaS={},volS={};sem.forEach(function(w){uaS[w]=0;volS[w]=0;});
+  var plan=0,hechas=0;
+  ses.forEach(function(s){
+    var w=paLunes(s.fecha);if(uaS[w]==null)return;
+    uaS[w]+=cxBloques(s).reduce(function(p,b){return p+b.ua;},0);
+    (s.ejercicios||[]).forEach(function(ex){volS[w]+=(parseInt(getParamVal(ex,'series')||ex.sets)||0)*(parseInt(getParamVal(ex,'reps')||ex.reps)||0)*(parseFloat(getParamVal(ex,'kg'))||0);});
+    if(s.fecha<=hoy){plan++;if(cxRegDe(s.id))hechas++;}
+  });
+  var tabla=conKg.map(function(o){
+    var a=o.h[0],b=o.h[o.h.length-1],d=a.kg?Math.round((b.kg-a.kg)/a.kg*100):0;
+    return '<div style="display:grid;grid-template-columns:minmax(0,2fr) 50px 1fr 1fr 60px;gap:8px;padding:7px 0;border-top:1px solid var(--border);font-size:12.5px;cursor:pointer" onclick="paEvoEj=\''+o.id+'\';paRenderEvo(paAtletaActual)"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap'+(o.id===paEvoEj?';font-weight:700;color:var(--accent-ink,inherit)':'')+'">'+escapeHtml(paExNombre(o.id))+'</span><span style="color:var(--text-muted)">'+o.h.length+'×</span><span>'+cxFmt(a.kg,a.kg%1?1:0)+' kg</span><span>'+cxFmt(b.kg,b.kg%1?1:0)+' kg</span><span style="font-weight:700;color:'+(d>0?'var(--green)':d<0?'var(--orange)':'var(--text-muted)')+'">'+(d>0?'+':'')+d+'%</span></div>';
+  }).join('')||'<div class="pa-empty">Ningún ejercicio lleva kg todavía; al añadirlos verás su evolución.</div>';
+  var kpi=function(l,v,sub){return '<div class="pa-card pa-card-sm"><div class="pa-ct">'+l+'</div><div class="pa-mv" style="font-size:22px">'+v+'</div><div class="pa-ms">'+sub+'</div></div>';};
+  var tonTot=0;sem.forEach(function(w){tonTot+=volS[w];});
+  el.innerHTML='<div class="pa-g4">'+kpi('Cumplimiento',plan?Math.round(hechas/plan*100)+'%':'—',hechas+' de '+plan+' sesiones pasadas')+kpi('Sesiones planificadas',ses.length,'desde '+new Date(ses[0].fecha+'T12:00:00').toLocaleDateString('es-ES',{day:'numeric',month:'short'}))+kpi('Ejercicios distintos',lista.length,'en su historial')+kpi('Volumen total',cxFmt(Math.round(tonTot))+' kg','series × reps × kg')+'</div>'
+   +'<div class="pa-g2" style="margin-top:14px"><div class="pa-card"><div class="pa-ct">Carga semanal (UA)</div><div class="pa-cw"><canvas id="pa-evo-ua"></canvas></div></div><div class="pa-card"><div class="pa-ct">Volumen semanal (kg)</div><div class="pa-cw"><canvas id="pa-evo-vol"></canvas></div></div></div>'
+   +'<div class="pa-g2" style="margin-top:14px"><div class="pa-card"><div class="pa-ct">Progresión · '+escapeHtml(paExNombre(paEvoEj))+'</div><div class="pa-cw"><canvas id="pa-evo-ex"></canvas></div></div><div class="pa-card"><div class="pa-ct">Cargas por ejercicio (pincha uno para verlo)</div><div style="display:grid;grid-template-columns:minmax(0,2fr) 50px 1fr 1fr 60px;gap:8px;font-size:10.5px;color:var(--text-muted);padding:4px 0"><span>EJERCICIO</span><span>VECES</span><span>PRIMERA</span><span>ÚLTIMA</span><span>CAMBIO</span></div>'+tabla+'</div></div>';
+  var lab=sem.map(function(w){return (+w.slice(8))+'/'+(+w.slice(5,7));});
+  var opt={responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{color:'#888'}},x:{ticks:{color:'#888'}}}};
+  paEvoCharts.push(new Chart(document.getElementById('pa-evo-ua'),{type:'bar',data:{labels:lab,datasets:[{data:sem.map(function(w){return uaS[w];}),backgroundColor:'#9bd34a',borderRadius:5}]},options:opt}));
+  paEvoCharts.push(new Chart(document.getElementById('pa-evo-vol'),{type:'bar',data:{labels:lab,datasets:[{data:sem.map(function(w){return Math.round(volS[w]);}),backgroundColor:'#93b8f0',borderRadius:5}]},options:opt}));
+  var h=ejs[paEvoEj].h;
+  paEvoCharts.push(new Chart(document.getElementById('pa-evo-ex'),{type:'line',data:{labels:h.map(function(x){return x.f.slice(8)+'/'+x.f.slice(5,7);}),datasets:[{label:'kg',data:h.map(function(x){return x.kg;}),borderColor:'#6b8f2a',backgroundColor:'#c4f135',tension:.25,pointRadius:4}]},options:opt}));
 }
 
 function paRenderEntrenamiento(nombre){
