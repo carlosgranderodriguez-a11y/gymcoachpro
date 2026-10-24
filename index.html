@@ -1142,6 +1142,7 @@ function aplicarCodigoAcceso(){
         <div class="pa-card"><div class="pa-ct">Próxima sesión</div><div id="pa-next"></div></div>
         <div class="pa-card"><div class="pa-ct">Tendencia wellness</div><div class="pa-cw"><canvas id="pa-trend"></canvas></div></div>
       </div>
+      <div id="pa-carga"></div>
     </div>
 
     <!-- CALENDARIO (se llena solo con las sesiones planificadas en GymCoach) -->
@@ -3944,6 +3945,7 @@ function paRenderResumen(nombre,f,dep,wellItems,tempItems){
     next.innerHTML='<div class="pa-mv" style="font-size:18px;">'+escapeHtml(proxima.nombre||'Sesión')+'</div><div class="pa-ms">'+fechaTxt+'</div>';
   }
 
+  paRenderCarga(nombre);
   var ctx=document.getElementById('pa-trend');
   if(paTrendChart){paTrendChart.destroy();paTrendChart=null;}
   var ultimos=wellItems.slice().sort(function(a,b){return (a.fecha||'').localeCompare(b.fecha||'');}).slice(-14);
@@ -3955,6 +3957,62 @@ function paRenderResumen(nombre,f,dep,wellItems,tempItems){
   } else if(ctx){
     ctx.getContext('2d').clearRect(0,0,ctx.width,ctx.height);
   }
+}
+
+
+// ── Resumen: carga semanal, reparto por bloque y ejercicios que realiza ──
+function paLunes(iso){var d=new Date(iso+'T12:00:00'),w=(d.getDay()+6)%7;d.setDate(d.getDate()-w);return fechaLocalISO(d);}
+function paRenderCarga(nombre){
+  var el=document.getElementById('pa-carga');if(!el)return;
+  var ses=DB.sesiones.filter(function(s){return s.atleta===nombre&&s.fecha;});
+  var hoy=fechaLocalISO(),lunHoy=paLunes(hoy),NS=5;
+  var semanas=[];for(var i=NS-1;i>=0;i--){semanas.push(fechaLocalISO(sumaDias(new Date(lunHoy+'T12:00:00'),-7*i)));}
+  var ua={},sesN={},hechas={},bloq={},ejs={};
+  semanas.forEach(function(w){ua[w]=0;sesN[w]=0;hechas[w]=0;});
+  var ini=semanas[0],totalSes=0;
+  ses.filter(function(s){return s.fecha>=ini&&s.fecha<=fechaLocalISO(sumaDias(new Date(lunHoy+'T12:00:00'),6));}).sort(function(a,b){return a.fecha.localeCompare(b.fecha);}).forEach(function(s){
+    var w=paLunes(s.fecha),reg=cxRegDe(s.id);
+    sesN[w]++;totalSes++;if(reg)hechas[w]++;
+    cxBloques(s).forEach(function(b){ua[w]+=b.ua;bloq[b.nombre]=bloq[b.nombre]||{ua:0,color:b.color};bloq[b.nombre].ua+=b.ua;});
+    (s.ejercicios||[]).forEach(function(ex){
+      var o=ejs[ex.id]=ejs[ex.id]||{id:ex.id,n:0,bloque:ex.bloque,hist:[]};
+      o.n++;o.bloque=ex.bloque;
+      o.hist.push({f:s.fecha,kg:parseFloat(getParamVal(ex,'kg'))||0,reps:getParamVal(ex,'reps'),ser:getParamVal(ex,'series')});
+    });
+  });
+  var maxUa=Math.max.apply(null,semanas.map(function(w){return ua[w];}).concat([1]));
+  var tem=(CX.tem||[]);
+  var barras=semanas.map(function(w,i){
+    var plan=tem.find(function(t){return t.fecha_inicio===w;});
+    var cur=w===lunHoy,h=Math.max(3,Math.round(ua[w]/maxUa*130));
+    return '<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:5px;min-width:0"><div style="font-size:11px;font-weight:600;color:var(--text)">'+(ua[w]?cxFmt(ua[w]):'—')+'</div><div style="width:100%;max-width:56px;height:'+h+'px;background:'+(cur?'var(--accent)':'#6b8f2a')+';border-radius:6px 6px 0 0;opacity:'+(ua[w]?1:.25)+'"></div><div style="font-size:10.5px;color:var(--text-muted)">'+(cur?'esta sem.':(plan&&plan.semana_num?'S'+plan.semana_num:(+w.slice(8))+'/'+(+w.slice(5,7))))+'</div></div>';
+  }).join('');
+  var totB=0;Object.keys(bloq).forEach(function(k){totB+=bloq[k].ua;});
+  var filasB=Object.keys(bloq).sort(function(a,b){return bloq[b].ua-bloq[a].ua;}).map(function(k){
+    var p=totB?Math.round(bloq[k].ua/totB*100):0;
+    return '<div style="display:flex;align-items:center;gap:8px;font-size:12px;margin:5px 0"><div style="width:96px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+escapeHtml(k)+'</div><div style="flex:1;height:8px;border-radius:4px;background:var(--surface2,#222);overflow:hidden"><div style="width:'+p+'%;height:100%;background:'+bloq[k].color+'"></div></div><div style="width:34px;text-align:right;color:var(--text-muted)">'+p+'%</div></div>';
+  }).join('')||'<div class="pa-empty">Sin sesiones en estas semanas.</div>';
+  var lista=Object.keys(ejs).map(function(k){return ejs[k];}).sort(function(a,b){return b.n-a.n;}).slice(0,12);
+  var filasE=lista.map(function(o){
+    var h=o.hist,u=h[h.length-1],pr=h.length>1?h[h.length-2]:null;
+    var nom=(DB.ejercicios[o.id]&&DB.ejercicios[o.id].nombre)||o.id;
+    var tend='=',col='var(--text-muted)';
+    if(pr&&u.kg>pr.kg){tend='↑';col='var(--green)';}else if(pr&&u.kg<pr.kg){tend='↓';col='var(--orange)';}
+    var carga=u.kg?cxFmt(u.kg,u.kg%1?1:0)+' kg':'peso corporal';
+    var sr=(u.ser?u.ser+'×':'')+(u.reps||'');
+    return '<div style="display:grid;grid-template-columns:minmax(0,2fr) 44px 1fr 70px 24px;gap:8px;align-items:center;padding:7px 0;border-top:1px solid var(--border);font-size:12.5px"><div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+escapeHtml(nom)+'</div><div style="color:var(--text-muted)">'+o.n+'×</div><div>'+carga+'</div><div style="color:var(--text-muted)">'+escapeHtml(sr)+'</div><div style="color:'+col+';font-weight:700">'+tend+'</div></div>';
+  }).join('')||'<div class="pa-empty">Aún no hay ejercicios planificados.</div>';
+  var cur=ua[lunHoy],ult4=semanas.slice(0,-1).map(function(w){return ua[w];}),cron=ult4.length?ult4.reduce(function(a,b){return a+b;},0)/ult4.length:0;
+  var ratio=cron?(cur/cron):null;
+  var sesMes=ses.filter(function(s){return s.fecha.slice(0,7)===hoy.slice(0,7);});
+  var kpi=function(l,v,sub){return '<div class="pa-card pa-card-sm"><div class="pa-ct">'+l+'</div><div class="pa-mv" style="font-size:22px">'+v+'</div><div class="pa-ms">'+sub+'</div></div>';};
+  el.innerHTML='<div class="pa-g4" style="margin-top:14px">'
+    +kpi('Carga esta semana',cxFmt(cur)+' UA','minutos × RPE planificado')
+    +kpi('Sesiones del mes',sesMes.length,sesMes.filter(function(s){return cxRegDe(s.id);}).length+' completadas')
+    +kpi('Ejercicios distintos',Object.keys(ejs).length,'últimas '+NS+' semanas')
+    +kpi('Esta semana / media',ratio==null?'—':cxFmt(ratio,2).replace('.',','),ratio==null?'sin semanas previas':(ratio<0.8?'por debajo: puedes subir':ratio>1.3?'por encima: vigila':'en rango'))
+    +'</div><div class="pa-g2" style="margin-top:14px"><div class="pa-card"><div class="pa-ct">Carga semanal (UA)</div><div style="display:flex;align-items:flex-end;gap:10px;height:190px;border-bottom:1px solid var(--border);padding-top:8px">'+barras+'</div><div class="pa-ct" style="margin-top:16px">Reparto por bloque</div>'+filasB+'</div>'
+    +'<div class="pa-card"><div class="pa-ct">Ejercicios que va realizando</div><div style="display:grid;grid-template-columns:minmax(0,2fr) 44px 1fr 70px 24px;gap:8px;font-size:10.5px;color:var(--text-muted);padding:4px 0"><span>EJERCICIO</span><span>VECES</span><span>ÚLTIMA CARGA</span><span>S×R</span><span></span></div>'+filasE+'</div></div>';
 }
 
 function paRenderEntrenamiento(nombre){
