@@ -671,6 +671,7 @@ function aplicarCodigoAcceso(){
     <div class="sb-group">Atletas</div>
     <div class="tab" onclick="switchTab('atletas',this)"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg><span>Atletas / Equipos</span></div>
     <div class="tab" onclick="switchTab('calendario',this)"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg><span>Calendario</span></div>
+    <div class="tab" onclick="switchTab('semequipo',this)"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18"/></svg><span>Semana del equipo</span></div>
     <div class="sb-group">Entrenamiento</div>
     <div class="tab" onclick="switchTab('biblioteca',this)"><svg viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg><span>Biblioteca</span></div>
     <div class="sb-group">Sistema</div>
@@ -743,6 +744,17 @@ function aplicarCodigoAcceso(){
       </div>
       <div id="equipo-roster-view" style="display:none;"></div>
     </div>
+  </div>
+
+  <!-- SEMANA DEL EQUIPO -->
+  <div id="page-semequipo" class="page">
+    <div class="section-header">
+      <div><div class="section-title">Semana del equipo</div><div id="se-sub" style="font-size:13px;color:var(--text-muted);margin-top:2px"></div></div>
+      <div style="display:flex;gap:8px;align-items:center"><button class="btn btn-secondary btn-sm" onclick="seMover(-1)">◀</button><button class="btn btn-secondary btn-sm" onclick="seMover(0)">Hoy</button><button class="btn btn-secondary btn-sm" onclick="seMover(1)">▶</button></div>
+    </div>
+    <div id="se-filtros" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px"></div>
+    <div id="se-tabla" style="overflow-x:auto"></div>
+    <div style="font-size:12px;color:var(--text-muted);margin-top:10px">Cada casilla es la carga del día en UA (minutos × RPE), más oscuro = más carga. Pincha una fila para abrir el perfil.</div>
   </div>
 
   <!-- CALENDARIO -->
@@ -1721,6 +1733,7 @@ function switchTab(tab,el){
   if(tab==='panel') renderPanel();
   if(tab==='calendario') renderCalendar();
   if(tab==='generador') initGenerador();
+  if(tab==='semequipo') seRender();
   if(tab==='programas'||tab==='generador'||tab==='biblioteca'){
     if(tab!=='biblioteca')bibActual=tab;
     var bt=document.querySelector('.tab[onclick*="\'biblioteca\'"]');
@@ -2450,6 +2463,52 @@ function renderPanel(){
     pl.sort(function(a,b){return a.f.localeCompare(b.f);});
     paEl.innerHTML=pl.length?pl.slice(0,5).map(function(x){return '<div class="ath-row"><div class="nm">'+escapeHtml(x.n)+' <span style="color:var(--text-muted);font-weight:400;font-size:12px">· vs '+escapeHtml(x.r)+' · '+x.f.slice(8)+'/'+x.f.slice(5,7)+'</span></div></div>';}).join(''):'<div class="empty-note">Sin partidos próximos. Los partidos ya jugados están en la pestaña Partidos de cada atleta.</div>';
   }
+}
+
+
+// ── Semana del equipo ──
+var SE={off:0,dep:''};
+function seMover(n){SE.off=n===0?0:SE.off+n;seRender();}
+function seRender(){
+  var wrap=document.getElementById('se-tabla');if(!wrap)return;
+  var lun=sumaDias(new Date(paLunes(fechaLocalISO())+'T12:00:00'),SE.off*7);
+  var dias=[0,1,2,3,4,5,6].map(function(i){return fechaLocalISO(sumaDias(lun,i));});
+  var DN=['LUN','MAR','MIÉ','JUE','VIE','SÁB','DOM'],hoy=fechaLocalISO();
+  document.getElementById('se-sub').textContent=new Date(dias[0]+'T12:00:00').toLocaleDateString('es-ES',{day:'numeric',month:'short'})+' – '+new Date(dias[6]+'T12:00:00').toLocaleDateString('es-ES',{day:'numeric',month:'short',year:'numeric'});
+  var todos=((DB.atletasFull&&DB.atletasFull.length)?DB.atletasFull.filter(function(a){return a.activo!==false;}):DB.atletas.map(function(n){return {nombre:n,deporte:'otro',estado:'disponible'};}));
+  var deps={};todos.forEach(function(a){deps[a.deporte||'otro']=1;});
+  var fl=document.getElementById('se-filtros');
+  fl.innerHTML=['']. concat(DISC_ATL_ORDER.filter(function(d){return deps[d];})).map(function(d){
+    return '<div class="fchip'+(SE.dep===d?' active':'')+'" onclick="SE.dep=\''+d+'\';seRender()">'+(d?DISC_ATL[d].icon+' '+DISC_ATL[d].label:'Todos')+'</div>';}).join('');
+  var lista=todos.filter(function(a){return !SE.dep||(a.deporte||'otro')===SE.dep;});
+  var maxD=1,filas=lista.map(function(a){
+    var nm=(a.nombre||'').trim(),tot=0;
+    var cel=dias.map(function(d){
+      var ua=0,n=0;
+      DB.sesiones.forEach(function(x){if((x.atleta||'').trim()===nm&&x.fecha===d){n++;ua+=cxBloques(x).reduce(function(p,b){return p+b.ua;},0);}});
+      (DB.resistencia||[]).forEach(function(r){if(r.tipo==='sesion'&&(r.atleta||'').trim()===nm&&r.fecha===d){n++;ua+=calcResistenciaLoad(r);}});
+      var par=cxPartidosDe(a.nombre).some(function(p){return cxParseFecha(p.fecha)===d;});
+      tot+=ua;if(ua>maxD)maxD=ua;
+      return {d:d,ua:ua,n:n,par:par};
+    });
+    return {a:a,cel:cel,tot:tot};
+  });
+  var maxT=Math.max.apply(null,filas.map(function(f){return f.tot;}).concat([1]));
+  function heat(ua){if(!ua)return ['transparent','var(--text-muted)'];var t=Math.min(1,ua/maxD);var l=Math.round(92-t*36);return ['hsl(80,55%,'+l+'%)','#1d3a05'];}
+  var g='grid-template-columns:200px repeat(7,minmax(70px,1fr)) 150px';
+  var h='<div style="display:grid;'+g+';font-size:11px;color:var(--text-muted);letter-spacing:.08em;padding:0 0 6px"><div style="padding:0 10px">ATLETA</div>'+dias.map(function(d,i){return '<div style="text-align:center'+(d===hoy?';color:var(--text);font-weight:700':'')+'">'+DN[i]+' '+(+d.slice(8))+'</div>';}).join('')+'<div style="padding:0 10px">CARGA</div></div>';
+  var body=filas.map(function(f){
+    var est=ESTADO_ATL[f.a.estado||'disponible']||ESTADO_ATL.disponible;
+    return '<div onclick="openAtletaPerfil(\''+f.a.nombre.replace(/'/g,"\\'")+'\')" style="display:grid;'+g+';align-items:stretch;background:var(--surface);border:1px solid var(--border);border-radius:10px;margin-bottom:6px;cursor:pointer">'
+      +'<div style="display:flex;align-items:center;gap:10px;padding:10px">'+avatarHtml(f.a.nombre)+'<div style="min-width:0"><div style="font-weight:600;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+escapeHtml(f.a.nombre)+'</div><div style="font-size:11px;color:'+est.color+'">'+est.label+'</div></div></div>'
+      +f.cel.map(function(c){
+        if(c.par)return '<div style="margin:6px 3px;border-radius:8px;background:#bfe3cf;border:1px solid #3f9d6d;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:#2f7d56">Partido</div>';
+        var hc=heat(c.ua);
+        return '<div style="margin:6px 3px;border-radius:8px;background:'+hc[0]+';border:'+(c.d===hoy?'1px solid var(--accent)':'1px solid transparent')+';display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;color:'+hc[1]+'">'+(c.ua?cxFmt(c.ua):'')+'</div>';
+      }).join('')
+      +'<div style="padding:10px;display:flex;flex-direction:column;justify-content:center;gap:5px"><div style="font-size:12.5px;font-weight:600">'+cxFmt(f.tot)+' UA</div><div style="height:6px;border-radius:3px;background:var(--surface2,#e5e7eb);overflow:hidden"><div style="width:'+Math.round(f.tot/maxT*100)+'%;height:100%;background:var(--accent)"></div></div></div></div>';
+  }).join('');
+  wrap.innerHTML=lista.length?'<div style="min-width:880px">'+h+body+'</div>':'<div class="empty-note">Sin atletas.</div>';
 }
 
 // ── ATLETAS ──
