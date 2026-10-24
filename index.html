@@ -701,14 +701,17 @@ function aplicarCodigoAcceso(){
       </div>
     </div>
     <div id="panel-cards" class="stat-grid"></div>
+    <div class="card panel-card" style="margin-bottom:18px"><h3>Hoy <a onclick="goTab('calendario')">Ver calendario ›</a></h3><div id="panel-hoy"></div></div>
     <div class="panel-cols">
       <div class="card panel-card">
         <h3>Próximas sesiones <a onclick="goTab('calendario')">Ver calendario ›</a></h3>
         <div id="panel-proximas"></div>
       </div>
       <div class="card panel-card">
-        <h3>Atletas <a onclick="goTab('atletas')">Ver todos ›</a></h3>
-        <div id="panel-atletas-shortcut"></div>
+        <h3>Requieren atención <a onclick="goTab('atletas')">Ver atletas ›</a></h3>
+        <div id="panel-atencion"></div>
+        <h3 style="margin-top:20px">Partidos próximos</h3>
+        <div id="panel-partidos"></div>
       </div>
     </div>
   </div>
@@ -2413,14 +2416,39 @@ function renderPanel(){
     }).join('');
   }
 
-  // Atletas shortcut
-  var sc=document.getElementById('panel-atletas-shortcut');
-  if(!DB.atletas.length){sc.innerHTML='<div class="empty-note">Sin atletas todavía.</div>';}
-  else{
-    sc.innerHTML=DB.atletas.slice(0,8).map(function(a){
-      return '<div class="ath-row" onclick="openAtletaPerfil(\''+a.replace(/'/g,"\\'")+'\')">'+avatarHtml(a)
-        +'<div class="nm">'+escapeHtml(a)+'</div><div class="go">›</div></div>';
-    }).join('')+(DB.atletas.length>8?'<div class="empty-note" style="padding:10px 0 0">y '+(DB.atletas.length-8)+' más</div>':'');
+  // Hoy
+  var hoyEl=document.getElementById('panel-hoy');
+  if(hoyEl){
+    var hoyL=DB.sesiones.filter(function(x){return x.fecha===today;}).map(function(x){return {t:'Fuerza',c:'#e8f3d2;color:#3d6a00',a:x.atleta,n:x.nombre,ua:calcSessionLoad(x)};})
+      .concat((DB.resistencia||[]).filter(function(r){return r.tipo==='sesion'&&r.fecha===today;}).map(function(r){return {t:'Resistencia',c:'#dbeafe;color:#1d4ed8',a:r.atleta,n:r.nombre,ua:calcResistenciaLoad(r)};}));
+    hoyEl.innerHTML=hoyL.length?hoyL.map(function(x){
+      return '<div class="ses-row" onclick="openAtletaPerfil(\''+(x.a||'').replace(/'/g,"\\'")+'\')">'+avatarHtml(x.a||'?')
+        +'<div class="ses-main"><div class="ses-name">'+escapeHtml(x.a||'')+'</div><div class="ses-sub">'+escapeHtml(x.n||'(sin nombre)')+' · '+x.ua+' UA prevista</div></div>'
+        +'<span class="pill" style="background:'+x.c+'">'+x.t+'</span></div>';
+    }).join(''):'<div class="empty-note">Hoy no hay sesiones planificadas.</div>';
+  }
+  // Atención: lesionados / en carga / readaptación, y activos sin nada en 7 días
+  var atEl=document.getElementById('panel-atencion');
+  if(atEl){
+    var activos=(DB.atletasFull&&DB.atletasFull.length)?DB.atletasFull.filter(function(a){return a.activo!==false;}):DB.atletas.map(function(n){return {nombre:n,estado:'disponible'};});
+    var filas=[];
+    activos.forEach(function(a){
+      var est=a.estado||'disponible',nm=(a.nombre||'').trim();
+      var conSes=DB.sesiones.some(function(x){return (x.atleta||'').trim()===nm&&x.fecha>=today&&x.fecha<=in7s;})||(DB.resistencia||[]).some(function(r){return (r.atleta||'').trim()===nm&&r.fecha>=today&&r.fecha<=in7s;});
+      if(est!=='disponible')filas.push({n:a.nombre,col:(ESTADO_ATL[est]||ESTADO_ATL.carga).color,t:(ESTADO_ATL[est]||ESTADO_ATL.carga).label});
+      else if(!conSes)filas.push({n:a.nombre,col:'#94a3b8',t:'Sin sesiones en 7 días'});
+    });
+    atEl.innerHTML=filas.length?filas.slice(0,8).map(function(x){
+      return '<div class="ath-row" onclick="openAtletaPerfil(\''+x.n.replace(/'/g,"\\'")+'\')"><span style="width:8px;height:8px;border-radius:50%;background:'+x.col+';flex:none"></span><div class="nm">'+escapeHtml(x.n)+' <span style="color:var(--text-muted);font-weight:400;font-size:12px">· '+x.t+'</span></div><div class="go">›</div></div>';
+    }).join(''):'<div class="empty-note">Todo en orden.</div>';
+  }
+  // Partidos próximos (partidos.js)
+  var paEl=document.getElementById('panel-partidos');
+  if(paEl){
+    var pl=[];
+    (DB.atletas||[]).forEach(function(n){cxPartidosDe(n).forEach(function(p){var f=cxParseFecha(p.fecha);if(f&&f>=today)pl.push({f:f,n:n,r:cxRival(p)});});});
+    pl.sort(function(a,b){return a.f.localeCompare(b.f);});
+    paEl.innerHTML=pl.length?pl.slice(0,5).map(function(x){return '<div class="ath-row"><div class="nm">'+escapeHtml(x.n)+' <span style="color:var(--text-muted);font-weight:400;font-size:12px">· vs '+escapeHtml(x.r)+' · '+x.f.slice(8)+'/'+x.f.slice(5,7)+'</span></div></div>';}).join(''):'<div class="empty-note">Sin partidos próximos. Los partidos ya jugados están en la pestaña Partidos de cada atleta.</div>';
   }
 }
 
