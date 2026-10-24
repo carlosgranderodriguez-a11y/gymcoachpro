@@ -697,7 +697,7 @@ function aplicarCodigoAcceso(){
       </div>
       <div class="hero-actions">
         <button class="btn btn-primary" onclick="goTab('atletas');openAtleta()">+ Nuevo atleta</button>
-        <button class="btn btn-secondary" onclick="goTab('programas')">Programas</button>
+        <button class="btn btn-secondary" onclick="goTab('programas')">Planes</button>
         <button class="btn btn-secondary" onclick="goTab('calendario')">Calendario</button>
       </div>
     </div>
@@ -801,12 +801,12 @@ function aplicarCodigoAcceso(){
     <!-- PLANTILLAS DE FUERZA (antes "Templates") -->
     <div id="page-templates" class="subpage">
       <div class="section-header">
-        <div class="section-title">Bloques y plantillas de sesión</div>
-        <button class="btn btn-primary" onclick="newTemplate()">+ Nueva plantilla</button>
+        <div><div class="section-title">Programas</div><div style="font-size:13px;color:var(--text-muted);margin-top:2px">Sesiones de fuerza completas, armadas con bloques.</div></div>
+        <button class="btn btn-primary" onclick="newTemplate()">+ Nuevo programa</button>
       </div>
       <div class="template-layout">
         <div class="template-list-panel">
-          <div class="tlp-header"><span class="tlp-title">Mis plantillas</span></div>
+          <div class="tlp-header"><span class="tlp-title">Mis programas</span></div>
           <div id="template-list"><div class="template-empty">Sin plantillas.<br>Crea la primera.</div></div>
         </div>
         <div class="template-editor" id="template-editor">
@@ -818,6 +818,7 @@ function aplicarCodigoAcceso(){
             <div class="te-header">
               <input class="te-name-input" id="te-name" placeholder="Nombre de la plantilla..." oninput="markDirty()">
               <div style="display:flex;gap:8px">
+                <select id="bg-insert" onchange="bgInsertar(this)" style="padding:7px 10px;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:12px"></select>
                 <button class="btn btn-secondary btn-sm" onclick="openTemplatePdfSettings()">👁️ Vista previa PDF</button>
                 <button class="btn btn-secondary btn-sm" onclick="deleteTemplate()">Eliminar</button>
                 <button class="btn btn-primary btn-sm" onclick="saveTemplate()">Guardar</button>
@@ -826,6 +827,18 @@ function aplicarCodigoAcceso(){
             <div id="bloques-container"></div>
           </div>
         </div>
+      </div>
+    </div>
+
+    <!-- BLOQUES GUARDADOS -->
+    <div id="page-bloques" class="subpage">
+      <div class="section-header">
+        <div><div class="section-title">Bloques</div><div style="font-size:13px;color:var(--text-muted);margin-top:2px">Bloques reutilizables (activación, fuerza, pliometría…). Insértalos en cualquier programa.</div></div>
+        <button class="btn btn-primary" onclick="bgNuevo()">+ Nuevo bloque</button>
+      </div>
+      <div class="template-layout">
+        <div class="template-list-panel"><div class="tlp-header"><span class="tlp-title">Mis bloques</span></div><div id="bg-list"></div></div>
+        <div class="template-editor"><div id="bg-editor"></div></div>
       </div>
     </div>
 
@@ -857,8 +870,8 @@ function aplicarCodigoAcceso(){
     <div class="section-header"><div class="section-title">Biblioteca</div></div>
     <div class="bib-nav"></div>
     <div class="section-header">
-      <div><div class="section-title">Programas</div><div style="font-size:13px;color:var(--text-muted);margin-top:2px;">Planes de varias semanas: elige un programa, ajusta cada día y asígnalo al calendario.</div></div>
-      <button class="btn btn-primary" onclick="newPrograma()">+ Nuevo programa</button>
+      <div><div class="section-title">Planes</div><div style="font-size:13px;color:var(--text-muted);margin-top:2px;">Planes de varias semanas: elige un programa, ajusta cada día y asígnalo al calendario.</div></div>
+      <button class="btn btn-primary" onclick="newPrograma()">+ Nuevo plan</button>
     </div>
     <div class="template-layout">
       <div class="template-list-panel">
@@ -1743,7 +1756,7 @@ function switchTab(tab,el){
   if(tab==='generador') initGenerador();
   if(tab==='semequipo') seRender();
   if(tab==='programas'||tab==='generador'||tab==='biblioteca'){
-    if(tab!=='biblioteca')bibActual=tab;
+    if(tab!=='biblioteca')bibActual=(tab==='programas'?'planes':tab);
     var bt=document.querySelector('.tab[onclick*="\'biblioteca\'"]');
     if(bt){bt.classList.add('active');var tt2=document.getElementById('tb-title');if(tt2)tt2.textContent='Biblioteca';}
     bibNavRender();
@@ -1927,8 +1940,70 @@ async function aprobarPlan(){
 }
 
 
-var BIB_TABS=[['programas','📚 Programas'],['templates','📋 Bloques'],['ejercicios','🏋️ Ejercicios'],['resistencia','🏃 Resistencia'],['generador','✨ Generador']];
+var BIB_TABS=[['templates','📋 Programas'],['bloques','🧱 Bloques'],['ejercicios','🏋️ Ejercicios'],['resistencia','🏃 Resistencia'],['planes','📚 Planes'],['generador','✨ Generador']];
 var bibActual='ejercicios';
+// ── Biblioteca de bloques guardados ──
+var BG={cur:null,dirty:false};
+function bgList(){if(!Array.isArray(DB.config.bloques_guardados))DB.config.bloques_guardados=[];return DB.config.bloques_guardados;}
+async function bgPersist(){
+  try{var r=await apiPost({action:'saveConfig',key:'bloques_guardados',value:bgList()});if(r&&r.ok){toast('✅ Bloque guardado');return true;}toast('No se pudo guardar: '+((r&&r.error)||'sin respuesta'),'err');}
+  catch(e){toast('No se pudo guardar el bloque','err');}
+  return false;
+}
+function bgNuevo(){BG.cur={id:'bg_'+Date.now(),nombre:'',tipo:(getBloques()[0]||{}).id||'fuerza',ex:[]};BG.dirty=true;bgRender();}
+function bgSel(i){BG.cur=JSON.parse(JSON.stringify(bgList()[i]));BG.dirty=false;bgRender();}
+function bgRender(){
+  var l=document.getElementById('bg-list'),ed=document.getElementById('bg-editor');if(!l||!ed)return;
+  var lst=bgList();
+  l.innerHTML=lst.length?lst.map(function(b,i){var m=getBloques().find(function(x){return x.id===b.tipo;})||{name:b.tipo,color:'#aaa'};
+    return '<div class="template-item'+(BG.cur&&BG.cur.id===b.id?' active':'')+'" onclick="bgSel('+i+')"><div class="template-item-name"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:'+m.color+';margin-right:6px"></span>'+escapeHtml(b.nombre||'(sin nombre)')+'</div><div class="template-item-meta">'+escapeHtml(m.name)+' · '+(b.ex||[]).length+' ejercicios</div></div>';}).join(''):'<div class="template-empty">Sin bloques.<br>Crea el primero o guarda uno desde un programa (botón 💾).</div>';
+  var c=BG.cur;
+  if(!c){ed.innerHTML='<div class="te-no-selection"><div style="font-size:32px">🧱</div><div>Selecciona o crea un bloque</div></div>';return;}
+  var opts=getBloques().map(function(b){return '<option value="'+b.id+'"'+(b.id===c.tipo?' selected':'')+'>'+escapeHtml(b.name)+'</option>';}).join('');
+  var exOpts='<option value="">+ Añadir ejercicio…</option>'+Object.keys(DB.ejercicios).sort(function(a,b){return (DB.ejercicios[a].nombre||a).localeCompare(DB.ejercicios[b].nombre||b);}).map(function(id){return '<option value="'+id+'">'+escapeHtml(DB.ejercicios[id].nombre||id)+'</option>';}).join('');
+  var pf=function(ex,i,id,ph,w){return '<input value="'+escAttr(getParamVal(ex,id))+'" placeholder="'+ph+'" style="width:'+w+'px;padding:6px 8px;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px" oninput="bgParam('+i+',\''+id+'\',this.value)">';};
+  ed.innerHTML='<div class="te-header"><input class="te-name-input" id="bg-nombre" placeholder="Nombre del bloque (ej: Fuerza 2 · unilateral)" value="'+escAttr(c.nombre)+'" oninput="BG.cur.nombre=this.value;BG.dirty=true"><div style="display:flex;gap:8px"><button class="btn btn-secondary btn-sm" onclick="bgEliminar()">Eliminar</button><button class="btn btn-primary btn-sm" onclick="bgGuardar()">Guardar</button></div></div>'
+    +'<div style="display:flex;gap:10px;align-items:center;margin:12px 0"><span style="font-size:12px;color:var(--text-muted)">Tipo</span><select onchange="BG.cur.tipo=this.value;BG.dirty=true;bgRender()" style="padding:8px 10px;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text)">'+opts+'</select></div>'
+    +(c.ex.length?c.ex.map(function(ex,i){var db=DB.ejercicios[ex.id]||{nombre:ex.id};
+      return '<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-top:1px solid var(--border);flex-wrap:wrap"><div style="flex:1;min-width:160px;font-size:13px;font-weight:600">'+escapeHtml(db.nombre)+'</div>'+pf(ex,i,'series','series',60)+pf(ex,i,'reps','reps',70)+pf(ex,i,'kg','kg',60)+pf(ex,i,'descanso','descanso',80)+'<button class="btn btn-danger btn-xs" onclick="bgQuitaEx('+i+')">✕</button></div>';}).join(''):'<div class="empty-note">Añade ejercicios a este bloque.</div>')
+    +'<select onchange="bgAddEx(this)" style="margin-top:12px;padding:9px 12px;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);max-width:100%">'+exOpts+'</select>';
+}
+function bgParam(i,id,v){var ex=BG.cur.ex[i];var p=(ex.params||[]).find(function(x){return x.id===id;});if(p)p.val=v;else{ex.params=ex.params||[];ex.params.push({id:id,val:v});}BG.dirty=true;}
+function bgAddEx(sel){if(!sel.value)return;BG.cur.ex.push({id:sel.value,params:[{id:'series',val:'3'},{id:'reps',val:'10'},{id:'descanso',val:'90s'}]});BG.dirty=true;bgRender();}
+function bgQuitaEx(i){BG.cur.ex.splice(i,1);BG.dirty=true;bgRender();}
+async function bgGuardar(){
+  if(!BG.cur.nombre.trim()){toast('Ponle nombre al bloque','err');return;}
+  var l=bgList(),i=l.findIndex(function(b){return b.id===BG.cur.id;});
+  var copia=JSON.parse(JSON.stringify(BG.cur));
+  if(i>=0)l[i]=copia;else l.push(copia);
+  BG.dirty=false;bgRender();await bgPersist();
+}
+async function bgEliminar(){
+  if(!confirm('¿Eliminar este bloque de la biblioteca? Los programas que ya lo usan no cambian.'))return;
+  var l=bgList(),i=l.findIndex(function(b){return b.id===BG.cur.id;});
+  if(i>=0){l.splice(i,1);await bgPersist();}
+  BG.cur=null;bgRender();
+}
+// desde el editor de programas
+async function bgDesdeTemplate(bid){
+  var exs=(currentTemplate.bloques[bid]||[]);if(!exs.length){toast('El bloque está vacío','err');return;}
+  var meta=resolveBloqueMeta(bid,currentTemplate),nom=prompt('Nombre para guardar este bloque:',meta.name);if(!nom)return;
+  bgList().push({id:'bg_'+Date.now(),nombre:nom.trim(),tipo:tipoDeBloqueKey(bid),ex:JSON.parse(JSON.stringify(exs))});
+  await bgPersist();
+  var sel=document.getElementById('bg-insert');if(sel)bgFillInsert();
+}
+function bgFillInsert(){
+  var sel=document.getElementById('bg-insert');if(!sel)return;
+  sel.innerHTML='<option value="">🧱 Insertar bloque guardado…</option>'+bgList().map(function(b){return '<option value="'+b.id+'">'+escapeHtml(b.nombre)+'</option>';}).join('');
+}
+function bgInsertar(sel){
+  var b=bgList().find(function(x){return x.id===sel.value;});sel.value='';if(!b||!currentTemplate)return;
+  var key=b.tipo;if(currentTemplate.bloques[key]){key=b.tipo+'::'+Date.now().toString(36);}
+  currentTemplate.bloques[key]=JSON.parse(JSON.stringify(b.ex));
+  if(key!==b.tipo){var m=getBloques().find(function(x){return x.id===b.tipo;})||{color:'#aaa'};if(!currentTemplate.bloqueMeta)currentTemplate.bloqueMeta={};currentTemplate.bloqueMeta[key]={name:b.nombre,color:m.color};}
+  markDirty();renderBloques();toast('Bloque «'+b.nombre+'» añadido');
+}
+
 function bibNavRender(){
   var h='<div class="bib-nav-in">'+BIB_TABS.map(function(t){
     return '<div class="fchip'+(t[0]===bibActual?' active':'')+(t[0]==='generador'?' bib-gen':'')+'" onclick="bibGo(\''+t[0]+'\')" data-bib="'+t[0]+'">'+t[1]+'</div>';
@@ -1937,13 +2012,15 @@ function bibNavRender(){
 }
 function bibGo(x){
   bibActual=x;
-  if(x==='programas'||x==='generador'){switchTab(x);return;}
+  if(x==='planes'){switchTab('programas');return;}
+  if(x==='generador'){switchTab('generador');return;}
   switchTab('biblioteca');
   switchBiblioteca(x);
 }
 function switchBiblioteca(sub){
   bibActual=sub;
-  ['ejercicios','templates','resistencia'].forEach(function(s){
+  if(sub==='bloques')bgRender();
+  ['ejercicios','templates','bloques','resistencia'].forEach(function(s){
     document.getElementById('page-'+s).classList.toggle('active',s===sub);
   });
   bibNavRender();
@@ -3172,6 +3249,7 @@ function renameBloqueTemplate(bloqueId,value){
   markDirty();
 }
 function renderBloques(){
+  bgFillInsert();
   var c=document.getElementById('bloques-container');c.innerHTML='';
   var idsUsados=Object.keys(currentTemplate.bloques);
   if(!idsUsados.length){
@@ -3184,6 +3262,7 @@ function renderBloques(){
     var div=document.createElement('div');div.className='bloque';
     div.innerHTML='<div class="bloque-header"><span class="bloque-drag" title="Arrastra para mover el bloque">⠿</span><div class="bloque-color" style="background:'+meta.color+'"></div><input class="bloque-name-input" value="'+escAttr(meta.name)+'" placeholder="Nombre del bloque" oninput="renameBloqueTemplate(\''+bloqueId+'\',this.value)"><span class="bloque-type-badge" title="Tipo de bloque">'+escAttr(tipoBase)+'</span><div class="bloque-count">'+exs.length+' ej.</div><div class="bloque-move"><button title="Subir bloque" onclick="moveBloqueTemplate(\''+bloqueId+'\',-1)"'+(bi===0?' disabled':'')+'>▲</button><button title="Bajar bloque" onclick="moveBloqueTemplate(\''+bloqueId+'\',1)"'+(bi===idsUsados.length-1?' disabled':'')+'>▼</button></div><button class="btn btn-danger btn-xs" onclick="removeBloqueFromTemplate(\''+bloqueId+'\')">✕</button></div><div class="bloque-body"><div class="bloque-add"><button class="btn btn-secondary btn-sm" onclick="openEjPicker(\'template\',\''+bloqueId+'\')">+ Añadir ejercicio</button></div><div id="blist-'+bloqueId+'"></div></div>';
     div.setAttribute('data-bid',bloqueId);
+    var _bh=div.querySelector('.bloque-header');if(_bh)_bh.insertAdjacentHTML('beforeend','<button class="btn btn-secondary btn-xs" title="Guardar este bloque en la biblioteca de Bloques" onclick="bgDesdeTemplate(\''+bloqueId+'\')">💾</button>');
     var handle=div.querySelector('.bloque-drag');
     handle.onmousedown=function(){div.draggable=true;};
     handle.ontouchstart=function(){div.draggable=true;};
