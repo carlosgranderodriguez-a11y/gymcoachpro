@@ -1152,6 +1152,7 @@ function aplicarCodigoAcceso(){
       <div class="pa-tab" data-pa="cal" onclick="paTab('cal')">Calendario</div>
       <div class="pa-tab" data-pa="pla" onclick="paTab('pla')">Planificado</div>
       <div class="pa-tab" data-pa="evo" onclick="paTab('evo')">Evolución</div>
+      <div class="pa-tab" data-pa="rm" onclick="paTab('rm')">Máximos</div>
       <div class="pa-tab" data-pa="tmp" onclick="paTab('tmp')">Temporada</div>
       <div class="pa-tab" data-pa="wel" onclick="paTab('wel')">Wellness</div>
       <div class="pa-tab" data-pa="par" id="pa-tab-par" style="display:none" onclick="paTab('par')">Partidos</div>
@@ -1195,6 +1196,9 @@ function aplicarCodigoAcceso(){
 
     <!-- EVOLUCIÓN -->
     <div id="pa-pnl-evo" class="pa-pnl"><div class="pa-st">Evolución del entrenamiento</div><div class="pa-ss">Progreso de cargas, volumen y cumplimiento.</div><div id="pa-evo-body"></div></div>
+
+    <!-- MÁXIMOS -->
+    <div id="pa-pnl-rm" class="pa-pnl"><div class="pa-st">Máximos y % de carga</div><div class="pa-ss">Histórico de pesos máximos por ejercicio y reporte de kilos y % sobre el máximo vigente.</div><div id="pa-rm-body"></div></div>
 
     <!-- PARTIDOS -->
     <div id="pa-pnl-par" class="pa-pnl">
@@ -4291,6 +4295,7 @@ function paTab(tab){
   if(tab==='cal')cxRender();
   if(tab==='pla')paRenderPlan(paAtletaActual);
   if(tab==='evo')paRenderEvo(paAtletaActual);
+  if(tab==='rm')paRenderRM(paAtletaActual);
 }
 
 function paCerrar(){
@@ -4456,6 +4461,98 @@ function paRenderPlan(nombre){
   }
   el.innerHTML=(prox.length?prox.map(function(s){return card(s,false);}).join(''):'<div class="pa-empty">No hay sesiones planificadas a partir de hoy.</div>')
     +(ult.length?'<div class="pa-ct" style="margin:18px 0 8px">Últimas sesiones</div>'+ult.map(function(s){return card(s,true);}).join(''):'');
+}
+
+// ── Pestaña Máximos: histórico de 1RM y reporte de kg / % ──
+var rmPer=28,rmEjSel=null,rmChart=null;
+function rmKey(n){return 'rm::'+(n||'').trim();}
+function rmData(n){var k=rmKey(n);if(!DB.config[k]||typeof DB.config[k]!=='object')DB.config[k]={};return DB.config[k];}
+function rmHist(n,ex){return (rmData(n)[ex]||[]).slice().sort(function(a,b){return a.f.localeCompare(b.f);});}
+function rmVigente(n,ex,fecha){var h=rmHist(n,ex),r=null;h.forEach(function(x){if(!fecha||x.f<=fecha)r=x;});return r;}
+function rmEst(kg,reps){return (kg>0&&reps>0&&reps<=12)?Math.round(kg*(1+reps/30)*2)/2:0;}
+async function rmPersist(n){
+  try{var r=await apiPost({action:'saveConfig',key:rmKey(n),value:rmData(n)});if(r&&r.ok)return true;toast('No se pudo guardar: '+((r&&r.error)||'sin respuesta'),'err');}
+  catch(e){toast('No se pudo guardar el máximo','err');}
+  return false;
+}
+async function rmAdd(ex,kg,fecha,tipo){
+  var n=paAtletaActual;kg=parseFloat(kg);
+  if(!ex||!(kg>0)){toast('Indica un peso válido','err');return;}
+  var d=rmData(n);d[ex]=d[ex]||[];
+  d[ex]=d[ex].filter(function(x){return !(x.f===fecha&&x.t===tipo);});
+  d[ex].push({f:fecha||fechaLocalISO(),kg:kg,t:tipo||'real'});
+  if(await rmPersist(n)){toast('✅ Máximo guardado');rmEjSel=ex;paRenderRM(n);}
+}
+async function rmDel(ex,f,t){
+  if(!confirm('¿Borrar este registro del histórico?'))return;
+  var n=paAtletaActual,d=rmData(n);d[ex]=(d[ex]||[]).filter(function(x){return !(x.f===f&&x.t===t);});
+  if(!d[ex].length)delete d[ex];
+  if(await rmPersist(n))paRenderRM(n);
+}
+function rmAddForm(ex){
+  var kg=document.getElementById('rm-kg-'+ex),f=document.getElementById('rm-f-'+ex),t=document.getElementById('rm-t-'+ex);
+  rmAdd(ex,kg.value,f.value||fechaLocalISO(),t.value);
+}
+function rmNuevoEj(sel){if(!sel.value)return;var ex=sel.value;var d=rmData(paAtletaActual);if(!d[ex])d[ex]=[];rmEjSel=ex;paRenderRM(paAtletaActual);}
+function rmFilas(nombre){
+  var hoy=fechaLocalISO(),desde=rmPer?fechaLocalISO(sumaDias(new Date(hoy+'T12:00:00'),-rmPer)):'0000-00-00';
+  var filas=[];
+  paSesAt(nombre).sort(function(a,b){return a.fecha.localeCompare(b.fecha);}).forEach(function(s){
+    if(s.fecha<desde)return;
+    (s.ejercicios||[]).forEach(function(ex){
+      var kg=parseFloat(getParamVal(ex,'kg'))||0,pct=parseFloat(getParamVal(ex,'pct_rm'))||0;
+      var se=parseInt(getParamVal(ex,'series')||ex.sets)||0,re=parseInt(getParamVal(ex,'reps')||ex.reps)||0;
+      var rm=rmVigente(nombre,ex.id,s.fecha),mx=rm?rm.kg:0;
+      if(!kg&&pct&&mx)kg=Math.round(mx*pct/100*2)/2;
+      if(!kg&&!pct)return;
+      var p=mx&&kg?Math.round(kg/mx*1000)/10:(pct||0);
+      filas.push({f:s.fecha,ses:s.nombre||'',ex:ex.id,ser:se,rep:re,kg:kg,rm:mx,pct:p,ton:se*re*kg,plan:s.fecha>hoy});
+    });
+  });
+  return filas;
+}
+function rmCSV(){
+  var f=rmFilas(paAtletaActual);
+  var l=['Fecha;Sesión;Ejercicio;Series;Reps;Kg;Máximo vigente;% sobre máximo;Tonelaje'].concat(f.map(function(r){return [r.f,r.ses,paExNombre(r.ex),r.ser,r.rep,r.kg,r.rm||'',r.pct||'',r.ton].join(';').replace(/\./g,',');}));
+  var a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['﻿'+l.join('\n')],{type:'text/csv'}));a.download='reporte_cargas_'+(paAtletaActual||'').replace(/\s+/g,'_')+'.csv';a.click();
+}
+function paRenderRM(nombre){
+  var el=document.getElementById('pa-rm-body');if(!el)return;
+  if(rmChart){try{rmChart.destroy();}catch(e){}rmChart=null;}
+  var d=rmData(nombre),hoy=fechaLocalISO();
+  var ids={};Object.keys(d).forEach(function(k){ids[k]=1;});
+  var est={};
+  paSesAt(nombre).forEach(function(s){(s.ejercicios||[]).forEach(function(ex){
+    ids[ex.id]=ids[ex.id]||0;
+    var e=rmEst(parseFloat(getParamVal(ex,'kg'))||0,parseInt(getParamVal(ex,'reps')||ex.reps)||0);
+    if(e&&(!est[ex.id]||e>est[ex.id].kg))est[ex.id]={kg:e,f:s.fecha};
+  });});
+  var lista=Object.keys(ids).sort(function(a,b){return paExNombre(a).localeCompare(paExNombre(b));});
+  if(!rmEjSel||lista.indexOf(rmEjSel)<0)rmEjSel=lista.filter(function(k){return (d[k]||[]).length;})[0]||lista[0]||null;
+  var inp='padding:6px 8px;background:var(--surface);border:1px solid var(--border);border-radius:7px;color:var(--text);font-size:12.5px;';
+  var filasEj=lista.map(function(k){
+    var v=rmVigente(nombre,k,'9999-12-31'),e=est[k];
+    return '<div style="display:grid;grid-template-columns:minmax(0,2fr) 90px 100px minmax(0,2.4fr);gap:8px;align-items:center;padding:8px 0;border-top:1px solid var(--border);font-size:12.5px">'
+      +'<span style="cursor:pointer;'+(k===rmEjSel?'font-weight:700':'')+'" onclick="rmEjSel=\''+k+'\';paRenderRM(paAtletaActual)">'+escapeHtml(paExNombre(k))+'</span>'
+      +'<span style="font-weight:700">'+(v?v.kg+' kg':'—')+'</span><span style="color:var(--text-muted)">'+(v?v.f.slice(8)+'/'+v.f.slice(5,7)+'/'+v.f.slice(2,4)+(v.t==='est'?' · est.':''):'')+'</span>'
+      +'<span style="display:flex;gap:5px;flex-wrap:wrap;align-items:center"><input id="rm-kg-'+k+'" type="number" step="0.5" placeholder="kg" style="'+inp+'width:70px"><input id="rm-f-'+k+'" type="date" value="'+hoy+'" style="'+inp+'width:130px"><select id="rm-t-'+k+'" style="'+inp+'"><option value="real">Real</option><option value="est">Estimado</option></select><button class="btn btn-primary btn-xs" onclick="rmAddForm(\''+k+'\')">Guardar</button>'
+      +(e&&(!v||e.kg>v.kg)?'<button class="btn btn-secondary btn-xs" title="Estimación con la fórmula de Epley a partir de tus sesiones" onclick="rmAdd(\''+k+'\','+e.kg+',\''+e.f+'\',\'est\')">Usar est. '+e.kg+'</button>':'')+'</span></div>';
+  }).join('')||'<div class="pa-empty">Aún no hay ejercicios. Añade uno abajo.</div>';
+  var add='<select onchange="rmNuevoEj(this)" style="'+inp+'max-width:100%;margin-top:10px"><option value="">+ Añadir otro ejercicio…</option>'+Object.keys(DB.ejercicios).filter(function(k){return lista.indexOf(k)<0;}).sort(function(a,b){return paExNombre(a).localeCompare(paExNombre(b));}).map(function(k){return '<option value="'+k+'">'+escapeHtml(paExNombre(k))+'</option>';}).join('')+'</select>';
+  var hist=rmEjSel?rmHist(nombre,rmEjSel):[];
+  var histH=hist.length?hist.slice().reverse().map(function(x){return '<div style="display:flex;justify-content:space-between;gap:8px;font-size:12.5px;padding:4px 0;border-top:1px solid var(--border)"><span>'+x.f.slice(8)+'/'+x.f.slice(5,7)+'/'+x.f.slice(0,4)+'</span><b>'+x.kg+' kg</b><span style="color:var(--text-muted)">'+(x.t==='est'?'estimado':'real')+'</span><button class="btn btn-danger btn-xs" onclick="rmDel(\''+rmEjSel+'\',\''+x.f+'\',\''+x.t+'\')">✕</button></div>';}).join(''):'<div class="pa-empty">Sin registros de este ejercicio.</div>';
+  var filas=rmFilas(nombre);
+  var porEj={};filas.forEach(function(r){var o=porEj[r.ex]=porEj[r.ex]||{n:0,kg:0,max:0,pct:0,np:0,ton:0};o.n++;if(r.kg){o.nk=(o.nk||0)+1;o.kg+=r.kg;}o.max=Math.max(o.max,r.kg);if(r.pct){o.pct+=r.pct;o.np++;}o.ton+=r.ton;});
+  var resumen=Object.keys(porEj).map(function(k){var o=porEj[k],v=rmVigente(nombre,k,'9999-12-31');
+    return '<div style="display:grid;grid-template-columns:minmax(0,2fr) 60px 70px 70px 80px 90px;gap:8px;padding:6px 0;border-top:1px solid var(--border);font-size:12.5px"><span>'+escapeHtml(paExNombre(k))+'</span><span>'+o.n+'</span><span>'+(o.nk?Math.round(o.kg/o.nk*10)/10:'—')+'</span><span>'+(o.max||'—')+'</span><span>'+(o.np?Math.round(o.pct/o.np*10)/10+'%':'—')+'</span><span style="color:var(--text-muted)">'+(v?v.kg+' kg':'sin máx.')+'</span></div>';}).join('')||'<div class="pa-empty">No hay cargas en este periodo.</div>';
+  var detalle=filas.slice().reverse().slice(0,150).map(function(r){return '<div style="display:grid;grid-template-columns:70px minmax(0,2fr) 70px 60px 70px 90px;gap:8px;padding:5px 0;border-top:1px solid var(--border);font-size:12px'+(r.plan?';color:var(--text-muted)':'')+'"><span>'+r.f.slice(8)+'/'+r.f.slice(5,7)+(r.plan?' ·plan':'')+'</span><span>'+escapeHtml(paExNombre(r.ex))+'</span><span>'+r.ser+'×'+r.rep+'</span><span>'+(r.kg?r.kg+' kg':'sin máx.')+'</span><span>'+(r.pct?r.pct+'%':'—')+'</span><span>'+(r.ton?cxFmt(Math.round(r.ton))+' kg':'—')+'</span></div>';}).join('');
+  var per=[[28,'4 semanas'],[56,'8 semanas'],[112,'16 semanas'],[0,'Todo']].map(function(x){return '<span onclick="rmPer='+x[0]+';paRenderRM(paAtletaActual)" style="cursor:pointer;padding:4px 10px;border-radius:8px;font-size:12px;border:1px solid var(--border);background:'+(rmPer===x[0]?'var(--accent)':'var(--surface)')+';color:'+(rmPer===x[0]?'#14230a':'var(--text-dim)')+'">'+x[1]+'</span>';}).join('');
+  el.innerHTML='<div class="pa-card"><div class="pa-ct">Máximo vigente por ejercicio</div><div style="font-size:11px;color:var(--text-muted);margin-bottom:6px">Guarda un máximo real (test) o estimado. Cada registro queda en el histórico y los % se calculan con el máximo vigente en la fecha de cada sesión.</div>'+filasEj+add+'</div>'
+   +'<div class="pa-g2" style="margin-top:14px"><div class="pa-card"><div class="pa-ct">Histórico · '+(rmEjSel?escapeHtml(paExNombre(rmEjSel)):'—')+'</div><div class="pa-cw" style="height:170px"><canvas id="rm-chart"></canvas></div>'+histH+'</div>'
+   +'<div class="pa-card"><div class="pa-ct">Reporte de cargas</div><div style="display:flex;gap:6px;flex-wrap:wrap;margin:6px 0 10px">'+per+'<button class="btn btn-secondary btn-xs" onclick="rmCSV()">⬇ CSV</button></div>'
+   +'<div style="display:grid;grid-template-columns:minmax(0,2fr) 60px 70px 70px 80px 90px;gap:8px;font-size:10.5px;color:var(--text-muted)"><span>Ejercicio</span><span>Series reg.</span><span>Kg medio</span><span>Kg máx.</span><span>% medio</span><span>Máx. vigente</span></div>'+resumen+'</div></div>'
+   +'<div class="pa-card" style="margin-top:14px"><div class="pa-ct">Detalle por sesión</div><div style="display:grid;grid-template-columns:70px minmax(0,2fr) 70px 60px 70px 90px;gap:8px;font-size:10.5px;color:var(--text-muted)"><span>Fecha</span><span>Ejercicio</span><span>Series×reps</span><span>Kg</span><span>% máx.</span><span>Tonelaje</span></div>'+(detalle||'<div class="pa-empty">Sin cargas.</div>')+'</div>';
+  if(hist.length&&window.Chart)rmChart=new Chart(document.getElementById('rm-chart'),{type:'line',data:{labels:hist.map(function(x){return x.f.slice(8)+'/'+x.f.slice(5,7)+'/'+x.f.slice(2,4);}),datasets:[{data:hist.map(function(x){return x.kg;}),borderColor:'#6b8f2a',backgroundColor:'#c4f135',tension:.2,pointRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{ticks:{color:'#888'}},x:{ticks:{color:'#888'}}}}});
 }
 // ── Pestaña Evolución ──
 var paEvoCharts=[],paEvoEj=null;
