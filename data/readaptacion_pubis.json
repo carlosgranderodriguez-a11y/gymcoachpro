@@ -1,0 +1,3966 @@
+{
+ "nombre": "Readaptación de pubis",
+ "ejercicios": [
+  {
+   "nombre": "Adductor. bench step",
+   "categoria": "Fuerza",
+   "patron": "AIS",
+   "rol": "Accesorio",
+   "unilateral": "",
+   "material": [
+    "Peso corporal"
+   ],
+   "grupos": [
+    "Aductores"
+   ]
+  },
+  {
+   "nombre": "adductor fitball",
+   "categoria": "Fuerza",
+   "patron": "AIS",
+   "rol": "Accesorio",
+   "unilateral": "",
+   "material": [
+    "Fitball"
+   ],
+   "grupos": [
+    "Aductores"
+   ]
+  },
+  {
+   "nombre": "lateral plank + leg raise",
+   "categoria": "Core",
+   "patron": "CAE",
+   "rol": "Accesorio",
+   "unilateral": "sí",
+   "material": [
+    "Peso corporal"
+   ],
+   "grupos": [
+    "Core",
+    "Aductores"
+   ]
+  },
+  {
+   "nombre": "press pallof kneeling",
+   "categoria": "Core",
+   "patron": "CAR",
+   "rol": "Accesorio",
+   "unilateral": "",
+   "material": [
+    "Banda elástica"
+   ],
+   "grupos": [
+    "Core"
+   ]
+  },
+  {
+   "nombre": "Plank",
+   "categoria": "Core",
+   "patron": "CAE",
+   "rol": "Accesorio",
+   "unilateral": "",
+   "material": [
+    "Peso corporal"
+   ],
+   "grupos": [
+    "Core"
+   ]
+  },
+  {
+   "nombre": "pallof rotacional",
+   "categoria": "Core",
+   "patron": "CAR",
+   "rol": "Accesorio",
+   "unilateral": "sí",
+   "material": [
+    "Banda elástica"
+   ],
+   "grupos": [
+    "Core"
+   ]
+  },
+  {
+   "nombre": "Push Up - Eccentric",
+   "categoria": "Fuerza",
+   "patron": "EH",
+   "rol": "Secundario",
+   "unilateral": "",
+   "material": [
+    "Peso corporal"
+   ],
+   "grupos": [
+    "Pectoral"
+   ]
+  },
+  {
+   "nombre": "Banded Side Plank Clamshell",
+   "categoria": "Activación",
+   "patron": "CD",
+   "rol": "Accesorio",
+   "unilateral": "sí",
+   "material": [
+    "Banda elástica"
+   ],
+   "grupos": [
+    "Glúteo medio"
+   ]
+  },
+  {
+   "nombre": "Lateral Plank to Row (Cable)",
+   "categoria": "Core",
+   "patron": "CAR",
+   "rol": "Accesorio",
+   "unilateral": "sí",
+   "material": [
+    "Máquina específica"
+   ],
+   "grupos": [
+    "Core"
+   ]
+  },
+  {
+   "nombre": "empuje gluteo",
+   "categoria": "Activación",
+   "patron": "CD",
+   "rol": "Accesorio",
+   "unilateral": "sí",
+   "material": [
+    "Peso corporal"
+   ],
+   "grupos": [
+    "Glúteo mayor"
+   ]
+  },
+  {
+   "nombre": "MQ - lateral Plank",
+   "categoria": "Core",
+   "patron": "CAE",
+   "rol": "Accesorio",
+   "unilateral": "sí",
+   "material": [
+    "Peso corporal"
+   ],
+   "grupos": [
+    "Core"
+   ]
+  },
+  {
+   "nombre": "Split Squat Isometric",
+   "categoria": "Fuerza",
+   "patron": "RD",
+   "rol": "Secundario",
+   "unilateral": "sí",
+   "material": [
+    "Peso corporal"
+   ],
+   "grupos": [
+    "Cuádriceps",
+    "Glúteo mayor"
+   ]
+  },
+  {
+   "nombre": "Split Squat",
+   "categoria": "Fuerza",
+   "patron": "RD",
+   "rol": "Secundario",
+   "unilateral": "sí",
+   "material": [
+    "Peso corporal"
+   ],
+   "grupos": [
+    "Cuádriceps",
+    "Glúteo mayor"
+   ]
+  },
+  {
+   "nombre": "Single Leg Hip Thrust",
+   "categoria": "Fuerza",
+   "patron": "CD",
+   "rol": "Secundario",
+   "unilateral": "sí",
+   "material": [
+    "Peso corporal"
+   ],
+   "grupos": [
+    "Glúteo mayor"
+   ]
+  },
+  {
+   "nombre": "Bench Press - Dumbbell (Hips Off Bench)",
+   "categoria": "Fuerza",
+   "patron": "EH",
+   "rol": "Secundario",
+   "unilateral": "",
+   "material": [
+    "Mancuerna"
+   ],
+   "grupos": [
+    "Pectoral"
+   ]
+  },
+  {
+   "nombre": "abs remo",
+   "categoria": "Core",
+   "patron": "CAE",
+   "rol": "Accesorio",
+   "unilateral": "",
+   "material": [
+    "Máquina específica"
+   ],
+   "grupos": [
+    "Core"
+   ]
+  },
+  {
+   "nombre": "Good morning exercise",
+   "categoria": "Fuerza",
+   "patron": "CD",
+   "rol": "Secundario",
+   "unilateral": "",
+   "material": [
+    "Peso corporal"
+   ],
+   "grupos": [
+    "Isquiotibiales"
+   ]
+  },
+  {
+   "nombre": "Romanian Deadlift - Kettlebell",
+   "categoria": "Fuerza",
+   "patron": "CD",
+   "rol": "Secundario",
+   "unilateral": "",
+   "material": [
+    "Mancuerna"
+   ],
+   "grupos": [
+    "Isquiotibiales",
+    "Glúteo mayor"
+   ]
+  },
+  {
+   "nombre": "Bench Press - 1 Arm Dumbbell Contralateral Hip Flexion (Hips off)",
+   "categoria": "Fuerza",
+   "patron": "EH",
+   "rol": "Secundario",
+   "unilateral": "sí",
+   "material": [
+    "Mancuerna"
+   ],
+   "grupos": [
+    "Pectoral",
+    "Core"
+   ]
+  },
+  {
+   "nombre": "Glute Stretch on Incline Bench",
+   "categoria": "Movilidad",
+   "patron": "MOV",
+   "rol": "Accesorio",
+   "unilateral": "sí",
+   "material": [
+    "Peso corporal"
+   ],
+   "grupos": [
+    "Glúteo mayor"
+   ]
+  },
+  {
+   "nombre": "Lateral Plank to Row (Tubing)",
+   "categoria": "Core",
+   "patron": "CAR",
+   "rol": "Accesorio",
+   "unilateral": "sí",
+   "material": [
+    "Banda elástica"
+   ],
+   "grupos": [
+    "Core"
+   ]
+  },
+  {
+   "nombre": "remo en plancha",
+   "categoria": "Core",
+   "patron": "TH",
+   "rol": "Accesorio",
+   "unilateral": "",
+   "material": [
+    "Máquina específica"
+   ],
+   "grupos": [
+    "Core",
+    "Dorsal"
+   ]
+  },
+  {
+   "nombre": "Bench Press - 1 Arm Dumbbell (Lateral Trunk Off Bench)",
+   "categoria": "Fuerza",
+   "patron": "EH",
+   "rol": "Secundario",
+   "unilateral": "sí",
+   "material": [
+    "Mancuerna"
+   ],
+   "grupos": [
+    "Pectoral",
+    "Core"
+   ]
+  },
+  {
+   "nombre": "RDL.Kettlebell",
+   "categoria": "Fuerza",
+   "patron": "CD",
+   "rol": "Secundario",
+   "unilateral": "sí",
+   "material": [
+    "Mancuerna"
+   ],
+   "grupos": [
+    "Isquiotibiales",
+    "Glúteo mayor"
+   ]
+  },
+  {
+   "nombre": "Barbell - Hip Thrust",
+   "categoria": "Fuerza",
+   "patron": "CD",
+   "rol": "Principal",
+   "unilateral": "",
+   "material": [
+    "Barra"
+   ],
+   "grupos": [
+    "Glúteo mayor"
+   ]
+  },
+  {
+   "nombre": "lateral walk",
+   "categoria": "Activación",
+   "patron": "CD",
+   "rol": "Accesorio",
+   "unilateral": "",
+   "material": [
+    "Miniband"
+   ],
+   "grupos": [
+    "Glúteo medio"
+   ]
+  },
+  {
+   "nombre": "remo en posición base. polea",
+   "categoria": "Fuerza",
+   "patron": "TH",
+   "rol": "Secundario",
+   "unilateral": "",
+   "material": [
+    "Máquina específica"
+   ],
+   "grupos": [
+    "Dorsal"
+   ]
+  },
+  {
+   "nombre": "Leg Curl (Slide)",
+   "categoria": "Fuerza",
+   "patron": "CD",
+   "rol": "Accesorio",
+   "unilateral": "",
+   "material": [
+    "Peso corporal"
+   ],
+   "grupos": [
+    "Isquiotibiales"
+   ]
+  },
+  {
+   "nombre": "Bench Press - Dumbbell",
+   "categoria": "Fuerza",
+   "patron": "EH",
+   "rol": "Secundario",
+   "unilateral": "",
+   "material": [
+    "Mancuerna"
+   ],
+   "grupos": [
+    "Pectoral"
+   ]
+  },
+  {
+   "nombre": "Hex Bar Romanian Deadlift",
+   "categoria": "Fuerza",
+   "patron": "CD",
+   "rol": "Principal",
+   "unilateral": "",
+   "material": [
+    "Barra"
+   ],
+   "grupos": [
+    "Isquiotibiales",
+    "Glúteo mayor"
+   ]
+  },
+  {
+   "nombre": "Lateral Squat",
+   "categoria": "Fuerza",
+   "patron": "RD",
+   "rol": "Secundario",
+   "unilateral": "sí",
+   "material": [
+    "Peso corporal"
+   ],
+   "grupos": [
+    "Aductores",
+    "Glúteo mayor"
+   ]
+  },
+  {
+   "nombre": "kettlebell deep squat",
+   "categoria": "Fuerza",
+   "patron": "RD",
+   "rol": "Secundario",
+   "unilateral": "",
+   "material": [
+    "Mancuerna"
+   ],
+   "grupos": [
+    "Cuádriceps",
+    "Aductores"
+   ]
+  },
+  {
+   "nombre": "Landmine wood chop",
+   "categoria": "Core",
+   "patron": "CAR",
+   "rol": "Accesorio",
+   "unilateral": "",
+   "material": [
+    "Landmine"
+   ],
+   "grupos": [
+    "Core"
+   ]
+  },
+  {
+   "nombre": "Pull unilateral split stance",
+   "categoria": "Fuerza",
+   "patron": "TH",
+   "rol": "Secundario",
+   "unilateral": "sí",
+   "material": [
+    "Máquina específica"
+   ],
+   "grupos": [
+    "Dorsal"
+   ]
+  },
+  {
+   "nombre": "kettlebell. one leg dead lift",
+   "categoria": "Fuerza",
+   "patron": "CD",
+   "rol": "Secundario",
+   "unilateral": "sí",
+   "material": [
+    "Mancuerna"
+   ],
+   "grupos": [
+    "Isquiotibiales",
+    "Glúteo mayor"
+   ]
+  },
+  {
+   "nombre": "Split Squat - Rear Foot Elevated Dumbbell",
+   "categoria": "Fuerza",
+   "patron": "RD",
+   "rol": "Principal",
+   "unilateral": "sí",
+   "material": [
+    "Mancuerna"
+   ],
+   "grupos": [
+    "Cuádriceps",
+    "Glúteo mayor"
+   ]
+  },
+  {
+   "nombre": "lateral plank + rotational",
+   "categoria": "Core",
+   "patron": "CAR",
+   "rol": "Accesorio",
+   "unilateral": "sí",
+   "material": [
+    "Peso corporal"
+   ],
+   "grupos": [
+    "Core"
+   ]
+  },
+  {
+   "nombre": "Sentadilla unilateral",
+   "categoria": "Fuerza",
+   "patron": "RD",
+   "rol": "Secundario",
+   "unilateral": "sí",
+   "material": [
+    "Peso corporal"
+   ],
+   "grupos": [
+    "Cuádriceps",
+    "Glúteo mayor"
+   ]
+  },
+  {
+   "nombre": "Chop rotacional con disco",
+   "categoria": "Core",
+   "patron": "CAR",
+   "rol": "Accesorio",
+   "unilateral": "sí",
+   "material": [],
+   "grupos": [
+    "Core"
+   ]
+  },
+  {
+   "nombre": "Puente gluteo + fitball",
+   "categoria": "Activación",
+   "patron": "CD",
+   "rol": "Accesorio",
+   "unilateral": "",
+   "material": [
+    "Fitball"
+   ],
+   "grupos": [
+    "Glúteo mayor",
+    "Isquiotibiales"
+   ]
+  },
+  {
+   "nombre": "Curl de isquios unilateral",
+   "categoria": "Fuerza",
+   "patron": "CD",
+   "rol": "Accesorio",
+   "unilateral": "sí",
+   "material": [
+    "Peso corporal"
+   ],
+   "grupos": [
+    "Isquiotibiales"
+   ]
+  },
+  {
+   "nombre": "Romanian Deadlift - Landmine",
+   "categoria": "Fuerza",
+   "patron": "CD",
+   "rol": "Secundario",
+   "unilateral": "",
+   "material": [
+    "Landmine"
+   ],
+   "grupos": [
+    "Isquiotibiales",
+    "Glúteo mayor"
+   ]
+  },
+  {
+   "nombre": "Reverse plank",
+   "categoria": "Core",
+   "patron": "CAE",
+   "rol": "Accesorio",
+   "unilateral": "",
+   "material": [
+    "Peso corporal"
+   ],
+   "grupos": [
+    "Core",
+    "Glúteo mayor"
+   ]
+  },
+  {
+   "nombre": "Dns + traccion",
+   "categoria": "Core",
+   "patron": "CAE",
+   "rol": "Accesorio",
+   "unilateral": "",
+   "material": [
+    "Banda elástica"
+   ],
+   "grupos": [
+    "Core"
+   ]
+  },
+  {
+   "nombre": "Drop single leg",
+   "categoria": "Pliometría",
+   "patron": "RD",
+   "rol": "Accesorio",
+   "unilateral": "sí",
+   "material": [
+    "Caja pliométrica"
+   ],
+   "grupos": [
+    "Cuádriceps"
+   ]
+  },
+  {
+   "nombre": "Drop split squat",
+   "categoria": "Pliometría",
+   "patron": "RD",
+   "rol": "Accesorio",
+   "unilateral": "sí",
+   "material": [
+    "Caja pliométrica"
+   ],
+   "grupos": [
+    "Cuádriceps"
+   ]
+  },
+  {
+   "nombre": "Drop (frenada) bipodal",
+   "categoria": "Pliometría",
+   "patron": "RD",
+   "rol": "Accesorio",
+   "unilateral": "",
+   "material": [
+    "Caja pliométrica"
+   ],
+   "grupos": [
+    "Cuádriceps"
+   ]
+  },
+  {
+   "nombre": "run",
+   "categoria": "Cardio",
+   "patron": "",
+   "rol": "Accesorio",
+   "unilateral": "",
+   "material": [
+    "Peso corporal"
+   ],
+   "grupos": []
+  },
+  {
+   "nombre": "Copenhaguen palanca corta",
+   "categoria": "Fuerza",
+   "patron": "AIS",
+   "rol": "Accesorio",
+   "unilateral": "sí",
+   "material": [
+    "Peso corporal"
+   ],
+   "grupos": [
+    "Aductores"
+   ]
+  },
+  {
+   "nombre": "Plancha lateral + traccion polea",
+   "categoria": "Core",
+   "patron": "CAR",
+   "rol": "Accesorio",
+   "unilateral": "sí",
+   "material": [
+    "Máquina específica"
+   ],
+   "grupos": [
+    "Core"
+   ]
+  }
+ ],
+ "bloques": [
+  {
+   "nombre": "Fase 1 · Aductores y core",
+   "tipo": "activacion",
+   "ex": [
+    {
+     "n": "Adductor. bench step",
+     "p": [
+      [
+       "series",
+       "3"
+      ],
+      [
+       "rpe",
+       "8"
+      ],
+      [
+       "duracion",
+       "20"
+      ],
+      [
+       "descanso",
+       "5s"
+      ]
+     ]
+    },
+    {
+     "n": "adductor fitball",
+     "p": [
+      [
+       "series",
+       "3"
+      ],
+      [
+       "reps",
+       "6"
+      ],
+      [
+       "rpe",
+       "8"
+      ],
+      [
+       "descanso",
+       "10s"
+      ],
+      [
+       "notas",
+       "Isométrico 5 s"
+      ]
+     ]
+    },
+    {
+     "n": "lateral plank + leg raise",
+     "p": [
+      [
+       "series",
+       "3"
+      ],
+      [
+       "reps",
+       "8"
+      ],
+      [
+       "pct_rm",
+       "50"
+      ],
+      [
+       "rpe",
+       "8"
+      ],
+      [
+       "descanso",
+       "10s"
+      ]
+     ]
+    },
+    {
+     "n": "press pallof kneeling",
+     "p": [
+      [
+       "series",
+       "3"
+      ],
+      [
+       "reps",
+       "10"
+      ],
+      [
+       "pct_rm",
+       "60"
+      ]
+     ]
+    },
+    {
+     "n": "Plank",
+     "p": [
+      [
+       "series",
+       "3"
+      ],
+      [
+       "duracion",
+       "30"
+      ]
+     ]
+    },
+    {
+     "n": "pallof rotacional",
+     "p": [
+      [
+       "series",
+       "3"
+      ],
+      [
+       "reps",
+       "8 c/lado"
+      ],
+      [
+       "pct_rm",
+       "50"
+      ]
+     ]
+    }
+   ],
+   "key": "f1_base"
+  },
+  {
+   "nombre": "Fase 1 · Core lateral y glúteo (día 2)",
+   "tipo": "activacion",
+   "ex": [
+    {
+     "n": "Adductor. bench step",
+     "p": [
+      [
+       "series",
+       "3"
+      ],
+      [
+       "rpe",
+       "8"
+      ],
+      [
+       "duracion",
+       "20"
+      ],
+      [
+       "descanso",
+       "5s"
+      ]
+     ]
+    },
+    {
+     "n": "lateral plank + leg raise",
+     "p": [
+      [
+       "series",
+       "3"
+      ],
+      [
+       "reps",
+       "8"
+      ],
+      [
+       "pct_rm",
+       "50"
+      ],
+      [
+       "rpe",
+       "8"
+      ],
+      [
+       "descanso",
+       "10s"
+      ]
+     ]
+    },
+    {
+     "n": "press pallof kneeling",
+     "p": [
+      [
+       "series",
+       "3"
+      ],
+      [
+       "reps",
+       "10"
+      ],
+      [
+       "pct_rm",
+       "60"
+      ]
+     ]
+    },
+    {
+     "n": "Push Up - Eccentric",
+     "p": [
+      [
+       "series",
+       "2"
+      ],
+      [
+       "reps",
+       "8"
+      ]
+     ]
+    },
+    {
+     "n": "Banded Side Plank Clamshell",
+     "p": [
+      [
+       "series",
+       "2"
+      ],
+      [
+       "reps",
+       "10 c/lado"
+      ],
+      [
+       "notas",
+       "Banda Heavy"
+      ]
+     ]
+    },
+    {
+     "n": "Lateral Plank to Row (Cable)",
+     "p": [
+      [
+       "series",
+       "2"
+      ],
+      [
+       "reps",
+       "8 c/lado"
+      ],
+      [
+       "pct_rm",
+       "50"
+      ]
+     ]
+    },
+    {
+     "n": "empuje gluteo",
+     "p": [
+      [
+       "series",
+       "2"
+      ],
+      [
+       "reps",
+       "8 c/lado"
+      ],
+      [
+       "notas",
+       "Isométrico 5 s"
+      ]
+     ]
+    }
+   ],
+   "key": "f1_d2"
+  },
+  {
+   "nombre": "Fase 1 · Extra core lateral (sem. 3)",
+   "tipo": "activacion",
+   "ex": [
+    {
+     "n": "MQ - lateral Plank",
+     "p": [
+      [
+       "series",
+       "2"
+      ],
+      [
+       "duracion",
+       "20"
+      ]
+     ]
+    },
+    {
+     "n": "Banded Side Plank Clamshell",
+     "p": [
+      [
+       "series",
+       "2"
+      ],
+      [
+       "reps",
+       "12 c/lado"
+      ],
+      [
+       "notas",
+       "Banda Very Heavy"
+      ]
+     ]
+    },
+    {
+     "n": "Lateral Plank to Row (Cable)",
+     "p": [
+      [
+       "series",
+       "2"
+      ],
+      [
+       "reps",
+       "8 c/lado"
+      ],
+      [
+       "pct_rm",
+       "40"
+      ]
+     ]
+    }
+   ],
+   "key": "f1_ext"
+  },
+  {
+   "nombre": "Fase 2 · Sentadilla dividida",
+   "tipo": "fuerza",
+   "ex": [
+    {
+     "n": "Split Squat Isometric",
+     "p": [
+      [
+       "series",
+       "3"
+      ],
+      [
+       "reps",
+       "1 c/lado"
+      ],
+      [
+       "rpe",
+       "8"
+      ],
+      [
+       "duracion",
+       "20"
+      ]
+     ]
+    },
+    {
+     "n": "Split Squat",
+     "p": [
+      [
+       "series",
+       "3"
+      ],
+      [
+       "reps",
+       "10 c/lado"
+      ]
+     ]
+    }
+   ],
+   "key": "f2_split"
+  },
+  {
+   "nombre": "Fase 2 · Cadera y press (día 2)",
+   "tipo": "fuerza",
+   "ex": [
+    {
+     "n": "Single Leg Hip Thrust",
+     "p": [
+      [
+       "series",
+       "3"
+      ],
+      [
+       "reps",
+       "12 c/lado"
+      ]
+     ]
+    },
+    {
+     "n": "Bench Press - Dumbbell (Hips Off Bench)",
+     "p": [
+      [
+       "series",
+       "3"
+      ],
+      [
+       "reps",
+       "12"
+      ],
+      [
+       "pct_rm",
+       "50"
+      ]
+     ]
+    }
+   ],
+   "key": "f2_d2_cad"
+  },
+  {
+   "nombre": "Fase 2 · Aductores y core con remo (día 3)",
+   "tipo": "activacion",
+   "ex": [
+    {
+     "n": "Adductor. bench step",
+     "p": [
+      [
+       "series",
+       "3"
+      ],
+      [
+       "rpe",
+       "8"
+      ],
+      [
+       "duracion",
+       "20"
+      ],
+      [
+       "descanso",
+       "5s"
+      ]
+     ]
+    },
+    {
+     "n": "adductor fitball",
+     "p": [
+      [
+       "series",
+       "3"
+      ],
+      [
+       "reps",
+       "6"
+      ],
+      [
+       "rpe",
+       "8"
+      ],
+      [
+       "descanso",
+       "10s"
+      ],
+      [
+       "notas",
+       "Isométrico 5 s"
+      ]
+     ]
+    },
+    {
+     "n": "lateral plank + leg raise",
+     "p": [
+      [
+       "series",
+       "3"
+      ],
+      [
+       "reps",
+       "8"
+      ],
+      [
+       "pct_rm",
+       "50"
+      ],
+      [
+       "rpe",
+       "8"
+      ],
+      [
+       "descanso",
+       "10s"
+      ]
+     ]
+    },
+    {
+     "n": "press pallof kneeling",
+     "p": [
+      [
+       "series",
+       "3"
+      ],
+      [
+       "reps",
+       "10"
+      ],
+      [
+       "pct_rm",
+       "60"
+      ]
+     ]
+    },
+    {
+     "n": "abs remo",
+     "p": [
+      [
+       "series",
+       "3"
+      ],
+      [
+       "reps",
+       "10"
+      ],
+      [
+       "pct_rm",
+       "40"
+      ]
+     ]
+    },
+    {
+     "n": "pallof rotacional",
+     "p": [
+      [
+       "series",
+       "3"
+      ],
+      [
+       "reps",
+       "8 c/lado"
+      ],
+      [
+       "pct_rm",
+       "50"
+      ]
+     ]
+    }
+   ],
+   "key": "f2_d3"
+  },
+  {
+   "nombre": "Fase 2 · Bisagra y press (día 3)",
+   "tipo": "fuerza",
+   "ex": [
+    {
+     "n": "Good morning exercise",
+     "p": [
+      [
+       "series",
+       "2"
+      ],
+      [
+       "reps",
+       "12"
+      ],
+      [
+       "notas",
+       "Tempo 0"
+      ]
+     ]
+    },
+    {
+     "n": "Romanian Deadlift - Kettlebell",
+     "p": [
+      [
+       "series",
+       "3"
+      ],
+      [
+       "reps",
+       "12"
+      ],
+      [
+       "pct_rm",
+       "50"
+      ]
+     ]
+    },
+    {
+     "n": "Bench Press - 1 Arm Dumbbell Contralateral Hip Flexion (Hips off)",
+     "p": [
+      [
+       "series",
+       "3"
+      ],
+      [
+       "reps",
+       "12 c/lado"
+      ],
+      [
+       "pct_rm",
+       "20"
+      ]
+     ]
+    },
+    {
+     "n": "Glute Stretch on Incline Bench",
+     "p": [
+      [
+       "series",
+       "3"
+      ],
+      [
+       "reps",
+       "5 c/lado"
+      ]
+     ]
+    }
+   ],
+   "key": "f2_d3_post"
+  },
+  {
+   "nombre": "Fase 2 · Aductores y core con row (día 4)",
+   "tipo": "activacion",
+   "ex": [
+    {
+     "n": "Adductor. bench step",
+     "p": [
+      [
+       "series",
+       "3"
+      ],
+      [
+       "rpe",
+       "8"
+      ],
+      [
+       "duracion",
+       "20"
+      ],
+      [
+       "descanso",
+       "5s"
+      ]
+     ]
+    },
+    {
+     "n": "adductor fitball",
+     "p": [
+      [
+       "series",
+       "3"
+      ],
+      [
+       "reps",
+       "6"
+      ],
+      [
+       "rpe",
+       "8"
+      ],
+      [
+       "descanso",
+       "10s"
+      ],
+      [
+       "notas",
+       "Isométrico 5 s"
+      ]
+     ]
+    },
+    {
+     "n": "Lateral Plank to Row (Tubing)",
+     "p": [
+      [
+       "series",
+       "3"
+      ],
+      [
+       "reps",
+       "8 c/lado"
+      ],
+      [
+       "pct_rm",
+       "50"
+      ],
+      [
+       "rpe",
+       "8"
+      ],
+      [
+       "descanso",
+       "10s"
+      ]
+     ]
+    },
+    {
+     "n": "press pallof kneeling",
+     "p": [
+      [
+       "series",
+       "3"
+      ],
+      [
+       "reps",
+       "10"
+      ],
+      [
+       "pct_rm",
+       "60"
+      ]
+     ]
+    },
+    {
+     "n": "remo en plancha",
+     "p": [
+      [
+       "series",
+       "3"
+      ],
+      [
+       "reps",
+       "10"
+      ],
+      [
+       "pct_rm",
+       "40"
+      ],
+      [
+       "descanso",
+       "30s"
+      ]
+     ]
+    },
+    {
+     "n": "pallof rotacional",
+     "p": [
+      [
+       "series",
+       "3"
+      ],
+      [
+       "reps",
+       "8 c/lado"
+      ],
+      [
+       "pct_rm",
+       "50"
+      ]
+     ]
+    }
+   ],
+   "key": "f2_d4"
+  },
+  {
+   "nombre": "Fase 2 · Press y bisagra (día 4)",
+   "tipo": "fuerza",
+   "ex": [
+    {
+     "n": "Bench Press - 1 Arm Dumbbell (Lateral Trunk Off Bench)",
+     "p": [
+      [
+       "series",
+       "3"
+      ],
+      [
+       "reps",
+       "12 c/lado"
+      ],
+      [
+       "pct_rm",
+       "50"
+      ]
+     ]
+    },
+    {
+     "n": "RDL.Kettlebell",
+     "p": [
+      [
+       "series",
+       "3"
+      ],
+      [
+       "reps",
+       "12 c/lado"
+      ],
+      [
+       "pct_rm",
+       "50"
+      ],
+      [
+       "rir",
+       "2"
+      ]
+     ]
+    }
+   ],
+   "key": "f2_d4_post"
+  },
+  {
+   "nombre": "Fase 3 · Fuerza PL. sagital B",
+   "tipo": "fuerza",
+   "ex": [
+    {
+     "n": "Barbell - Hip Thrust",
+     "p": [
+      [
+       "series",
+       "3"
+      ],
+      [
+       "reps",
+       "12"
+      ],
+      [
+       "pct_rm",
+       "30"
+      ],
+      [
+       "rpe",
+       "7"
+      ]
+     ]
+    },
+    {
+     "n": "lateral walk",
+     "p": [
+      [
+       "series",
+       "3"
+      ],
+      [
+       "reps",
+       "10"
+      ],
+      [
+       "notas",
+       "Banda Heavy"
+      ]
+     ]
+    },
+    {
+     "n": "remo en posición base. polea",
+     "p": [
+      [
+       "series",
+       "3"
+      ],
+      [
+       "reps",
+       "12"
+      ],
+      [
+       "pct_rm",
+       "70"
+      ]
+     ]
+    },
+    {
+     "n": "Leg Curl (Slide)",
+     "p": [
+      [
+       "series",
+       "3"
+      ],
+      [
+       "reps",
+       "6-9"
+      ],
+      [
+       "rpe",
+       "7"
+      ]
+     ]
+    },
+    {
+     "n": "Bench Press - Dumbbell",
+     "p": [
+      [
+       "series",
+       "3"
+      ],
+      [
+       "reps",
+       "12"
+      ],
+      [
+       "pct_rm",
+       "80"
+      ]
+     ]
+    },
+    {
+     "n": "Hex Bar Romanian Deadlift",
+     "p": [
+      [
+       "series",
+       "3"
+      ],
+      [
+       "reps",
+       "10"
+      ],
+      [
+       "pct_rm",
+       "50"
+      ]
+     ]
+    }
+   ],
+   "key": "f3_sag"
+  },
+  {
+   "nombre": "Fase 3 · Fuerza PL. frontal A",
+   "tipo": "fuerza",
+   "ex": [
+    {
+     "n": "Bench Press - 1 Arm Dumbbell Contralateral Hip Flexion (Hips off)",
+     "p": [
+      [
+       "series",
+       "3"
+      ],
+      [
+       "reps",
+       "12 c/lado"
+      ],
+      [
+       "pct_rm",
+       "80"
+      ]
+     ]
+    },
+    {
+     "n": "Lateral Squat",
+     "p": [
+      [
+       "series",
+       "3"
+      ],
+      [
+       "reps",
+       "6-9 c/lado"
+      ],
+      [
+       "rpe",
+       "7"
+      ]
+     ]
+    },
+    {
+     "n": "kettlebell deep squat",
+     "p": [
+      [
+       "series",
+       "3"
+      ],
+      [
+       "reps",
+       "10"
+      ],
+      [
+       "pct_rm",
+       "50"
+      ]
+     ]
+    },
+    {
+     "n": "Landmine wood chop",
+     "p": [
+      [
+       "series",
+       "3"
+      ],
+      [
+       "reps",
+       "12"
+      ],
+      [
+       "pct_rm",
+       "80"
+      ]
+     ]
+    },
+    {
+     "n": "Pull unilateral split stance",
+     "p": [
+      [
+       "series",
+       "3"
+      ],
+      [
+       "reps",
+       "6-9"
+      ],
+      [
+       "rpe",
+       "7"
+      ]
+     ]
+    },
+    {
+     "n": "abs remo",
+     "p": [
+      [
+       "series",
+       "3"
+      ],
+      [
+       "reps",
+       "10"
+      ],
+      [
+       "pct_rm",
+       "50"
+      ]
+     ]
+    }
+   ],
+   "key": "f3_fro"
+  },
+  {
+   "nombre": "Fase 3 · Fuerza PL. transversal C (sem. 1)",
+   "tipo": "fuerza",
+   "ex": [
+    {
+     "n": "kettlebell. one leg dead lift",
+     "p": [
+      [
+       "series",
+       "3"
+      ],
+      [
+       "reps",
+       "10"
+      ],
+      [
+       "pct_rm",
+       "50"
+      ]
+     ]
+    },
+    {
+     "n": "Split Squat - Rear Foot Elevated Dumbbell",
+     "p": [
+      [
+       "series",
+       "3"
+      ],
+      [
+       "reps",
+       "10 c/lado"
+      ],
+      [
+       "pct_rm",
+       "50"
+      ]
+     ]
+    },
+    {
+     "n": "pallof rotacional",
+     "p": [
+      [
+       "series",
+       "3"
+      ],
+      [
+       "reps",
+       "6-9 c/lado"
+      ],
+      [
+       "rpe",
+       "7"
+      ]
+     ]
+    },
+    {
+     "n": "Lateral Squat",
+     "p": [
+      [
+       "series",
+       "3"
+      ],
+      [
+       "reps",
+       "10 c/lado"
+      ],
+      [
+       "pct_rm",
+       "50"
+      ]
+     ]
+    },
+    {
+     "n": "Adductor. bench step",
+     "p": [
+      [
+       "series",
+       "3"
+      ],
+      [
+       "reps",
+       "10"
+      ],
+      [
+       "pct_rm",
+       "50"
+      ]
+     ]
+    },
+    {
+     "n": "lateral plank + rotational",
+     "p": [
+      [
+       "series",
+       "3"
+      ],
+      [
+       "reps",
+       "6-9"
+      ],
+      [
+       "rpe",
+       "7"
+      ]
+     ]
+    }
+   ],
+   "key": "f3_tra1"
+  },
+  {
+   "nombre": "Fase 3 · Fuerza PL. transversal C",
+   "tipo": "fuerza",
+   "ex": [
+    {
+     "n": "pallof rotacional",
+     "p": [
+      [
+       "series",
+       "3"
+      ],
+      [
+       "reps",
+       "6-9 c/lado"
+      ],
+      [
+       "rpe",
+       "7"
+      ]
+     ]
+    },
+    {
+     "n": "Split Squat - Rear Foot Elevated Dumbbell",
+     "p": [
+      [
+       "series",
+       "3"
+      ],
+      [
+       "reps",
+       "10 c/lado"
+      ],
+      [
+       "pct_rm",
+       "50"
+      ]
+     ]
+    },
+    {
+     "n": "kettlebell. one leg dead lift",
+     "p": [
+      [
+       "series",
+       "3"
+      ],
+      [
+       "reps",
+       "10"
+      ],
+      [
+       "pct_rm",
+       "50"
+      ]
+     ]
+    },
+    {
+     "n": "Lateral Squat",
+     "p": [
+      [
+       "series",
+       "3"
+      ],
+      [
+       "reps",
+       "10 c/lado"
+      ],
+      [
+       "pct_rm",
+       "50"
+      ]
+     ]
+    },
+    {
+     "n": "Adductor. bench step",
+     "p": [
+      [
+       "series",
+       "3"
+      ],
+      [
+       "reps",
+       "10"
+      ],
+      [
+       "pct_rm",
+       "50"
+      ]
+     ]
+    },
+    {
+     "n": "lateral plank + rotational",
+     "p": [
+      [
+       "series",
+       "3"
+      ],
+      [
+       "reps",
+       "6-9"
+      ],
+      [
+       "rpe",
+       "7"
+      ]
+     ]
+    }
+   ],
+   "key": "f3_tra"
+  },
+  {
+   "nombre": "Activación A",
+   "tipo": "activacion",
+   "ex": [
+    {
+     "n": "lateral plank + leg raise",
+     "p": [
+      [
+       "series",
+       "3"
+      ],
+      [
+       "reps",
+       "8"
+      ],
+      [
+       "pct_rm",
+       "50"
+      ],
+      [
+       "rpe",
+       "8"
+      ],
+      [
+       "descanso",
+       "10s"
+      ]
+     ]
+    },
+    {
+     "n": "Banded Side Plank Clamshell",
+     "p": [
+      [
+       "series",
+       "2"
+      ],
+      [
+       "reps",
+       "10 c/lado"
+      ],
+      [
+       "notas",
+       "Banda Heavy"
+      ]
+     ]
+    },
+    {
+     "n": "Split Squat",
+     "p": [
+      [
+       "series",
+       "2"
+      ],
+      [
+       "reps",
+       "10 c/lado"
+      ]
+     ]
+    },
+    {
+     "n": "press pallof kneeling",
+     "p": [
+      [
+       "series",
+       "2"
+      ],
+      [
+       "reps",
+       "10"
+      ],
+      [
+       "pct_rm",
+       "60"
+      ]
+     ]
+    },
+    {
+     "n": "Push Up - Eccentric",
+     "p": [
+      [
+       "series",
+       "2"
+      ],
+      [
+       "reps",
+       "8"
+      ]
+     ]
+    },
+    {
+     "n": "Split Squat Isometric",
+     "p": [
+      [
+       "series",
+       "3"
+      ],
+      [
+       "reps",
+       "1 c/lado"
+      ],
+      [
+       "rpe",
+       "8"
+      ],
+      [
+       "duracion",
+       "20"
+      ]
+     ]
+    }
+   ],
+   "key": "f4_actA"
+  },
+  {
+   "nombre": "Activación A (sem. 3-4)",
+   "tipo": "activacion",
+   "ex": [
+    {
+     "n": "lateral plank + leg raise",
+     "p": [
+      [
+       "series",
+       "3"
+      ],
+      [
+       "reps",
+       "8"
+      ],
+      [
+       "pct_rm",
+       "50"
+      ],
+      [
+       "rpe",
+       "8"
+      ],
+      [
+       "descanso",
+       "10s"
+      ]
+     ]
+    },
+    {
+     "n": "Banded Side Plank Clamshell",
+     "p": [
+      [
+       "series",
+       "2"
+      ],
+      [
+       "reps",
+       "10 c/lado"
+      ],
+      [
+       "notas",
+       "Banda Heavy"
+      ]
+     ]
+    },
+    {
+     "n": "Split Squat",
+     "p": [
+      [
+       "series",
+       "2"
+      ],
+      [
+       "reps",
+       "10 c/lado"
+      ]
+     ]
+    },
+    {
+     "n": "Push Up - Eccentric",
+     "p": [
+      [
+       "series",
+       "2"
+      ],
+      [
+       "reps",
+       "8"
+      ]
+     ]
+    },
+    {
+     "n": "Split Squat Isometric",
+     "p": [
+      [
+       "series",
+       "3"
+      ],
+      [
+       "reps",
+       "1 c/lado"
+      ],
+      [
+       "rpe",
+       "8"
+      ],
+      [
+       "duracion",
+       "20"
+      ]
+     ]
+    }
+   ],
+   "key": "f4_actA3"
+  },
+  {
+   "nombre": "Fuerza PL. frontal A",
+   "tipo": "fuerza",
+   "ex": [
+    {
+     "n": "Bench Press - 1 Arm Dumbbell Contralateral Hip Flexion (Hips off)",
+     "p": [
+      [
+       "series",
+       "3"
+      ],
+      [
+       "reps",
+       "12 c/lado"
+      ],
+      [
+       "pct_rm",
+       "80"
+      ]
+     ]
+    },
+    {
+     "n": "Lateral Squat",
+     "p": [
+      [
+       "series",
+       "3"
+      ],
+      [
+       "reps",
+       "6-9 c/lado"
+      ],
+      [
+       "rpe",
+       "7"
+      ]
+     ]
+    },
+    {
+     "n": "kettlebell deep squat",
+     "p": [
+      [
+       "series",
+       "2"
+      ],
+      [
+       "reps",
+       "10"
+      ],
+      [
+       "pct_rm",
+       "50"
+      ]
+     ]
+    }
+   ],
+   "key": "f4_froA"
+  },
+  {
+   "nombre": "Fuerza PL. frontal A (sem. 3-4)",
+   "tipo": "fuerza",
+   "ex": [
+    {
+     "n": "Bench Press - 1 Arm Dumbbell Contralateral Hip Flexion (Hips off)",
+     "p": [
+      [
+       "series",
+       "3"
+      ],
+      [
+       "reps",
+       "12 c/lado"
+      ],
+      [
+       "pct_rm",
+       "80"
+      ]
+     ]
+    },
+    {
+     "n": "Lateral Squat",
+     "p": [
+      [
+       "series",
+       "3"
+      ],
+      [
+       "reps",
+       "6-9 c/lado"
+      ],
+      [
+       "rpe",
+       "7"
+      ]
+     ]
+    },
+    {
+     "n": "Sentadilla unilateral",
+     "p": [
+      [
+       "series",
+       "3"
+      ],
+      [
+       "reps",
+       "10 c/lado"
+      ],
+      [
+       "pct_rm",
+       "50"
+      ]
+     ]
+    }
+   ],
+   "key": "f4_froA3"
+  },
+  {
+   "nombre": "Fuerza PL. transversal A",
+   "tipo": "fuerza",
+   "ex": [
+    {
+     "n": "Landmine wood chop",
+     "p": [
+      [
+       "series",
+       "3"
+      ],
+      [
+       "reps",
+       "12"
+      ],
+      [
+       "pct_rm",
+       "80"
+      ]
+     ]
+    },
+    {
+     "n": "Pull unilateral split stance",
+     "p": [
+      [
+       "series",
+       "3"
+      ],
+      [
+       "reps",
+       "6-9"
+      ],
+      [
+       "rpe",
+       "7"
+      ]
+     ]
+    },
+    {
+     "n": "abs remo",
+     "p": [
+      [
+       "series",
+       "3"
+      ],
+      [
+       "reps",
+       "10"
+      ],
+      [
+       "pct_rm",
+       "50"
+      ]
+     ]
+    }
+   ],
+   "key": "f4_traA"
+  },
+  {
+   "nombre": "Fuerza PL. transversal A (sem. 3-4)",
+   "tipo": "fuerza",
+   "ex": [
+    {
+     "n": "Landmine wood chop",
+     "p": [
+      [
+       "series",
+       "3"
+      ],
+      [
+       "reps",
+       "12"
+      ],
+      [
+       "pct_rm",
+       "80"
+      ]
+     ]
+    },
+    {
+     "n": "Pull unilateral split stance",
+     "p": [
+      [
+       "series",
+       "3"
+      ],
+      [
+       "reps",
+       "6-9"
+      ],
+      [
+       "rpe",
+       "7"
+      ]
+     ]
+    },
+    {
+     "n": "Chop rotacional con disco",
+     "p": [
+      [
+       "series",
+       "3"
+      ],
+      [
+       "reps",
+       "8 c/lado"
+      ],
+      [
+       "pct_rm",
+       "50"
+      ]
+     ]
+    }
+   ],
+   "key": "f4_traA3"
+  },
+  {
+   "nombre": "Activación B · Hip thrust",
+   "tipo": "activacion",
+   "ex": [
+    {
+     "n": "adductor fitball",
+     "p": [
+      [
+       "series",
+       "3"
+      ],
+      [
+       "reps",
+       "6"
+      ],
+      [
+       "rpe",
+       "8"
+      ],
+      [
+       "descanso",
+       "10s"
+      ],
+      [
+       "notas",
+       "Isométrico 5 s"
+      ]
+     ]
+    },
+    {
+     "n": "lateral plank + leg raise",
+     "p": [
+      [
+       "series",
+       "3"
+      ],
+      [
+       "reps",
+       "8"
+      ],
+      [
+       "pct_rm",
+       "50"
+      ],
+      [
+       "rpe",
+       "8"
+      ],
+      [
+       "descanso",
+       "10s"
+      ]
+     ]
+    },
+    {
+     "n": "pallof rotacional",
+     "p": [
+      [
+       "series",
+       "3"
+      ],
+      [
+       "reps",
+       "8 c/lado"
+      ],
+      [
+       "pct_rm",
+       "50"
+      ]
+     ]
+    },
+    {
+     "n": "Adductor. bench step",
+     "p": [
+      [
+       "series",
+       "3"
+      ],
+      [
+       "rpe",
+       "8"
+      ],
+      [
+       "duracion",
+       "20"
+      ],
+      [
+       "descanso",
+       "5s"
+      ]
+     ]
+    },
+    {
+     "n": "Single Leg Hip Thrust",
+     "p": [
+      [
+       "series",
+       "3"
+      ],
+      [
+       "reps",
+       "12 c/lado"
+      ]
+     ]
+    },
+    {
+     "n": "empuje gluteo",
+     "p": [
+      [
+       "series",
+       "3"
+      ],
+      [
+       "reps",
+       "8 c/lado"
+      ],
+      [
+       "notas",
+       "Isométrico 5 s"
+      ]
+     ]
+    }
+   ],
+   "key": "f4_actB"
+  },
+  {
+   "nombre": "Activación B · Hip thrust (sem. 3-4)",
+   "tipo": "activacion",
+   "ex": [
+    {
+     "n": "adductor fitball",
+     "p": [
+      [
+       "series",
+       "3"
+      ],
+      [
+       "reps",
+       "6"
+      ],
+      [
+       "rpe",
+       "8"
+      ],
+      [
+       "descanso",
+       "10s"
+      ],
+      [
+       "notas",
+       "Isométrico 5 s"
+      ]
+     ]
+    },
+    {
+     "n": "lateral plank + leg raise",
+     "p": [
+      [
+       "series",
+       "3"
+      ],
+      [
+       "reps",
+       "8"
+      ],
+      [
+       "pct_rm",
+       "50"
+      ],
+      [
+       "rpe",
+       "8"
+      ],
+      [
+       "descanso",
+       "10s"
+      ]
+     ]
+    },
+    {
+     "n": "pallof rotacional",
+     "p": [
+      [
+       "series",
+       "3"
+      ],
+      [
+       "reps",
+       "8 c/lado"
+      ],
+      [
+       "pct_rm",
+       "50"
+      ]
+     ]
+    },
+    {
+     "n": "Puente gluteo + fitball",
+     "p": [
+      [
+       "series",
+       "3"
+      ],
+      [
+       "reps",
+       "10"
+      ],
+      [
+       "pct_rm",
+       "60"
+      ]
+     ]
+    },
+    {
+     "n": "Adductor. bench step",
+     "p": [
+      [
+       "series",
+       "3"
+      ],
+      [
+       "rpe",
+       "8"
+      ],
+      [
+       "duracion",
+       "20"
+      ],
+      [
+       "descanso",
+       "5s"
+      ]
+     ]
+    },
+    {
+     "n": "Single Leg Hip Thrust",
+     "p": [
+      [
+       "series",
+       "3"
+      ],
+      [
+       "reps",
+       "12 c/lado"
+      ]
+     ]
+    }
+   ],
+   "key": "f4_actB3"
+  },
+  {
+   "nombre": "Fuerza PL. sagital B (fase 4)",
+   "tipo": "fuerza",
+   "ex": [
+    {
+     "n": "Barbell - Hip Thrust",
+     "p": [
+      [
+       "series",
+       "3"
+      ],
+      [
+       "reps",
+       "12"
+      ],
+      [
+       "pct_rm",
+       "60"
+      ],
+      [
+       "rpe",
+       "7"
+      ]
+     ]
+    },
+    {
+     "n": "lateral walk",
+     "p": [
+      [
+       "series",
+       "3"
+      ],
+      [
+       "reps",
+       "10"
+      ],
+      [
+       "notas",
+       "Banda Heavy"
+      ]
+     ]
+    },
+    {
+     "n": "remo en posición base. polea",
+     "p": [
+      [
+       "series",
+       "3"
+      ],
+      [
+       "reps",
+       "12"
+      ],
+      [
+       "pct_rm",
+       "70"
+      ]
+     ]
+    },
+    {
+     "n": "abs remo",
+     "p": [
+      [
+       "series",
+       "3"
+      ],
+      [
+       "reps",
+       "12"
+      ],
+      [
+       "pct_rm",
+       "50"
+      ]
+     ]
+    }
+   ],
+   "key": "f4_sagB"
+  },
+  {
+   "nombre": "Fuerza PL. sagital B · bloque 1 (sem. 3-4)",
+   "tipo": "fuerza",
+   "ex": [
+    {
+     "n": "Barbell - Hip Thrust",
+     "p": [
+      [
+       "series",
+       "3"
+      ],
+      [
+       "reps",
+       "12"
+      ],
+      [
+       "pct_rm",
+       "60"
+      ],
+      [
+       "rpe",
+       "7"
+      ]
+     ]
+    },
+    {
+     "n": "lateral walk",
+     "p": [
+      [
+       "series",
+       "3"
+      ],
+      [
+       "reps",
+       "10"
+      ],
+      [
+       "notas",
+       "Banda Heavy"
+      ]
+     ]
+    },
+    {
+     "n": "remo en posición base. polea",
+     "p": [
+      [
+       "series",
+       "3"
+      ],
+      [
+       "reps",
+       "12"
+      ],
+      [
+       "pct_rm",
+       "70"
+      ]
+     ]
+    },
+    {
+     "n": "Curl de isquios unilateral",
+     "p": [
+      [
+       "series",
+       "3"
+      ],
+      [
+       "reps",
+       "12 c/lado"
+      ],
+      [
+       "pct_rm",
+       "50"
+      ]
+     ]
+    }
+   ],
+   "key": "f4_sagB3a"
+  },
+  {
+   "nombre": "Fuerza PL. sagital B · bloque 2 (sem. 3-4)",
+   "tipo": "fuerza",
+   "ex": [
+    {
+     "n": "Romanian Deadlift - Landmine",
+     "p": [
+      [
+       "series",
+       "3"
+      ],
+      [
+       "reps",
+       "12"
+      ],
+      [
+       "pct_rm",
+       "50"
+      ]
+     ]
+    },
+    {
+     "n": "Reverse plank",
+     "p": [
+      [
+       "series",
+       "3"
+      ],
+      [
+       "reps",
+       "12"
+      ],
+      [
+       "rpe",
+       "7"
+      ]
+     ]
+    },
+    {
+     "n": "lateral walk",
+     "p": [
+      [
+       "series",
+       "3"
+      ],
+      [
+       "reps",
+       "10"
+      ],
+      [
+       "notas",
+       "Banda Heavy"
+      ]
+     ]
+    },
+    {
+     "n": "Dns + traccion",
+     "p": [
+      [
+       "series",
+       "3"
+      ],
+      [
+       "reps",
+       "12"
+      ],
+      [
+       "pct_rm",
+       "70"
+      ]
+     ]
+    }
+   ],
+   "key": "f4_sagB3b"
+  },
+  {
+   "nombre": "Pliometría · caídas",
+   "tipo": "pliometria",
+   "ex": [
+    {
+     "n": "Drop single leg",
+     "p": [
+      [
+       "series",
+       "2"
+      ],
+      [
+       "reps",
+       "6"
+      ]
+     ]
+    },
+    {
+     "n": "Drop split squat",
+     "p": [
+      [
+       "series",
+       "2"
+      ],
+      [
+       "reps",
+       "6"
+      ]
+     ]
+    },
+    {
+     "n": "Drop (frenada) bipodal",
+     "p": [
+      [
+       "series",
+       "2"
+      ],
+      [
+       "reps",
+       "6"
+      ]
+     ]
+    }
+   ],
+   "key": "f4_plio"
+  },
+  {
+   "nombre": "Carrera continua",
+   "tipo": "resistencia",
+   "ex": [
+    {
+     "n": "run",
+     "p": [
+      [
+       "series",
+       "2"
+      ],
+      [
+       "reps",
+       "10"
+      ],
+      [
+       "descanso",
+       "60s"
+      ],
+      [
+       "notas",
+       "80 m a 10 km/h"
+      ]
+     ]
+    }
+   ],
+   "key": "f4_run"
+  },
+  {
+   "nombre": "Activación C",
+   "tipo": "activacion",
+   "ex": [
+    {
+     "n": "adductor fitball",
+     "p": [
+      [
+       "series",
+       "3"
+      ],
+      [
+       "reps",
+       "6"
+      ],
+      [
+       "rpe",
+       "8"
+      ],
+      [
+       "descanso",
+       "10s"
+      ],
+      [
+       "notas",
+       "Isométrico 5 s"
+      ]
+     ]
+    },
+    {
+     "n": "Lateral Plank to Row (Tubing)",
+     "p": [
+      [
+       "series",
+       "3"
+      ],
+      [
+       "reps",
+       "8 c/lado"
+      ],
+      [
+       "pct_rm",
+       "50"
+      ],
+      [
+       "rpe",
+       "8"
+      ],
+      [
+       "descanso",
+       "10s"
+      ]
+     ]
+    },
+    {
+     "n": "remo en plancha",
+     "p": [
+      [
+       "series",
+       "3"
+      ],
+      [
+       "reps",
+       "10"
+      ],
+      [
+       "pct_rm",
+       "40"
+      ],
+      [
+       "descanso",
+       "30s"
+      ]
+     ]
+    },
+    {
+     "n": "pallof rotacional",
+     "p": [
+      [
+       "series",
+       "3"
+      ],
+      [
+       "reps",
+       "8 c/lado"
+      ],
+      [
+       "pct_rm",
+       "50"
+      ]
+     ]
+    },
+    {
+     "n": "Bench Press - 1 Arm Dumbbell (Lateral Trunk Off Bench)",
+     "p": [
+      [
+       "series",
+       "3"
+      ],
+      [
+       "reps",
+       "12 c/lado"
+      ],
+      [
+       "pct_rm",
+       "50"
+      ]
+     ]
+    }
+   ],
+   "key": "f4_actC"
+  },
+  {
+   "nombre": "Fuerza PL. transversal C · bloque 1",
+   "tipo": "fuerza",
+   "ex": [
+    {
+     "n": "kettlebell. one leg dead lift",
+     "p": [
+      [
+       "series",
+       "3"
+      ],
+      [
+       "reps",
+       "10"
+      ],
+      [
+       "pct_rm",
+       "50"
+      ]
+     ]
+    },
+    {
+     "n": "Split Squat - Rear Foot Elevated Dumbbell",
+     "p": [
+      [
+       "series",
+       "3"
+      ],
+      [
+       "reps",
+       "10 c/lado"
+      ],
+      [
+       "pct_rm",
+       "50"
+      ]
+     ]
+    },
+    {
+     "n": "pallof rotacional",
+     "p": [
+      [
+       "series",
+       "3"
+      ],
+      [
+       "reps",
+       "6-9 c/lado"
+      ],
+      [
+       "rpe",
+       "7"
+      ]
+     ]
+    }
+   ],
+   "key": "f4_traC1"
+  },
+  {
+   "nombre": "Fuerza PL. transversal C · bloque 2",
+   "tipo": "fuerza",
+   "ex": [
+    {
+     "n": "Lateral Squat",
+     "p": [
+      [
+       "series",
+       "3"
+      ],
+      [
+       "reps",
+       "10 c/lado"
+      ],
+      [
+       "pct_rm",
+       "50"
+      ]
+     ]
+    },
+    {
+     "n": "Copenhaguen palanca corta",
+     "p": [
+      [
+       "series",
+       "3"
+      ],
+      [
+       "reps",
+       "10 c/lado"
+      ],
+      [
+       "pct_rm",
+       "50"
+      ]
+     ]
+    },
+    {
+     "n": "lateral plank + rotational",
+     "p": [
+      [
+       "series",
+       "3"
+      ],
+      [
+       "reps",
+       "6-9"
+      ],
+      [
+       "rpe",
+       "7"
+      ]
+     ]
+    }
+   ],
+   "key": "f4_traC2"
+  },
+  {
+   "nombre": "Fuerza PL. transversal C · bloque 2 (sem. 3-4)",
+   "tipo": "fuerza",
+   "ex": [
+    {
+     "n": "Lateral Squat",
+     "p": [
+      [
+       "series",
+       "3"
+      ],
+      [
+       "reps",
+       "10 c/lado"
+      ],
+      [
+       "pct_rm",
+       "50"
+      ]
+     ]
+    },
+    {
+     "n": "Copenhaguen palanca corta",
+     "p": [
+      [
+       "series",
+       "3"
+      ],
+      [
+       "reps",
+       "10 c/lado"
+      ],
+      [
+       "pct_rm",
+       "50"
+      ]
+     ]
+    },
+    {
+     "n": "lateral plank + rotational",
+     "p": [
+      [
+       "series",
+       "3"
+      ],
+      [
+       "reps",
+       "6-9"
+      ],
+      [
+       "rpe",
+       "7"
+      ]
+     ]
+    },
+    {
+     "n": "Plancha lateral + traccion polea",
+     "p": [
+      [
+       "series",
+       "3"
+      ],
+      [
+       "reps",
+       "8"
+      ],
+      [
+       "pct_rm",
+       "50"
+      ]
+     ]
+    }
+   ],
+   "key": "f4_traC3"
+  },
+  {
+   "nombre": "Activación B · RDL",
+   "tipo": "activacion",
+   "ex": [
+    {
+     "n": "adductor fitball",
+     "p": [
+      [
+       "series",
+       "3"
+      ],
+      [
+       "reps",
+       "6"
+      ],
+      [
+       "rpe",
+       "8"
+      ],
+      [
+       "descanso",
+       "10s"
+      ],
+      [
+       "notas",
+       "Isométrico 5 s"
+      ]
+     ]
+    },
+    {
+     "n": "lateral plank + leg raise",
+     "p": [
+      [
+       "series",
+       "3"
+      ],
+      [
+       "reps",
+       "8"
+      ],
+      [
+       "pct_rm",
+       "50"
+      ],
+      [
+       "rpe",
+       "8"
+      ],
+      [
+       "descanso",
+       "10s"
+      ]
+     ]
+    },
+    {
+     "n": "press pallof kneeling",
+     "p": [
+      [
+       "series",
+       "3"
+      ],
+      [
+       "reps",
+       "10"
+      ],
+      [
+       "pct_rm",
+       "60"
+      ]
+     ]
+    },
+    {
+     "n": "pallof rotacional",
+     "p": [
+      [
+       "series",
+       "3"
+      ],
+      [
+       "reps",
+       "8 c/lado"
+      ],
+      [
+       "pct_rm",
+       "50"
+      ]
+     ]
+    },
+    {
+     "n": "RDL.Kettlebell",
+     "p": [
+      [
+       "series",
+       "3"
+      ],
+      [
+       "reps",
+       "12 c/lado"
+      ],
+      [
+       "pct_rm",
+       "50"
+      ],
+      [
+       "rir",
+       "2"
+      ]
+     ]
+    },
+    {
+     "n": "Copenhaguen palanca corta",
+     "p": [
+      [
+       "series",
+       "3"
+      ],
+      [
+       "rpe",
+       "8"
+      ],
+      [
+       "duracion",
+       "20"
+      ],
+      [
+       "descanso",
+       "5s"
+      ]
+     ]
+    }
+   ],
+   "key": "f4_actBR"
+  },
+  {
+   "nombre": "Fuerza PL. sagital B · RDL",
+   "tipo": "fuerza",
+   "ex": [
+    {
+     "n": "Hex Bar Romanian Deadlift",
+     "p": [
+      [
+       "series",
+       "3"
+      ],
+      [
+       "reps",
+       "10"
+      ],
+      [
+       "pct_rm",
+       "50"
+      ]
+     ]
+    },
+    {
+     "n": "Leg Curl (Slide)",
+     "p": [
+      [
+       "series",
+       "3"
+      ],
+      [
+       "reps",
+       "6-9"
+      ],
+      [
+       "rpe",
+       "7"
+      ]
+     ]
+    },
+    {
+     "n": "Bench Press - Dumbbell (Hips Off Bench)",
+     "p": [
+      [
+       "series",
+       "3"
+      ],
+      [
+       "reps",
+       "12"
+      ],
+      [
+       "pct_rm",
+       "50"
+      ]
+     ]
+    },
+    {
+     "n": "lateral plank + leg raise",
+     "p": [
+      [
+       "series",
+       "3"
+      ],
+      [
+       "reps",
+       "12"
+      ],
+      [
+       "rpe",
+       "8"
+      ]
+     ]
+    }
+   ],
+   "key": "f4_sagBR"
+  }
+ ],
+ "sesiones": [
+  {
+   "nombre": "Pubis F1 · Aductores y core",
+   "bloques": [
+    {
+     "ref": "f1_base"
+    }
+   ],
+   "key": "p1_d1"
+  },
+  {
+   "nombre": "Pubis F1 · Core lateral y glúteo",
+   "bloques": [
+    {
+     "ref": "f1_d2"
+    }
+   ],
+   "key": "p1_d2"
+  },
+  {
+   "nombre": "Pubis F1 · Aductores y core + extra (A)",
+   "bloques": [
+    {
+     "ref": "f1_base"
+    },
+    {
+     "nombre": "Fase 1 · Extra core lateral (sem. 3)",
+     "tipo": "activacion",
+     "ex": [
+      {
+       "n": "MQ - lateral Plank",
+       "p": [
+        [
+         "series",
+         "2"
+        ],
+        [
+         "duracion",
+         "20"
+        ]
+       ]
+      },
+      {
+       "n": "Banded Side Plank Clamshell",
+       "p": [
+        [
+         "series",
+         "2"
+        ],
+        [
+         "reps",
+         "12 c/lado"
+        ],
+        [
+         "notas",
+         "Banda Very Heavy"
+        ]
+       ]
+      },
+      {
+       "n": "Lateral Plank to Row (Cable)",
+       "p": [
+        [
+         "series",
+         "2"
+        ],
+        [
+         "reps",
+         "8 c/lado"
+        ],
+        [
+         "pct_rm",
+         "40"
+        ]
+       ]
+      }
+     ]
+    }
+   ],
+   "key": "p1_w3_d2"
+  },
+  {
+   "nombre": "Pubis F1 · Aductores y core + extra (B)",
+   "bloques": [
+    {
+     "ref": "f1_base"
+    },
+    {
+     "nombre": "Fase 1 · Extra core lateral (B)",
+     "tipo": "activacion",
+     "ex": [
+      {
+       "n": "MQ - lateral Plank",
+       "p": [
+        [
+         "series",
+         "2"
+        ],
+        [
+         "duracion",
+         "20"
+        ]
+       ]
+      },
+      {
+       "n": "Lateral Plank to Row (Cable)",
+       "p": [
+        [
+         "series",
+         "2"
+        ],
+        [
+         "reps",
+         "8 c/lado"
+        ],
+        [
+         "pct_rm",
+         "40"
+        ]
+       ]
+      },
+      {
+       "n": "Banded Side Plank Clamshell",
+       "p": [
+        [
+         "series",
+         "2"
+        ],
+        [
+         "reps",
+         "12 c/lado"
+        ],
+        [
+         "notas",
+         "Banda Very Heavy"
+        ]
+       ]
+      }
+     ]
+    }
+   ],
+   "key": "p1_w3_d3"
+  },
+  {
+   "nombre": "Pubis F1 · Aductores y core + extra (C)",
+   "bloques": [
+    {
+     "ref": "f1_base"
+    },
+    {
+     "nombre": "Fase 1 · Extra core lateral (C)",
+     "tipo": "activacion",
+     "ex": [
+      {
+       "n": "Lateral Plank to Row (Cable)",
+       "p": [
+        [
+         "series",
+         "2"
+        ],
+        [
+         "reps",
+         "8 c/lado"
+        ],
+        [
+         "pct_rm",
+         "40"
+        ]
+       ]
+      },
+      {
+       "n": "Banded Side Plank Clamshell",
+       "p": [
+        [
+         "series",
+         "2"
+        ],
+        [
+         "reps",
+         "12 c/lado"
+        ],
+        [
+         "notas",
+         "Banda Very Heavy"
+        ]
+       ]
+      },
+      {
+       "n": "MQ - lateral Plank",
+       "p": [
+        [
+         "series",
+         "2"
+        ],
+        [
+         "duracion",
+         "20"
+        ]
+       ]
+      }
+     ]
+    }
+   ],
+   "key": "p1_w3_d4"
+  },
+  {
+   "nombre": "Pubis F2 · Día 1 · Dividida",
+   "bloques": [
+    {
+     "ref": "f1_base"
+    },
+    {
+     "ref": "f2_split"
+    }
+   ],
+   "key": "p2_d1"
+  },
+  {
+   "nombre": "Pubis F2 · Día 2 · Cadera y press",
+   "bloques": [
+    {
+     "ref": "f1_d2"
+    },
+    {
+     "ref": "f2_d2_cad"
+    }
+   ],
+   "key": "p2_d2"
+  },
+  {
+   "nombre": "Pubis F2 · Día 3 · Bisagra",
+   "bloques": [
+    {
+     "ref": "f2_d3"
+    },
+    {
+     "ref": "f2_d3_post"
+    }
+   ],
+   "key": "p2_d3"
+  },
+  {
+   "nombre": "Pubis F2 · Día 4 · Press y RDL",
+   "bloques": [
+    {
+     "ref": "f2_d4"
+    },
+    {
+     "ref": "f2_d4_post"
+    }
+   ],
+   "key": "p2_d4"
+  },
+  {
+   "nombre": "Pubis F3 · Sesión B (sagital)",
+   "bloques": [
+    {
+     "ref": "f1_base"
+    },
+    {
+     "ref": "f2_split"
+    },
+    {
+     "ref": "f3_sag"
+    }
+   ],
+   "key": "p3_B"
+  },
+  {
+   "nombre": "Pubis F3 · Sesión A (frontal)",
+   "bloques": [
+    {
+     "ref": "f1_d2"
+    },
+    {
+     "ref": "f2_d2_cad"
+    },
+    {
+     "ref": "f3_fro"
+    }
+   ],
+   "key": "p3_A"
+  },
+  {
+   "nombre": "Pubis F3 · Sesión C (transversal) sem. 1",
+   "bloques": [
+    {
+     "ref": "f2_d4"
+    },
+    {
+     "ref": "f2_d4_post"
+    },
+    {
+     "ref": "f3_tra1"
+    }
+   ],
+   "key": "p3_C1"
+  },
+  {
+   "nombre": "Pubis F3 · Sesión C (transversal)",
+   "bloques": [
+    {
+     "ref": "f2_d4"
+    },
+    {
+     "ref": "f2_d4_post"
+    },
+    {
+     "ref": "f3_tra"
+    }
+   ],
+   "key": "p3_C"
+  },
+  {
+   "nombre": "Pubis F4 · Sesión A",
+   "bloques": [
+    {
+     "ref": "f4_actA"
+    },
+    {
+     "ref": "f4_froA"
+    },
+    {
+     "ref": "f4_traA"
+    }
+   ],
+   "key": "p4_A"
+  },
+  {
+   "nombre": "Pubis F4 · Sesión B",
+   "bloques": [
+    {
+     "ref": "f4_actB"
+    },
+    {
+     "ref": "f4_sagB"
+    }
+   ],
+   "key": "p4_B"
+  },
+  {
+   "nombre": "Pubis F4 · Sesión C",
+   "bloques": [
+    {
+     "ref": "f4_actC"
+    },
+    {
+     "ref": "f4_traC1"
+    },
+    {
+     "ref": "f4_traC2"
+    }
+   ],
+   "key": "p4_C"
+  },
+  {
+   "nombre": "Pubis F4 · Sesión B (RDL)",
+   "bloques": [
+    {
+     "ref": "f4_actBR"
+    },
+    {
+     "ref": "f4_sagBR"
+    }
+   ],
+   "key": "p4_B2"
+  },
+  {
+   "nombre": "Pubis F4 · Sesión A (sem. 3-4)",
+   "bloques": [
+    {
+     "ref": "f4_actA3"
+    },
+    {
+     "ref": "f4_froA3"
+    },
+    {
+     "ref": "f4_plio"
+    },
+    {
+     "ref": "f4_traA3"
+    }
+   ],
+   "key": "p4_A3"
+  },
+  {
+   "nombre": "Pubis F4 · Sesión B (sem. 3-4)",
+   "bloques": [
+    {
+     "ref": "f4_actB3"
+    },
+    {
+     "ref": "f4_sagB3a"
+    },
+    {
+     "ref": "f4_sagB3b"
+    },
+    {
+     "ref": "f4_plio"
+    },
+    {
+     "ref": "f4_run"
+    }
+   ],
+   "key": "p4_B3"
+  },
+  {
+   "nombre": "Pubis F4 · Sesión C (sem. 3-4)",
+   "bloques": [
+    {
+     "ref": "f4_actC"
+    },
+    {
+     "ref": "f4_traC1"
+    },
+    {
+     "ref": "f4_traC3"
+    }
+   ],
+   "key": "p4_C3"
+  }
+ ],
+ "semanas": [
+  {
+   "fase": 1,
+   "semana": 1,
+   "dias": {
+    "1": "p1_d1",
+    "2": "p1_d2",
+    "3": "p1_d1",
+    "4": "p1_d1"
+   }
+  },
+  {
+   "fase": 1,
+   "semana": 2,
+   "dias": {
+    "1": "p1_d1",
+    "2": "p1_d1",
+    "3": "p1_d1",
+    "4": "p1_d1"
+   }
+  },
+  {
+   "fase": 1,
+   "semana": 3,
+   "dias": {
+    "1": "p1_d1",
+    "2": "p1_w3_d2",
+    "3": "p1_w3_d3",
+    "4": "p1_w3_d4"
+   }
+  },
+  {
+   "fase": 2,
+   "semana": 1,
+   "dias": {
+    "1": "p2_d1",
+    "2": "p2_d2",
+    "3": "p2_d3",
+    "4": "p2_d4"
+   }
+  },
+  {
+   "fase": 2,
+   "semana": 2,
+   "dias": {
+    "1": "p2_d1",
+    "2": "p2_d2",
+    "3": "p2_d3",
+    "4": "p2_d4"
+   }
+  },
+  {
+   "fase": 2,
+   "semana": 3,
+   "dias": {
+    "1": "p2_d1",
+    "2": "p2_d2",
+    "3": "p2_d3",
+    "4": "p2_d4"
+   }
+  },
+  {
+   "fase": 2,
+   "semana": 4,
+   "dias": {
+    "1": "p2_d1",
+    "2": "p2_d2",
+    "3": "p2_d3",
+    "4": "p2_d4"
+   }
+  },
+  {
+   "fase": 2,
+   "semana": 5,
+   "dias": {
+    "1": "p2_d1",
+    "2": "p2_d2",
+    "3": "p2_d3",
+    "4": "p2_d4"
+   }
+  },
+  {
+   "fase": 3,
+   "semana": 1,
+   "dias": {
+    "1": "p3_B",
+    "2": "p3_A",
+    "3": "p3_C1"
+   }
+  },
+  {
+   "fase": 3,
+   "semana": 2,
+   "dias": {
+    "1": "p3_B",
+    "2": "p3_A",
+    "3": "p3_C"
+   }
+  },
+  {
+   "fase": 3,
+   "semana": 3,
+   "dias": {
+    "1": "p3_B",
+    "2": "p3_A",
+    "3": "p3_C"
+   }
+  },
+  {
+   "fase": 3,
+   "semana": 4,
+   "dias": {
+    "1": "p3_B",
+    "2": "p3_A",
+    "3": "p3_C"
+   }
+  },
+  {
+   "fase": 4,
+   "semana": 1,
+   "dias": {
+    "1": "p4_A",
+    "2": "p4_B",
+    "3": "p4_C",
+    "4": "p4_B2"
+   }
+  },
+  {
+   "fase": 4,
+   "semana": 2,
+   "dias": {
+    "1": "p4_A",
+    "2": "p4_B",
+    "3": "p4_C",
+    "4": "p4_B2"
+   }
+  },
+  {
+   "fase": 4,
+   "semana": 3,
+   "dias": {
+    "1": "p4_A3",
+    "2": "p4_B3",
+    "3": "p4_C3"
+   }
+  },
+  {
+   "fase": 4,
+   "semana": 4,
+   "dias": {
+    "1": "p4_A3",
+    "2": "p4_B3",
+    "3": "p4_C3"
+   }
+  }
+ ]
+}

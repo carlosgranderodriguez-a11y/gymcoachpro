@@ -871,7 +871,7 @@ function aplicarCodigoAcceso(){
     <div class="bib-nav"></div>
     <div class="section-header">
       <div><div class="section-title">Planes</div><div style="font-size:13px;color:var(--text-muted);margin-top:2px;">Planes de varias semanas: elige un programa, ajusta cada día y asígnalo al calendario.</div></div>
-      <button class="btn btn-primary" onclick="newPrograma()">+ Nuevo plan</button>
+      <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-secondary" onclick="importarPaquete('data/readaptacion_pubis.json')">⬇ Importar «Readaptación de pubis»</button><button class="btn btn-primary" onclick="newPrograma()">+ Nuevo plan</button></div>
     </div>
     <div class="template-layout">
       <div class="template-list-panel">
@@ -2186,6 +2186,68 @@ function nrRestaurar(){if(!confirm('¿Volver a los valores originales? Se pierde
 
 var BIB_TABS=[['templates','📋 Programas'],['bloques','🧱 Bloques'],['ejercicios','🏋️ Ejercicios'],['resistencia','🏃 Resistencia'],['planes','📚 Planes'],['generador','✨ Generador']];
 var bibActual='ejercicios';
+
+// ── Importar un paquete (ejercicios + bloques + programas + plan) desde un JSON ──
+function impNorm(t){return String(t||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]+/g,' ').trim();}
+async function importarPaquete(url){
+  if(window._impBusy)return;
+  var pkg;
+  try{pkg=await (await fetch(url+'?v='+Date.now(),{cache:'no-store'})).json();}catch(e){toast('No se pudo leer el paquete','err');return;}
+  if(DB.programas.some(function(p){return p.name===pkg.nombre;})&&!confirm('Ya existe un plan «'+pkg.nombre+'». ¿Importar de nuevo y crear otro?'))return;
+  if(!confirm('Se van a crear en tu biblioteca: ejercicios que falten, '+pkg.bloques.length+' bloques, '+pkg.sesiones.length+' programas (sesiones) y el plan «'+pkg.nombre+'» de '+pkg.semanas.length+' semanas. ¿Continuar?'))return;
+  window._impBusy=true;
+  try{
+    // 1. Ejercicios
+    var porNombre={};Object.keys(DB.ejercicios).forEach(function(k){porNombre[impNorm(DB.ejercicios[k].nombre)]=k;});
+    var ids={},nuevos=0;
+    for(var i=0;i<pkg.ejercicios.length;i++){
+      var e=pkg.ejercicios[i],nk=impNorm(e.nombre);
+      if(porNombre[nk]){ids[e.nombre]=porNombre[nk];continue;}
+      var id=e.nombre.toLowerCase().replace(/\s+/g,'-').replace(/[^a-z0-9-]/g,''),n=2,base=id;
+      while(DB.ejercicios[id])id=base+'-'+(n++);
+      var d={id:id,nombre:e.nombre,categoria:e.categoria,musculos:'',descripcion:'',video:'',imagen:'',tipo_contraccion:[],material:e.material||[],grupos_musculares:e.grupos||[],patron:e.patron||'',rol:e.rol||'',unilateral:e.unilateral||'',combinado:''};
+      toast('Creando ejercicios… '+(i+1)+'/'+pkg.ejercicios.length);
+      var r=await apiPost(Object.assign({action:'addEjercicio'},d));
+      if(!r||!r.ok)throw new Error('Ejercicio «'+e.nombre+'»: '+((r&&r.error)||'sin respuesta'));
+      DB.ejercicios[id]=d;ids[e.nombre]=id;nuevos++;
+    }
+    function conv(exs){return exs.map(function(x){return {id:ids[x.n],params:x.p.map(function(q){return {id:q[0],val:q[1]};})};});}
+    // 2. Biblioteca de bloques
+    var lst=bgList(),hechos=0;
+    pkg.bloques.forEach(function(b){
+      if(lst.some(function(x){return x.nombre===b.nombre;}))return;
+      lst.push({id:'bg_'+Date.now()+'_'+(hechos++),nombre:b.nombre,tipo:b.tipo,ex:conv(b.ex)});
+    });
+    if(!(await bgPersist()))throw new Error('No se pudieron guardar los bloques');
+    // 3. Programas (sesiones)
+    var tpls={};
+    for(var j=0;j<pkg.sesiones.length;j++){
+      var se=pkg.sesiones[j],bl={},meta={};
+      se.bloques.forEach(function(b,bi){
+        var def=b.ref?pkg.bloques.find(function(x){return x.key===b.ref;}):b;
+        var key=def.tipo+'::i'+bi,m=getBloques().find(function(x){return x.id===def.tipo;})||{color:'#aaa'};
+        bl[key]=conv(def.ex);meta[key]={name:def.nombre,color:m.color};
+      });
+      var tpl={id:'tpl_pub_'+Date.now()+'_'+j,name:se.nombre,bloques:bl,bloqueMeta:meta};
+      toast('Creando programas… '+(j+1)+'/'+pkg.sesiones.length);
+      var rt=await apiPost({action:'saveTemplate',template:tpl});
+      if(!rt||!rt.ok)throw new Error('Programa «'+se.nombre+'» no guardado');
+      DB.templates.push(tpl);tpls[se.key]=tpl.id;
+    }
+    try{localStorage.setItem('gc_templates',JSON.stringify(DB.templates));}catch(e){}
+    // 4. Plan de semanas
+    var plan={id:'prog_'+Date.now(),name:pkg.nombre,weeks:pkg.semanas.map(function(w){
+      var dias={};Object.keys(w.dias).forEach(function(k){dias[k]=tpls[w.dias[k]];});
+      return {dias:dias,sesiones:{},fase:w.fase};
+    })};
+    var rp=await apiPost({action:'saveProgram',program:plan});
+    DB.programas.push(plan);try{localStorage.setItem('gc_programas',JSON.stringify(DB.programas));}catch(e){}
+    if(!rp||!rp.ok)toast('Plan guardado solo en este navegador: '+((rp&&rp.error)||'el servidor no lo aceptó'),'err');
+    renderProgramaList();if(typeof bgRender==='function')bgRender();
+    toast('✅ Importado: '+nuevos+' ejercicios nuevos, '+hechos+' bloques, '+pkg.sesiones.length+' programas y el plan');
+  }catch(err){toast('Importación detenida: '+err.message,'err');}
+  finally{window._impBusy=false;}
+}
 // ── Biblioteca de bloques guardados ──
 var BG={cur:null,dirty:false};
 function bgList(){if(!Array.isArray(DB.config.bloques_guardados))DB.config.bloques_guardados=[];return DB.config.bloques_guardados;}
