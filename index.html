@@ -2234,7 +2234,7 @@ async function importarPaquete(url){
     var plan={id:'prog_'+Date.now(),name:pkg.nombre,weeks:pkg.semanas.map(function(w){
       var dias={},ses={};
       Object.keys(w.dias).forEach(function(k){dias[k]='__custom__';var c=JSON.parse(JSON.stringify(cop[w.dias[k]]));c.tplId='';ses[k]=c;});
-      return {dias:dias,sesiones:ses,fase:w.fase};
+      return {dias:dias,sesiones:ses,fase:'Fase '+w.fase};
     })};
     var rp=await apiPost({action:'saveProgram',program:plan});
     DB.programas.push(plan);try{localStorage.setItem('gc_programas',JSON.stringify(DB.programas));}catch(e){}
@@ -3836,17 +3836,44 @@ async function psGuardarComoPrograma(wi,dk){
     else toast('No se pudo guardar: '+((r&&r.error)||'sin respuesta'),'err');
   }catch(e){toast('No se pudo guardar','err');}
 }
+function psFaseDe(w){var f=w&&w.fase;if(f===undefined||f===null||f==='')return '';return typeof f==='number'?'Fase '+f:String(f);}
+function psFases(){
+  var out=[],cur=null;
+  currentPrograma.weeks.forEach(function(w,i){
+    var f=psFaseDe(w);
+    if(!cur||cur.nombre!==f){cur={nombre:f,ini:i,n:0,dias:0};out.push(cur);}
+    cur.n++;cur.dias=Math.max(cur.dias,psDiasActivos(w).length);
+  });
+  return out;
+}
+function psSetFase(wi,v){currentPrograma.weeks[wi].fase=v.trim();markDirtyPrograma();renderProgramaBoard();}
+function psFaseDesc(nombre,v){if(!currentPrograma.fasesDesc)currentPrograma.fasesDesc={};currentPrograma.fasesDesc[nombre]=v;markDirtyPrograma();}
+function psFaseHtml(){
+  var fs=psFases();
+  if(fs.length===1&&!fs[0].nombre)return '<div style="font-size:12px;color:var(--text-muted);margin-bottom:10px">Este plan no tiene fases. Escribe un nombre en «Fase» de cada semana (por ejemplo Fase 1) para agruparlas.</div>';
+  var actual=currentPrograma.weeks[psWeek]?psFaseDe(currentPrograma.weeks[psWeek]):'';
+  return '<div class="ps-fases" style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px">'+fs.map(function(f,i){
+    var on=f.nombre===actual&&psWeek>=f.ini&&psWeek<f.ini+f.n;
+    var d=(currentPrograma.fasesDesc||{})[f.nombre]||'';
+    return '<div style="border:1px solid '+(on?'var(--accent)':'var(--border)')+';border-radius:10px;padding:10px 14px;background:'+(on?'var(--surface2)':'var(--surface)')+'">'
+      +'<div style="display:flex;justify-content:space-between;gap:10px;cursor:pointer" onclick="psGoWeek('+f.ini+')"><div><b style="font-size:14px">'+(i+1)+'. '+escapeHtml(f.nombre||'Sin fase')+'</b>'+(on?' <span style="color:var(--accent-ink)">●</span>':'')
+      +'<div style="font-size:12px;color:var(--text-muted)">'+f.n+(f.n===1?' semana':' semanas')+' · '+f.dias+' días/semana · semanas '+(f.ini+1)+(f.n>1?'–'+(f.ini+f.n):'')+'</div></div>'
+      +'<span style="font-size:12px;color:var(--accent-ink);align-self:center">Abrir ›</span></div>'
+      +'<input value="'+escAttr(d)+'" placeholder="Descripción de la fase…" oninput="psFaseDesc(\''+escAttr(f.nombre)+'\',this.value)" style="width:100%;margin-top:6px;padding:5px 8px;font-size:12px;background:transparent;border:none;border-top:1px solid var(--border);color:var(--text-dim);outline:none"></div>';
+  }).join('')+'</div>';
+}
 function renderProgramaBoard(){
   var c=document.getElementById('pe-weeks-container');if(!c||!currentPrograma)return;
   var old=c.querySelector('.ps-board');var sl=old?old.scrollLeft:0;
   var n=currentPrograma.weeks.length;
   if(psWeek>=n)psWeek=n-1;if(psWeek<0)psWeek=0;
   var week=currentPrograma.weeks[psWeek];if(!week.dias)week.dias={};
-  var opts='';for(var i=0;i<n;i++)opts+='<option value="'+i+'"'+(i===psWeek?' selected':'')+'>Semana '+(i+1)+' de '+n+'</option>';
-  var h='<div class="ps-toolbar">'
+  var opts='';for(var i=0;i<n;i++)opts+='<option value="'+i+'"'+(i===psWeek?' selected':'')+'>Semana '+(i+1)+' de '+n+(psFaseDe(currentPrograma.weeks[i])?' · '+psFaseDe(currentPrograma.weeks[i]):'')+'</option>';
+  var h=psFaseHtml()+'<div class="ps-toolbar">'
     +'<button class="btn btn-secondary btn-sm" onclick="psGoWeek('+(psWeek-1)+')"'+(psWeek===0?' disabled':'')+'>‹</button>'
     +'<select onchange="psGoWeek(parseInt(this.value,10))">'+opts+'</select>'
     +'<button class="btn btn-secondary btn-sm" onclick="psGoWeek('+(psWeek+1)+')"'+(psWeek>=n-1?' disabled':'')+'>›</button>'
+    +'<input value="'+escAttr(psFaseDe(week))+'" placeholder="Fase" title="Fase a la que pertenece esta semana" onchange="psSetFase('+psWeek+',this.value)" style="width:110px;padding:7px 9px;font-size:13px;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text)">'
     +'<span style="flex:1"></span>'
     +'<button class="btn btn-secondary btn-sm" onclick="psToggleAll()">'+(psExpandAll?'Contraer bloques':'Expandir bloques')+'</button>'
     +'<button class="btn btn-secondary btn-sm" onclick="addSemana()">+ Semana</button>'
@@ -3859,7 +3886,7 @@ function renderProgramaBoard(){
   var nb=c.querySelector('.ps-board');if(nb)nb.scrollLeft=sl;
 }
 function renderProgramaWeeks(){renderProgramaBoard();}
-function addSemana(){currentPrograma.weeks.push({dias:{},sesiones:{}});psWeek=currentPrograma.weeks.length-1;markDirtyPrograma();renderProgramaBoard();renderProgramaList();}
+function addSemana(){var ult=currentPrograma.weeks[currentPrograma.weeks.length-1];currentPrograma.weeks.push({dias:{},sesiones:{},fase:ult?ult.fase:''});psWeek=currentPrograma.weeks.length-1;markDirtyPrograma();renderProgramaBoard();renderProgramaList();}
 function duplicarSemana(wi){
   var copia=JSON.parse(JSON.stringify(currentPrograma.weeks[wi]));
   currentPrograma.weeks.splice(wi+1,0,copia);psWeek=wi+1;

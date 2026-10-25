@@ -3855,6 +3855,48 @@
     }
    ],
    "key": "p4_C3"
+  },
+  {
+   "nombre": "Pubis F5 · Sesión A",
+   "bloques": [
+    {
+     "ref": "f4_actA"
+    },
+    {
+     "ref": "f4_froA3"
+    },
+    {
+     "ref": "f4_traA3"
+    }
+   ],
+   "key": "p5_A"
+  },
+  {
+   "nombre": "Pubis F5 · Sesión B",
+   "bloques": [
+    {
+     "ref": "f4_actB"
+    },
+    {
+     "ref": "f4_sagB3a"
+    }
+   ],
+   "key": "p5_B"
+  },
+  {
+   "nombre": "Pubis F5 · Sesión C",
+   "bloques": [
+    {
+     "ref": "f4_actC"
+    },
+    {
+     "ref": "f4_traC1"
+    },
+    {
+     "ref": "f4_traC2"
+    }
+   ],
+   "key": "p5_C"
   }
  ],
  "semanas": [
@@ -4010,6 +4052,15 @@
     "1": "p4_A3",
     "2": "p4_B3",
     "3": "p4_C3"
+   }
+  },
+  {
+   "fase": 5,
+   "semana": 1,
+   "dias": {
+    "1": "p5_A",
+    "2": "p5_B",
+    "3": "p5_C"
    }
   }
  ]
