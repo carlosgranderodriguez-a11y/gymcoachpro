@@ -794,6 +794,7 @@ function aplicarCodigoAcceso(){
         <div class="section-title">Base de ejercicios</div>
         <div style="display:flex;gap:10px;align-items:center;">
           <input id="ex-search" type="text" placeholder="🔍 Buscar..." style="padding:9px 14px;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;outline:none;width:200px;" oninput="renderEjercicios()">
+          <button class="btn btn-secondary" onclick="ytAbrir()">🔗 Enlazar vídeos YouTube</button>
           <button class="btn btn-primary" onclick="openEjercicio()">+ Nuevo ejercicio</button>
         </div>
       </div>
@@ -3264,6 +3265,55 @@ async function handleImageSelect(input){
   }catch(err){document.getElementById('ej-img-text').textContent='❌ Error de conexión';progress.style.display='none';}
 }
 
+
+// ── Enlazar vídeos de YouTube a ejercicios ──
+var ytFilas=[];
+function ytAbrir(){
+  var o=document.getElementById('yt-ov');if(o)o.remove();
+  o=document.createElement('div');o.id='yt-ov';o.style.cssText='position:fixed;inset:0;background:rgba(10,15,25,.55);z-index:9999;display:flex;align-items:flex-start;justify-content:center;padding:30px 16px;overflow:auto';
+  o.innerHTML='<div style="background:var(--surface);border-radius:14px;max-width:900px;width:100%;padding:22px;box-shadow:0 20px 60px rgba(0,0,0,.4)">'
+   +'<div style="display:flex;justify-content:space-between;align-items:center"><b style="font-size:18px">Enlazar vídeos de YouTube</b><button class="btn btn-secondary btn-sm" onclick="document.getElementById(\'yt-ov\').remove()">✕</button></div>'
+   +'<p style="font-size:13px;color:var(--text-muted);margin:8px 0">Pega una línea por vídeo, con el título y el enlace (en cualquier orden), p. ej. <i>Sentadilla goblet - https://youtu.be/XXXXXXXXXXX</i>. Se asocia al ejercicio cuyo nombre coincide con el título; puedes corregirlo antes de guardar.</p>'
+   +'<textarea id="yt-txt" rows="7" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;background:var(--bg,#fff);color:var(--text);font-size:13px" placeholder="Título del vídeo - https://youtu.be/..."></textarea>'
+   +'<div style="margin:10px 0"><button class="btn btn-primary btn-sm" onclick="ytAnalizar()">Analizar</button></div><div id="yt-res"></div></div>';
+  document.body.appendChild(o);
+}
+function ytAnalizar(){
+  var ids=Object.keys(DB.ejercicios),lineas=document.getElementById('yt-txt').value.split(/\n+/),re=/https?:\/\/(?:www\.|m\.)?(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|shorts\/|embed\/))[^\s)>\]]+/i;
+  ytFilas=[];
+  lineas.forEach(function(l){
+    var m=l.match(re);if(!m)return;
+    var url=m[0],tit=l.replace(url,'').replace(/^[\s\-–—:|·,;"'•]+|[\s\-–—:|·,;"']+$/g,'');
+    var t=impNorm(tit),best=null,bl=0;
+    ids.forEach(function(id){var n=impNorm(DB.ejercicios[id].nombre);if(!n||!t)return;var sc=0;
+      if(n===t)sc=1000+n.length;else if(t.indexOf(n)>=0)sc=500+n.length;else if(n.indexOf(t)>=0&&t.length>=6)sc=200+t.length;
+      if(sc>bl){bl=sc;best=id;}});
+    ytFilas.push({titulo:tit,url:url,id:best,ok:!!best&&!(DB.ejercicios[best].video)});
+  });
+  ytPinta();
+}
+function ytPinta(){
+  var r=document.getElementById('yt-res');if(!ytFilas.length){r.innerHTML='<div style="color:var(--text-muted);font-size:13px">No encontré enlaces de YouTube en el texto.</div>';return;}
+  var ids=Object.keys(DB.ejercicios).sort(function(a,b){return DB.ejercicios[a].nombre.localeCompare(DB.ejercicios[b].nombre);});
+  var opts='<option value="">— sin asignar —</option>'+ids.map(function(i){return '<option value="'+escAttr(i)+'">'+escapeHtml(DB.ejercicios[i].nombre)+'</option>';}).join('');
+  r.innerHTML='<div style="max-height:50vh;overflow:auto;border:1px solid var(--border);border-radius:8px"><table style="width:100%;font-size:12px;border-collapse:collapse">'
+   +ytFilas.map(function(f,i){var e=f.id?DB.ejercicios[f.id]:null;
+     return '<tr style="border-bottom:1px solid var(--border)"><td style="padding:6px"><input type="checkbox" '+(f.ok?'checked ':'')+(f.id?'':'disabled ')+'onchange="ytFilas['+i+'].ok=this.checked"></td>'
+      +'<td style="padding:6px;max-width:260px;overflow:hidden;text-overflow:ellipsis">'+escapeHtml(f.titulo||f.url)+'</td>'
+      +'<td style="padding:6px"><select onchange="ytFilas['+i+'].id=this.value||null;ytFilas['+i+'].ok=!!this.value&&!DB.ejercicios[this.value].video;ytPinta()" style="max-width:240px;font-size:12px">'+opts.replace('value="'+escAttr(f.id||'')+'"','value="'+escAttr(f.id||'')+'" selected')+'</select></td>'
+      +'<td style="padding:6px;color:var(--text-muted)">'+(e&&e.video?'⚠ ya tiene vídeo (se reemplaza si marcas)':'')+'</td></tr>';}).join('')+'</table></div>'
+   +'<div style="margin-top:10px;display:flex;gap:10px;align-items:center"><button class="btn btn-primary btn-sm" onclick="ytAplicar()">Guardar vídeos marcados</button><span id="yt-msg" style="font-size:12px;color:var(--text-muted)"></span></div>';
+}
+async function ytAplicar(){
+  var sel=ytFilas.filter(function(f){return f.ok&&f.id;}),n=0,msg=document.getElementById('yt-msg');
+  for(var i=0;i<sel.length;i++){
+    var e=DB.ejercicios[sel[i].id],d=Object.assign({},e,{id:sel[i].id,video:sel[i].url});
+    msg.textContent='Guardando '+(i+1)+' de '+sel.length+'…';
+    var r=await apiPost(Object.assign({action:'updateEjercicio'},d));
+    if(r&&r.ok){DB.ejercicios[sel[i].id]=d;n++;}else{toast('Error en '+e.nombre+': '+(r&&r.error),'err');}
+  }
+  renderEjercicios();toast('✅ '+n+' vídeos enlazados');document.getElementById('yt-ov').remove();
+}
 async function saveEjercicio(){
   await esperarSubidas(document.getElementById('btn-save-ej'));
   var n=document.getElementById('ej-nombre').value.trim();
