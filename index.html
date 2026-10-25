@@ -930,6 +930,7 @@ function aplicarCodigoAcceso(){
         <div class="form-group"><label>Mesociclo</label><select id="gen-mesociclo"><option value="">Según el objetivo</option><option value="acumulacion">Acumulación</option><option value="transformacion">Transformación</option><option value="realizacion">Realización</option></select></div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
           <div class="form-group"><label>Semanas</label><input type="number" id="gen-semanas" value="4" min="1" max="12"></div>
+          <div class="form-group"><label>Máx. minutos/sesión</label><input type="number" id="gen-maxmin" value="" placeholder="sin límite" min="20" max="180"></div>
           <div class="form-group"><label>Sesiones/sem</label><input type="number" id="gen-dias" value="2" min="1" max="6" oninput="genTiposRender()"></div>
         </div>
         <div class="form-group"><label>Tipo de cada sesión</label><div id="gen-tipos"></div></div>
@@ -1874,6 +1875,7 @@ async function generarBloque(){
       mesociclo:document.getElementById('gen-mesociclo').value,
       semanas:document.getElementById('gen-semanas').value,
       dias_por_semana:document.getElementById('gen-dias').value,
+      max_min:document.getElementById('gen-maxmin').value||0,
       notas:document.getElementById('gen-notas').value.trim()
     });
     if(!r||!r.ok){
@@ -1915,7 +1917,7 @@ function renderPlanGenerado(r){
     if(sem.justificacion)h+='<div style="font-size:11px;color:var(--text-dim);font-style:italic;margin-bottom:10px;line-height:1.45;">'+sem.justificacion+'</div>';
     (sem.sesiones||[]).forEach(function(ses){
       h+='<div style="background:var(--surface2);border-radius:8px;padding:10px;margin-bottom:8px;">';
-      h+='<div style="font-size:12px;font-weight:600;margin-bottom:7px;">'+(ses.nombre||'Sesión')+'</div>';
+      h+='<div style="font-size:12px;font-weight:600;margin-bottom:7px;">'+(ses.nombre||'Sesión')+(ses.duracion?' <span style="font-weight:400;color:var(--text-muted)">· ~'+ses.duracion+' min</span>':'')+'</div>';
       h+='<table style="width:100%;border-collapse:collapse;font-size:11px;">';
       var _bl=null;
       (ses.ejercicios||[]).forEach(function(ex){
@@ -2018,7 +2020,10 @@ NR_DEF.MESOCICLOS={
   transformacion:{etiqueta:'Transformación',semanas:4,patronCarga:[1,1.05,1.1,0.6],patronIntensidad:[1,1.05,1.1,0.9]},
   realizacion:{etiqueta:'Realización',semanas:4,patronCarga:[1,0.9,0.8,0.6],patronIntensidad:[1,1.05,1.08,0.9]}
 };
-NR_DEF.BLOQUES_SESION={"normalizacion":{"nombre":"Normalización / movilidad","destino":"custom-1784882286043","fuente":"huecos","huecos":[{"patron":"MOV","rol":"Accesorio","categoria":"Movilidad"}],"series":2,"reps":10,"descansoSeg":20,"serDelta":0,"repsMax":0,"rpe":0},"activacion":{"nombre":"Activación","destino":"activacion","fuente":"huecos","huecos":[{"patron":"CD","rol":"Accesorio","categoria":"Activación"},{"patron":"MOV","rol":"Accesorio","categoria":"Activación"}],"series":2,"reps":10,"descansoSeg":45,"serDelta":0,"repsMax":0,"rpe":0},"potencia":{"nombre":"Potencia","destino":"potencia","fuente":"huecos","huecos":[{"patron":"CD","rol":"Accesorio","categoria":"Potencia"}],"series":0,"reps":0,"descansoSeg":105,"serDelta":-1,"repsMax":5,"rpe":0},"pliometria":{"nombre":"Pliometría","destino":"pliometria","fuente":"huecos","huecos":[{"patron":"RD","rol":"Accesorio","categoria":"Pliometría"}],"series":0,"reps":0,"descansoSeg":105,"serDelta":-1,"repsMax":5,"rpe":0},"pot_resistida":{"nombre":"Potencia resistida","destino":"pot-resistida","fuente":"huecos","huecos":[{"patron":"RD","rol":"Accesorio","categoria":"Potencia"}],"series":0,"reps":0,"descansoSeg":60,"serDelta":-1,"repsMax":8,"rpe":0},"desplazamientos":{"nombre":"Desplazamientos / velocidad","destino":"pliometria","fuente":"huecos","huecos":[{"patron":"RD","rol":"Accesorio","categoria":"Técnica","estricto":true}],"series":4,"reps":3,"descansoSeg":120,"serDelta":0,"repsMax":0,"rpe":0},"fuerza":{"nombre":"Fuerza principal","destino":"fuerza","fuente":"principal","huecos":[],"series":0,"reps":0,"descansoSeg":0,"serDelta":0,"repsMax":0,"rpe":0},"complementario":{"nombre":"Trabajo complementario","destino":"fuerza","fuente":"complementario","huecos":[],"series":0,"reps":0,"descansoSeg":0,"serDelta":0,"repsMax":0,"rpe":0},"vuelta_calma":{"nombre":"Vuelta a la calma","destino":"vuelta-calma","fuente":"huecos","huecos":[{"patron":"MOV","rol":"Accesorio","categoria":"Vuelta a la calma"}],"series":1,"reps":8,"descansoSeg":30,"serDelta":0,"repsMax":0,"rpe":0}};
+NR_DEF.BLOQUES_SESION={"normalizacion":{"nombre":"Normalización / movilidad","destino":"custom-1784882286043","fuente":"huecos","huecos":[{"patron":"MOV","rol":"Accesorio","categoria":"Movilidad"}],"series":2,"reps":10,"descansoSeg":20,"serDelta":0,"repsMax":0,"rpe":0,"recorte":3},"activacion":{"nombre":"Activación","destino":"activacion","fuente":"huecos","huecos":[{"patron":"CD","rol":"Accesorio","categoria":"Activación"},{"patron":"MOV","rol":"Accesorio","categoria":"Activación"}],"series":2,"reps":10,"descansoSeg":45,"serDelta":0,"repsMax":0,"rpe":0,"recorte":2},"potencia":{"nombre":"Potencia","destino":"potencia","fuente":"huecos","huecos":[{"patron":"CD","rol":"Accesorio","categoria":"Potencia"}],"series":0,"reps":0,"descansoSeg":105,"serDelta":-1,"repsMax":5,"rpe":0,"recorte":0},"pliometria":{"nombre":"Pliometría","destino":"pliometria","fuente":"huecos","huecos":[{"patron":"RD","rol":"Accesorio","categoria":"Pliometría"}],"series":0,"reps":0,"descansoSeg":105,"serDelta":-1,"repsMax":5,"rpe":0,"recorte":0},"pot_resistida":{"nombre":"Potencia resistida","destino":"pot-resistida","fuente":"huecos","huecos":[{"patron":"RD","rol":"Accesorio","categoria":"Potencia"}],"series":0,"reps":0,"descansoSeg":60,"serDelta":-1,"repsMax":8,"rpe":0,"recorte":0},"desplazamientos":{"nombre":"Desplazamientos / velocidad","destino":"pliometria","fuente":"huecos","huecos":[{"patron":"RD","rol":"Accesorio","categoria":"Técnica","estricto":true}],"series":4,"reps":3,"descansoSeg":120,"serDelta":0,"repsMax":0,"rpe":0,"recorte":0},"fuerza":{"nombre":"Fuerza principal","destino":"fuerza","fuente":"principal","huecos":[],"series":0,"reps":0,"descansoSeg":0,"serDelta":0,"repsMax":0,"rpe":0,"recorte":0},"complementario":{"nombre":"Trabajo complementario","destino":"fuerza","fuente":"complementario","huecos":[],"series":0,"reps":0,"descansoSeg":0,"serDelta":0,"repsMax":0,"rpe":0,"recorte":1},"vuelta_calma":{"nombre":"Vuelta a la calma","destino":"vuelta-calma","fuente":"huecos","huecos":[{"patron":"MOV","rol":"Accesorio","categoria":"Vuelta a la calma"}],"series":1,"reps":8,"descansoSeg":30,"serDelta":0,"repsMax":0,"rpe":0,"recorte":4}};
+NR_DEF.LIMITE_SESION={"minutos":0,"segPorRep":3,"transicionSeg":30};
+NR_DEF.FILTROS={"materialExcluido":[]};
+NR_DEF.ESTABILIDAD={"principalRotarCada":0};
 NR_DEF.ESTRUCTURA={"base":["normalizacion","activacion","fuerza","complementario","vuelta_calma"],"tipos":{"fuerza_maxima":["normalizacion","activacion","fuerza","complementario","vuelta_calma"],"submaxima":["normalizacion","activacion","fuerza","complementario","vuelta_calma"],"potencia":["normalizacion","activacion","potencia","fuerza","complementario","vuelta_calma"],"velocidad":["normalizacion","activacion","desplazamientos","pliometria","fuerza","complementario","vuelta_calma"],"potencia_resistencia":["normalizacion","activacion","pot_resistida","fuerza","complementario","vuelta_calma"],"hipertrofia":["normalizacion","activacion","fuerza","complementario","vuelta_calma"],"readaptacion":["normalizacion","activacion","fuerza","complementario","vuelta_calma"],"trabajo_neuronal":["normalizacion","activacion","potencia","fuerza","vuelta_calma"],"regeneracion":["normalizacion","activacion","complementario","vuelta_calma"]}};
 var NR={val:null};
 var NR_PAT=[['RD','Rodilla dominante'],['CD','Cadera dominante'],['EH','Empuje horizontal'],['EV','Empuje vertical'],['TH','Tracción horizontal'],['TV','Tracción vertical'],['CAE','Core anti-extensión'],['CAR','Core anti-rotación'],['AIS','Aislamiento'],['MOV','Movilidad']];
@@ -2082,6 +2087,9 @@ function nrRender(){
   h+=nrCard('4 · Estructura de la sesión (bloques editables)','Cada sesión de fuerza se monta con una lista ordenada de bloques. Aquí eliges qué bloques lleva cada tipo de sesión y en qué orden, y debajo defines qué contiene cada bloque. Los ejercicios no se repiten dentro de una sesión.',
     nrOrdenes()+'<div style="font-size:13px;font-weight:700;margin:18px 0 8px">Contenido de cada bloque</div>'+Object.keys(nrGet('BLOQUES_SESION')).map(nrBloqueDef).join('')
     +'<button class="btn btn-secondary btn-xs" onclick="nrNuevoBloque()">+ Crear bloque propio</button>');
+  h+=nrCard('4b · Tiempo, estabilidad y material','Tope de duración por sesión (el Generador puede fijar otro), cuánto tiempo se mantienen los ejercicios principales y qué material no está disponible.',
+    nrFila([nrIn('LIMITE_SESION.minutos','Máx. minutos por sesión (0 = sin límite)',{w:150}),nrIn('LIMITE_SESION.segPorRep','Segundos por repetición',{w:120}),nrIn('LIMITE_SESION.transicionSeg','Cambio de ejercicio (s)',{w:120}),nrIn('ESTABILIDAD.principalRotarCada','Rotar principales cada (semanas, 0 = nunca)',{w:180})])
+    +'<div style="font-size:12px;font-weight:700;margin:6px 0">Material NO disponible</div><div style="display:flex;gap:8px;flex-wrap:wrap">'+NR_MAT.map(function(m){var on=(nrGet('FILTROS.materialExcluido')||[]).indexOf(m)>-1;return '<span onclick="nrMat(\''+m+'\')" style="cursor:pointer;padding:5px 10px;border-radius:8px;font-size:12px;border:1px solid var(--border);background:'+(on?'var(--red)':'var(--surface)')+';color:'+(on?'#fff':'var(--text-dim)')+'">'+m+'</span>';}).join('')+'</div>');
   var fases=[['acumulacion','Base / Acumulación'],['transformacion','Transformación'],['realizacion','Competitivo / Realización'],['readaptacion','Readaptación']];
   h+=nrCard('5 · Fases de entrenamiento','Cada fase fija las series, repeticiones y RPE. Se parte del valor inicial y se llega al final a lo largo del mesociclo. Repeticiones: primero el valor de la semana 1 y luego el de la última.',
     fases.map(function(f){var b='FASES.'+f[0];return '<div style="background:var(--surface2);border-radius:10px;padding:12px;margin-bottom:10px"><div style="font-weight:700;font-size:13px;margin-bottom:8px">'+f[1]+'</div>'
@@ -2128,6 +2136,8 @@ function nrOrdenes(){
     return '<div style="background:var(--surface2);border-radius:10px;padding:12px;margin-bottom:10px"><div style="font-weight:700;font-size:13px;margin-bottom:8px">'+escapeHtml(nombre)+'</div><div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">'+(chips||'<span style="font-size:12px;color:var(--text-muted)">Sin bloques</span>')+add+'</div></div>';
   }).join('');
 }
+var NR_MAT=['Peso corporal','Mancuerna','Barra','Landmine','Banda elástica','Miniband','TRX/Suspensión','Fitball','Bosu','Balón medicinal','Caja pliométrica','Máquina específica','Trineo','Vallas','Iso-inercial'];
+function nrMat(m){var a=nrGet('FILTROS.materialExcluido');var i=a.indexOf(m);if(i>-1)a.splice(i,1);else a.push(m);nrRender();}
 function nrMoverBloque(path,i,d){var a=nrGet(path),j=i+d;if(j<0||j>=a.length)return;var x=a[i];a[i]=a[j];a[j]=x;nrRender();}
 function nrAddBloqueOrden(path,id){if(!id)return;nrGet(path).push(id);nrRender();}
 function nrBloqueDef(id){
@@ -2135,7 +2145,7 @@ function nrBloqueDef(id){
   var esProp=!NR_DEF.BLOQUES_SESION[id];
   var h='<div style="border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:10px">'
     +nrFila([nrIn(b+'.nombre','Nombre del bloque',{t:'text',w:200}),nrIn(b+'.destino','Se guarda en el bloque de la app',{t:'sel',opts:getBloques().map(function(x){return [x.id,x.name];}),w:190}),nrIn(b+'.fuente','De dónde salen los ejercicios',{t:'sel',opts:NR_FUENTE,w:270,re:true})])
-    +nrFila([nrIn(b+'.series','Series (0 = según fase)',{w:110}),nrIn(b+'.reps','Reps (0 = según fase)',{w:110}),nrIn(b+'.descansoSeg','Descanso s (0 = según fase)',{w:130}),nrIn(b+'.serDelta','Series fase ±',{w:80}),nrIn(b+'.repsMax','Tope de reps',{w:80})]);
+    +nrFila([nrIn(b+'.series','Series (0 = según fase)',{w:110}),nrIn(b+'.reps','Reps (0 = según fase)',{w:110}),nrIn(b+'.descansoSeg','Descanso s (0 = según fase)',{w:130}),nrIn(b+'.serDelta','Series fase ±',{w:80}),nrIn(b+'.repsMax','Tope de reps',{w:80}),nrIn(b+'.recorte','Orden de recorte (0 = nunca)',{w:130})]);
   if(d.fuente==='huecos'){
     h+=(d.huecos||[]).map(function(x,i){var q=b+'.huecos.'+i;
       return '<div style="display:flex;gap:8px;align-items:flex-end;margin-bottom:6px;flex-wrap:wrap">'+nrIn(q+'.patron',i?'':'Patrón',{t:'sel',opts:NR_PAT,w:150})+nrIn(q+'.rol',i?'':'Rol',{t:'sel',opts:NR_ROL,w:110})+nrIn(q+'.categoria',i?'':'Categoría de la hoja',{t:'sel',opts:NR_CAT,w:150})
