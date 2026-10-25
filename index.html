@@ -612,6 +612,14 @@ input:focus,select:focus,textarea:focus{border-color:#8aa0d6 !important;box-shad
 </head>
 <body>
 
+<div id="auth-gate" style="display:none;position:fixed;inset:0;z-index:100000;background:#0f1729;align-items:center;justify-content:center;padding:20px">
+  <div style="background:#fff;border-radius:16px;max-width:380px;width:100%;padding:30px 26px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.5)">
+    <div style="font-size:22px;font-weight:800;margin-bottom:4px">GymCoach<span style="color:#7aa800">Pro</span></div>
+    <div style="font-size:13px;color:#667;margin-bottom:20px">Acceso para entrenadores</div>
+    <div id="auth-btn" style="display:flex;justify-content:center;min-height:44px"></div>
+    <div id="auth-msg" style="font-size:12.5px;color:#b45309;margin-top:14px;min-height:16px"></div>
+  </div>
+</div>
 <div id="access-gate" style="display:flex;position:fixed;inset:0;z-index:9999;background:var(--bg);align-items:center;justify-content:center;padding:24px;">
   <div style="width:100%;max-width:340px;text-align:center;">
     <div style="font-size:10px;letter-spacing:3px;color:var(--accent-ink);text-transform:uppercase;margin-bottom:6px;">GymCoach Pro</div>
@@ -651,6 +659,7 @@ document.addEventListener('DOMContentLoaded',function(){
 });
 // Llamada desde window.onload una vez DB.config ya está cargado de verdad.
 function aplicarCodigoAcceso(){
+  if(AUTH.on){document.getElementById('access-gate').style.display='none';return;}
   var real=(DB.config&&DB.config.codigo_acceso)||'';
   var gate=document.getElementById('access-gate');
   if(!real){
@@ -679,9 +688,10 @@ function aplicarCodigoAcceso(){
     <div class="sb-group">Entrenamiento</div>
     <div class="tab" onclick="switchTab('biblioteca',this)"><svg viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg><span>Biblioteca</span></div>
     <div class="sb-group">Sistema</div>
+    <div class="tab" id="tab-entrenadores" style="display:none" onclick="switchTab('entrenadores',this)"><svg viewBox="0 0 24 24"><path d="M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6z"/><path d="M9 12l2 2 4-4"/></svg><span>Entrenadores</span></div>
     <div class="tab" onclick="switchTab('ajustes',this)"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg><span>Ajustes</span></div>
   </nav>
-  <div class="sb-foot"><div class="status-badge" id="status">⏳ Conectando...</div></div>
+  <div class="sb-foot"><div id="auth-chip" style="display:none;font-size:12px;color:#cbd5e1;margin-bottom:10px;line-height:1.4"></div><div class="status-badge" id="status">⏳ Conectando...</div></div>
 </aside>
 <div class="sb-backdrop" onclick="closeSidebar()"></div>
 <div class="main">
@@ -959,7 +969,24 @@ function aplicarCodigoAcceso(){
 
 
   <!-- AJUSTES -->
-  <div id="page-ajustes" class="page">
+  <div id="page-entrenadores" class="page">
+  <div class="section-header"><div><div class="section-title">Entrenadores</div><div style="font-size:13px;color:var(--text-muted);margin-top:2px">Tú ves todo. Cada entrenador ve sus atletas, equipos y planes, y la biblioteca común.</div></div></div>
+  <div class="template-editor" style="padding:20px;margin-bottom:18px">
+    <div style="font-weight:700;margin-bottom:10px">Cuentas con acceso</div>
+    <div id="ent-lista" style="margin-bottom:14px"></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+      <input id="ent-email" type="email" placeholder="email de Google del entrenador" style="flex:2;min-width:220px;padding:9px 12px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text)">
+      <input id="ent-nombre" type="text" placeholder="Nombre" style="flex:1;min-width:140px;padding:9px 12px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text)">
+      <button class="btn btn-primary" onclick="entAdd()">+ Añadir entrenador</button>
+    </div>
+  </div>
+  <div class="template-editor" style="padding:20px">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px"><div style="font-weight:700">Atletas por entrenador</div>
+      <select id="ent-filtro" onchange="entRenderAtletas()" style="padding:7px 10px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text)"></select></div>
+    <div id="ent-atletas"></div>
+  </div>
+</div>
+<div id="page-ajustes" class="page">
     <div class="section-header"><div class="section-title">Ajustes</div></div>
     <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:16px;">
       <div style="font-size:14px;font-weight:600;margin-bottom:14px;">🏋️ Tipos de contracción</div>
@@ -1711,9 +1738,152 @@ var DEFAULT_PARAMS_CATALOG = [
   {id:'notas',  label:'Notas',    type:'text'}
 ];
 
+// ── ACCESO CON GOOGLE (multi-entrenador) ──
+// Rellena GOOGLE_CLIENT_ID con el ID de cliente de Google Cloud. Vacío = sin inicio de sesión (como antes).
+var GOOGLE_CLIENT_ID='';
+var AUTH={on:!!GOOGLE_CLIENT_ID,token:'',me:null,companeros:[],entrenadores:[]};
+function jwtDatos(t){try{return JSON.parse(decodeURIComponent(escape(atob(t.split('.')[1].replace(/-/g,'+').replace(/_/g,'/')))));}catch(e){return {};}}
+function authCargarGIS(){return new Promise(function(res){if(window.google&&google.accounts&&google.accounts.id)return res();var sc=document.createElement('script');sc.src='https://accounts.google.com/gsi/client';sc.onload=res;sc.onerror=res;document.head.appendChild(sc);});}
+function authPedir(msg){
+  return new Promise(async function(resolve){
+    await authCargarGIS();
+    var g=document.getElementById('auth-gate');g.style.display='flex';document.getElementById('auth-msg').textContent=msg||'';
+    if(!(window.google&&google.accounts)){document.getElementById('auth-msg').textContent='No se pudo cargar el acceso con Google. Revisa la conexión y recarga.';return;}
+    google.accounts.id.initialize({client_id:GOOGLE_CLIENT_ID,auto_select:false,callback:function(r){AUTH.token=r.credential;try{localStorage.setItem('gc_idtoken',r.credential);}catch(e){}g.style.display='none';resolve(r.credential);}});
+    var b=document.getElementById('auth-btn');b.innerHTML='';google.accounts.id.renderButton(b,{theme:'outline',size:'large',text:'signin_with',locale:'es'});
+  });
+}
+// Renovación silenciosa (el token dura ~1 h): si no se puede, vuelve a pedir
+function authRenovar(){
+  return new Promise(async function(resolve){
+    await authCargarGIS();var hecho=false;
+    var fin=function(t){if(hecho)return;hecho=true;resolve(t);};
+    try{
+      google.accounts.id.initialize({client_id:GOOGLE_CLIENT_ID,auto_select:true,callback:function(r){AUTH.token=r.credential;try{localStorage.setItem('gc_idtoken',r.credential);}catch(e){}fin(r.credential);}});
+      google.accounts.id.prompt();
+    }catch(e){}
+    setTimeout(function(){if(!hecho){hecho=true;authPedir('La sesión ha caducado. Entra de nuevo.').then(resolve);}},3500);
+  });
+}
+async function authToken(forzar){
+  if(!AUTH.on)return '';
+  if(!forzar&&AUTH.token&&jwtDatos(AUTH.token).exp*1000-60000>Date.now())return AUTH.token;
+  if(AUTH.token&&!forzar){AUTH.token='';return await authRenovar();}
+  AUTH.token='';return await authPedir('Entra con tu cuenta de Google.');
+}
+function authSoyAdmin(){return !AUTH.on||(AUTH.me&&AUTH.me.rol==='admin');}
+function authEsMio(a){return !AUTH.on||!AUTH.me||authSoyAdmin()||(a.propietario||'')===AUTH.me.email;}
+function authNombreDe(email){if(AUTH.me&&email===AUTH.me.email)return 'Yo';var c=(AUTH.companeros||[]).find(function(x){return x.email===email;});return c?(c.nombre||email):(email||'');}
+async function authInit(){
+  if(!AUTH.on)return true;
+  var guard=null;try{guard=localStorage.getItem('gc_idtoken');}catch(e){}
+  if(guard&&jwtDatos(guard).exp*1000-60000>Date.now())AUTH.token=guard;
+  var msg='';
+  for(var i=0;i<6;i++){
+    if(!AUTH.token)await authPedir(msg||'Entra con tu cuenta de Google.');
+    var r=await api({action:'whoami'});
+    if(r&&r.ok){AUTH.me=r;break;}
+    var em=jwtDatos(AUTH.token).email||'';
+    msg='La cuenta '+em+' no tiene acceso. Pídele al administrador que la añada o entra con otra.';
+    AUTH.token='';try{localStorage.removeItem('gc_idtoken');if(window.google&&google.accounts)google.accounts.id.disableAutoSelect();}catch(e){}
+  }
+  if(!AUTH.me)return false;
+  var rc=await api({action:'getCompaneros'});if(rc&&rc.ok)AUTH.companeros=rc.companeros||[];
+  document.body.classList.toggle('es-admin',AUTH.me.rol==='admin');
+  var t=document.getElementById('tab-entrenadores');if(t)t.style.display=AUTH.me.rol==='admin'?'':'none';
+  var ch=document.getElementById('auth-chip');if(ch){ch.style.display='block';ch.innerHTML='👤 '+escapeHtml(AUTH.me.nombre||AUTH.me.email)+'<br><span style="opacity:.7">'+(AUTH.me.rol==='admin'?'Administrador':'Entrenador')+'</span> · <a href="#" onclick="authSalir();return false" style="color:#ccff66">Salir</a>';}
+  return true;
+}
+function authSalir(){AUTH.token='';AUTH.me=null;try{localStorage.removeItem('gc_idtoken');if(window.google&&google.accounts)google.accounts.id.disableAutoSelect();}catch(e){}location.reload();}
+
 // ── API ──
-async function api(p){var qs=Object.keys(p).map(function(k){return k+'='+encodeURIComponent(p[k]);}).join('&');return(await fetch(API+'?'+qs)).json();}
-async function apiPost(b){return(await fetch(API,{method:'POST',body:JSON.stringify(b)})).json();}
+async function api(p){
+  if(AUTH.on)p=Object.assign({},p,{idToken:await authToken()});
+  var qs=function(q){return Object.keys(q).map(function(k){return k+'='+encodeURIComponent(q[k]);}).join('&');};
+  var r=await(await fetch(API+'?'+qs(p))).json();
+  if(AUTH.on&&r&&r.code==='AUTH'&&AUTH.me){p=Object.assign({},p,{idToken:await authToken(true)});r=await(await fetch(API+'?'+qs(p))).json();}
+  return r;
+}
+async function apiPost(b){
+  if(AUTH.on)b=Object.assign({},b,{idToken:await authToken()});
+  var r=await(await fetch(API,{method:'POST',body:JSON.stringify(b)})).json();
+  if(AUTH.on&&r&&r.code==='AUTH'&&AUTH.me){b=Object.assign({},b,{idToken:await authToken(true)});r=await(await fetch(API,{method:'POST',body:JSON.stringify(b)})).json();}
+  if(r&&r.code==='PERM'&&typeof toast==='function')toast(r.error||'Sin permiso','err');
+  return r;
+}
+
+
+// ── COMPARTIR ATLETAS + PANEL DE ENTRENADORES ──
+function compartirAbrir(nombre){
+  var a=(DB.atletasFull||[]).find(function(x){return x.nombre===nombre;});if(!a)return;
+  var o=document.getElementById('comp-ov');if(o)o.remove();
+  var lista=(AUTH.companeros||[]).filter(function(c){return c.email!==(a.propietario||'')&&c.email!==(AUTH.me&&AUTH.me.email);});
+  var sel=a.compartido_con||[];
+  o=document.createElement('div');o.id='comp-ov';o.style.cssText='position:fixed;inset:0;background:rgba(10,15,25,.55);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px';
+  o.innerHTML='<div style="background:var(--surface);border-radius:14px;max-width:420px;width:100%;padding:22px;box-shadow:0 20px 60px rgba(0,0,0,.4)"><b style="font-size:17px">Compartir «'+escapeHtml(nombre)+'»</b>'
+   +'<p style="font-size:12.5px;color:var(--text-muted);margin:8px 0 12px">Los entrenadores marcados podrán ver y editar a este atleta y su calendario. Solo tú (y el administrador) podéis borrarlo o dejar de compartirlo.</p>'
+   +(lista.length?lista.map(function(c){return '<label style="display:flex;gap:8px;align-items:center;padding:6px 0;font-size:14px"><input type="checkbox" data-e="'+escAttr(c.email)+'" '+(sel.indexOf(c.email)>=0?'checked':'')+'> '+escapeHtml(c.nombre)+' <span style="color:var(--text-muted);font-size:12px">'+escapeHtml(c.email)+'</span></label>';}).join(''):'<div style="font-size:13px;color:var(--text-muted)">No hay más entrenadores dados de alta.</div>')
+   +'<div style="display:flex;gap:8px;margin-top:14px;justify-content:flex-end"><button class="btn btn-secondary btn-sm" onclick="document.getElementById(\'comp-ov\').remove()">Cancelar</button><button class="btn btn-primary btn-sm" onclick="compartirGuardar(\''+nombre.replace(/'/g,"\\'")+'\')">Guardar</button></div></div>';
+  document.body.appendChild(o);
+}
+async function compartirGuardar(nombre){
+  var em=[].slice.call(document.querySelectorAll('#comp-ov input[data-e]')).filter(function(i){return i.checked;}).map(function(i){return i.getAttribute('data-e');});
+  var r=await apiPost({action:'compartirAtleta',nombre:nombre,compartido_con:em});
+  if(r&&r.ok){var a=DB.atletasFull.find(function(x){return x.nombre===nombre;});if(a)a.compartido_con=em;document.getElementById('comp-ov').remove();renderAtletas();if(document.getElementById('ent-atletas'))entRenderAtletas();toast('✅ Compartido con '+em.length+' entrenador'+(em.length===1?'':'es'));}
+  else toast('Error: '+(r&&r.error),'err');
+}
+async function entCargar(){
+  var r=await api({action:'getEntrenadores'});
+  if(r&&r.ok){AUTH.entrenadores=r.entrenadores||[];}
+  var rf=await api({action:'getAtletasFull'});if(rf&&rf.ok)DB.atletasFull=rf.atletas||[];
+  entRender();
+}
+function entRender(){
+  var l=document.getElementById('ent-lista');if(!l)return;
+  var adm=(AUTH.me&&AUTH.me.email)||'';
+  l.innerHTML='<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)"><b style="flex:1">'+escapeHtml((AUTH.me&&AUTH.me.nombre)||'Tú')+'</b><span style="font-size:12px;color:var(--text-muted)">'+escapeHtml(adm)+'</span><span class="pill">Administrador</span></div>'
+   +(AUTH.entrenadores||[]).map(function(e,i){return '<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);flex-wrap:wrap"><b style="flex:1;min-width:120px;'+(e.activo?'':'opacity:.5')+'">'+escapeHtml(e.nombre||'(sin nombre)')+'</b><span style="font-size:12px;color:var(--text-muted)">'+escapeHtml(e.email)+'</span>'
+     +'<select onchange="entCambia('+i+',\'rol\',this.value)" style="padding:4px 6px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text)"><option value="entrenador"'+(e.rol!=='admin'?' selected':'')+'>Entrenador</option><option value="admin"'+(e.rol==='admin'?' selected':'')+'>Administrador</option></select>'
+     +'<button class="btn btn-secondary btn-sm" onclick="entCambia('+i+',\'activo\','+(!e.activo)+')">'+(e.activo?'Desactivar':'Activar')+'</button>'
+     +'<button class="btn btn-danger btn-sm" onclick="entBorra('+i+')">✕</button></div>';}).join('')
+   +((AUTH.entrenadores||[]).length?'':'<div style="font-size:13px;color:var(--text-muted);padding:8px 0">Aún no has añadido a ningún entrenador.</div>');
+  var f=document.getElementById('ent-filtro'),cur=f.value;
+  f.innerHTML='<option value="">Todos los entrenadores</option><option value="__sin">Sin propietario</option>'+[{email:adm,nombre:'Yo'}].concat(AUTH.entrenadores||[]).map(function(e){return '<option value="'+escAttr(e.email)+'">'+escapeHtml(e.nombre||e.email)+'</option>';}).join('');
+  f.value=cur;entRenderAtletas();
+}
+function entRenderAtletas(){
+  var w=document.getElementById('ent-atletas'),f=document.getElementById('ent-filtro').value,adm=(AUTH.me&&AUTH.me.email)||'';
+  var L=(DB.atletasFull||[]).filter(function(a){return !f||(f==='__sin'?!a.propietario:(a.propietario||adm)===f);}).sort(function(a,b){return a.nombre.localeCompare(b.nombre);});
+  var opts=[{email:adm,nombre:'Yo (admin)'}].concat((AUTH.entrenadores||[]).filter(function(e){return e.activo;}));
+  w.innerHTML='<table style="width:100%;font-size:13px;border-collapse:collapse">'+L.map(function(a){
+    var own=a.propietario||adm;
+    return '<tr style="border-bottom:1px solid var(--border)"><td style="padding:7px 4px;font-weight:600">'+escapeHtml(a.nombre)+'</td>'
+     +'<td style="padding:7px 4px"><select onchange="entDueno(\''+a.nombre.replace(/'/g,"\\'")+'\',this.value)" style="padding:4px 6px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text)">'+opts.map(function(o){return '<option value="'+escAttr(o.email)+'"'+(o.email===own?' selected':'')+'>'+escapeHtml(o.nombre||o.email)+'</option>';}).join('')+'</select></td>'
+     +'<td style="padding:7px 4px;color:var(--text-muted)">'+((a.compartido_con||[]).length?'👥 '+a.compartido_con.map(authNombreDe).map(escapeHtml).join(', '):'—')+'</td>'
+     +'<td style="padding:7px 4px;text-align:right"><button class="btn btn-secondary btn-sm" onclick="compartirAbrir(\''+a.nombre.replace(/'/g,"\\'")+'\')">Compartir</button></td></tr>';}).join('')+'</table>'
+    +(L.length?'':'<div style="font-size:13px;color:var(--text-muted);padding:8px 0">Sin atletas en este filtro.</div>');
+}
+async function entDueno(nombre,email){
+  var a=DB.atletasFull.find(function(x){return x.nombre===nombre;});
+  var r=await apiPost({action:'compartirAtleta',nombre:nombre,compartido_con:(a&&a.compartido_con)||[],propietario:email});
+  if(r&&r.ok){if(a)a.propietario=email;toast('✅ Propietario cambiado');entRenderAtletas();}else toast('Error: '+(r&&r.error),'err');
+}
+async function entRefrescaCompaneros(){var rc=await api({action:'getCompaneros'});if(rc&&rc.ok)AUTH.companeros=rc.companeros||[];}
+async function entAdd(){
+  var email=document.getElementById('ent-email').value.trim(),nombre=document.getElementById('ent-nombre').value.trim();
+  var r=await apiPost({action:'saveEntrenador',email:email,nombre:nombre,rol:'entrenador',activo:true});
+  if(r&&r.ok){document.getElementById('ent-email').value='';document.getElementById('ent-nombre').value='';toast('✅ Entrenador añadido');await entCargar();await entRefrescaCompaneros();}else toast('Error: '+(r&&r.error),'err');
+}
+async function entCambia(i,campo,val){
+  var e=Object.assign({},AUTH.entrenadores[i]);e[campo]=val;
+  var r=await apiPost({action:'saveEntrenador',email:e.email,nombre:e.nombre,rol:e.rol,activo:e.activo});
+  if(r&&r.ok){await entCargar();await entRefrescaCompaneros();}else toast('Error: '+(r&&r.error),'err');
+}
+async function entBorra(i){
+  var e=AUTH.entrenadores[i];if(!confirm('¿Quitar el acceso de '+(e.nombre||e.email)+'? Sus atletas, equipos y planes se quedan como están (los verás tú).'))return;
+  var r=await apiPost({action:'deleteEntrenador',email:e.email});
+  if(r&&r.ok){await entCargar();await entRefrescaCompaneros();}else toast('Error: '+(r&&r.error),'err');
+}
 
 // ── UTILS ──
 function toast(msg,type){var t=document.getElementById('toast');t.textContent=msg;t.className='toast show '+(type||'ok');clearTimeout(t._t);t._t=setTimeout(function(){t.className='toast';},2800);}
@@ -1741,6 +1911,7 @@ async function aplicarProgramasDelServidor(rP){
 }
 
 window.onload=async function(){
+  if(AUTH.on){var okA=await authInit();if(!okA)return;}
   var now=new Date();calYear=now.getFullYear();calMonth=now.getMonth();
   try{DB.templates=JSON.parse(localStorage.getItem('gc_templates')||'[]');}catch(e){}
   try{DB.programas=JSON.parse(localStorage.getItem('gc_programas')||'[]');}catch(e){}
@@ -1783,6 +1954,7 @@ function switchTab(tab,el){
   if(tab==='calendario') renderCalendar();
   if(tab==='generador') initGenerador();
   if(tab==='semequipo') seRender();
+  if(tab==='entrenadores') entCargar();
   if(tab==='programas'||tab==='generador'||tab==='biblioteca'){
     if(tab!=='biblioteca')bibActual=(tab==='programas'?'planes':tab);
     var bt=document.querySelector('.tab[onclick*="\'biblioteca\'"]');
@@ -2934,9 +3106,16 @@ function atlCardHtml(a){
   var d=DISC_ATL[a.deporte||'otro']||DISC_ATL.otro;
   var est=ESTADO_ATL[a.estado||'disponible']||ESTADO_ATL.disponible;
   var safeName=a.nombre.replace(/'/g,"\\'");
+  var multi=AUTH.on&&AUTH.me,mio=authEsMio(a),extra='';
+  if(multi){
+    if(authSoyAdmin()&&a.propietario)extra=' · 👤 '+escapeHtml(authNombreDe(a.propietario));
+    else if(!mio)extra=' · 👥 compartido';
+    if(mio&&(a.compartido_con||[]).length)extra+=' · 👥 '+a.compartido_con.length;
+  }
   return '<div class="atl-card" style="--c:'+d.color+';--s:'+est.color+';" onclick="openAtletaPerfil(\''+safeName+'\')">'
     +'<div class="atl-card-top">'+avatarHtml(a.nombre,44)
-      +'<div class="atl-main"><div class="name">'+escapeHtml(a.nombre)+'</div><div class="sub">'+d.icon+' '+(a.notas?escapeHtml(a.notas):d.label)+'</div></div>'
+      +'<div class="atl-main"><div class="name">'+escapeHtml(a.nombre)+'</div><div class="sub">'+d.icon+' '+(a.notas?escapeHtml(a.notas):d.label)+extra+'</div></div>'
+      +(multi&&mio?'<button class="atl-edit" onclick="event.stopPropagation();compartirAbrir(\''+safeName+'\')" title="Compartir con otro entrenador">👥</button>':'')
       +'<button class="atl-edit" onclick="event.stopPropagation();openEditAtleta(\''+safeName+'\')" title="Editar">✎</button>'
     +'</div>'
     +'<div class="atl-card-foot">'
@@ -3756,7 +3935,7 @@ function renderProgramaList(){
   if(!DB.programas.length){list.innerHTML='<div class="template-empty">Sin programas.<br>Crea el primero.</div>';return;}
   list.innerHTML=DB.programas.map(function(p,i){
     var totalSesiones=(p.weeks||[]).reduce(function(acc,w){return acc+psDiasActivos(w).length;},0);
-    return '<div class="template-item'+(currentPrograma&&currentPrograma.id===p.id?' active':'')+'" onclick="selectPrograma('+i+')"><div class="template-item-name">'+(p.name||'(sin nombre)')+'</div><div class="template-item-meta">'+(p.weeks||[]).length+((p.weeks||[]).length===1?' semana · ':' semanas · ')+totalSesiones+(totalSesiones===1?' sesión':' sesiones')+'</div></div>';
+    return '<div class="template-item'+(currentPrograma&&currentPrograma.id===p.id?' active':'')+'" onclick="selectPrograma('+i+')"><div class="template-item-name">'+(p.name||'(sin nombre)')+((AUTH.on&&AUTH.me&&authSoyAdmin()&&p.propietario&&p.propietario!==AUTH.me.email)?' <span style="font-weight:400;color:var(--text-muted);font-size:12px">· 👤 '+escapeHtml(authNombreDe(p.propietario))+'</span>':'')+'</div><div class="template-item-meta">'+(p.weeks||[]).length+((p.weeks||[]).length===1?' semana · ':' semanas · ')+totalSesiones+(totalSesiones===1?' sesión':' sesiones')+'</div></div>';
   }).join('');
 }
 function newPrograma(){
