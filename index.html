@@ -2194,7 +2194,7 @@ async function importarPaquete(url){
   var pkg;
   try{pkg=await (await fetch(url+'?v='+Date.now(),{cache:'no-store'})).json();}catch(e){toast('No se pudo leer el paquete','err');return;}
   if(DB.programas.some(function(p){return p.name===pkg.nombre;})&&!confirm('Ya existe un plan «'+pkg.nombre+'». ¿Importar de nuevo y crear otro?'))return;
-  if(!confirm('Se van a crear en tu biblioteca: ejercicios que falten, '+pkg.bloques.length+' bloques, '+pkg.sesiones.length+' programas (sesiones) y el plan «'+pkg.nombre+'» de '+pkg.semanas.length+' semanas. ¿Continuar?'))return;
+  if(!confirm('Se van a crear en tu biblioteca: ejercicios que falten, '+pkg.bloques.length+' bloques y el plan «'+pkg.nombre+'» de '+pkg.semanas.length+' semanas (sin crear programas sueltos). ¿Continuar?'))return;
   window._impBusy=true;
   try{
     // 1. Ejercicios
@@ -2220,32 +2220,27 @@ async function importarPaquete(url){
       lst.push({id:'bg_'+Date.now()+'_'+(hechos++),nombre:b.nombre,tipo:b.tipo,ex:conv(b.ex)});
     });
     if(!(await bgPersist()))throw new Error('No se pudieron guardar los bloques');
-    // 3. Programas (sesiones)
-    var tpls={};
-    for(var j=0;j<pkg.sesiones.length;j++){
-      var se=pkg.sesiones[j],bl={},meta={};
+    // 3. Plan de semanas: cada día lleva su propia copia de la sesión (no se crean programas sueltos)
+    var cop={};
+    pkg.sesiones.forEach(function(se){
+      var bl={},meta={};
       se.bloques.forEach(function(b,bi){
         var def=b.ref?pkg.bloques.find(function(x){return x.key===b.ref;}):b;
         var key=def.tipo+'::i'+bi,m=getBloques().find(function(x){return x.id===def.tipo;})||{color:'#aaa'};
         bl[key]=conv(def.ex);meta[key]={name:def.nombre,color:m.color};
       });
-      var tpl={id:'tpl_pub_'+Date.now()+'_'+j,name:se.nombre,bloques:bl,bloqueMeta:meta};
-      toast('Creando programas… '+(j+1)+'/'+pkg.sesiones.length);
-      var rt=await apiPost({action:'saveTemplate',template:tpl});
-      if(!rt||!rt.ok)throw new Error('Programa «'+se.nombre+'» no guardado');
-      DB.templates.push(tpl);tpls[se.key]=tpl.id;
-    }
-    try{localStorage.setItem('gc_templates',JSON.stringify(DB.templates));}catch(e){}
-    // 4. Plan de semanas
+      cop[se.key]={nombre:se.nombre,bloques:bl,bloqueMeta:meta};
+    });
     var plan={id:'prog_'+Date.now(),name:pkg.nombre,weeks:pkg.semanas.map(function(w){
-      var dias={};Object.keys(w.dias).forEach(function(k){dias[k]=tpls[w.dias[k]];});
-      return {dias:dias,sesiones:{},fase:w.fase};
+      var dias={},ses={};
+      Object.keys(w.dias).forEach(function(k){dias[k]='__custom__';var c=JSON.parse(JSON.stringify(cop[w.dias[k]]));c.tplId='';ses[k]=c;});
+      return {dias:dias,sesiones:ses,fase:w.fase};
     })};
     var rp=await apiPost({action:'saveProgram',program:plan});
     DB.programas.push(plan);try{localStorage.setItem('gc_programas',JSON.stringify(DB.programas));}catch(e){}
     if(!rp||!rp.ok)toast('Plan guardado solo en este navegador: '+((rp&&rp.error)||'el servidor no lo aceptó'),'err');
     renderProgramaList();if(typeof bgRender==='function')bgRender();
-    toast('✅ Importado: '+nuevos+' ejercicios nuevos, '+hechos+' bloques, '+pkg.sesiones.length+' programas y el plan');
+    toast('✅ Importado: '+nuevos+' ejercicios nuevos, '+hechos+' bloques y el plan');
   }catch(err){toast('Importación detenida: '+err.message,'err');}
   finally{window._impBusy=false;}
 }
@@ -3827,9 +3822,19 @@ function psDayHtml(wi,di){
     var ids=Object.keys(ses.bloques);
     if(!ids.length)h+='<div class="ps-rest">Sin bloques todavía</div>';
     ids.forEach(function(bid){h+=psBlockHtml(wi,dk,ses,bid);});
-    h+='<div class="ps-foot"><button class="btn btn-secondary btn-xs" onclick="psAddBloque('+wi+','+dk+')">+ Añadir bloque</button></div>';
+    h+='<div class="ps-foot"><button class="btn btn-secondary btn-xs" onclick="psAddBloque('+wi+','+dk+')">+ Añadir bloque</button> <button class="btn btn-secondary btn-xs" title="Guarda esta sesión en la pestaña Programas, fuera del plan" onclick="psGuardarComoPrograma('+wi+','+dk+')">💾 Guardar como programa</button></div>';
   }
   return h+'</div>';
+}
+async function psGuardarComoPrograma(wi,dk){
+  var ses=psSesion(wi,dk);if(!ses)return;
+  var nom=prompt('Nombre del programa:',ses.nombre||'');if(!nom||!nom.trim())return;
+  var tpl={id:'tpl_'+Date.now(),name:nom.trim(),bloques:JSON.parse(JSON.stringify(ses.bloques||{})),bloqueMeta:JSON.parse(JSON.stringify(ses.bloqueMeta||{}))};
+  try{
+    var r=await apiPost({action:'saveTemplate',template:tpl});
+    if(r&&r.ok){DB.templates.push(tpl);try{localStorage.setItem('gc_templates',JSON.stringify(DB.templates));}catch(e){}toast('✅ Guardado en Programas: '+tpl.name);}
+    else toast('No se pudo guardar: '+((r&&r.error)||'sin respuesta'),'err');
+  }catch(e){toast('No se pudo guardar','err');}
 }
 function renderProgramaBoard(){
   var c=document.getElementById('pe-weeks-container');if(!c||!currentPrograma)return;
