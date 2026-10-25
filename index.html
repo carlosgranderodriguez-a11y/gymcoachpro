@@ -2203,6 +2203,7 @@ async function importarPaquete(url){
     for(var i=0;i<pkg.ejercicios.length;i++){
       var e=pkg.ejercicios[i],nk=impNorm(e.nombre);
       if(porNombre[nk]){ids[e.nombre]=porNombre[nk];continue;}
+      if(e.alias&&DB.ejercicios[e.alias]){ids[e.nombre]=e.alias;continue;}
       var id=e.nombre.toLowerCase().replace(/\s+/g,'-').replace(/[^a-z0-9-]/g,''),n=2,base=id;
       while(DB.ejercicios[id])id=base+'-'+(n++);
       var d={id:id,nombre:e.nombre,categoria:e.categoria,musculos:'',descripcion:'',video:'',imagen:'',tipo_contraccion:[],material:e.material||[],grupos_musculares:e.grupos||[],patron:e.patron||'',rol:e.rol||'',unilateral:e.unilateral||'',combinado:''};

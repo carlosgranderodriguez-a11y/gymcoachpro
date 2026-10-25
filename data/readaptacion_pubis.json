@@ -2,6 +2,7 @@
  "nombre": "Readaptación de pubis",
  "ejercicios": [
   {
+   "alias": "",
    "nombre": "Adductor. bench step",
    "categoria": "Fuerza",
    "patron": "AIS",
@@ -15,6 +16,7 @@
    ]
   },
   {
+   "alias": "",
    "nombre": "adductor fitball",
    "categoria": "Fuerza",
    "patron": "AIS",
@@ -28,6 +30,7 @@
    ]
   },
   {
+   "alias": "",
    "nombre": "lateral plank + leg raise",
    "categoria": "Core",
    "patron": "CAE",
@@ -42,6 +45,7 @@
    ]
   },
   {
+   "alias": "",
    "nombre": "press pallof kneeling",
    "categoria": "Core",
    "patron": "CAR",
@@ -55,6 +59,7 @@
    ]
   },
   {
+   "alias": "",
    "nombre": "Plank",
    "categoria": "Core",
    "patron": "CAE",
@@ -68,6 +73,7 @@
    ]
   },
   {
+   "alias": "",
    "nombre": "pallof rotacional",
    "categoria": "Core",
    "patron": "CAR",
@@ -81,6 +87,7 @@
    ]
   },
   {
+   "alias": "",
    "nombre": "Push Up - Eccentric",
    "categoria": "Fuerza",
    "patron": "EH",
@@ -94,6 +101,7 @@
    ]
   },
   {
+   "alias": "",
    "nombre": "Banded Side Plank Clamshell",
    "categoria": "Activación",
    "patron": "CD",
@@ -107,6 +115,7 @@
    ]
   },
   {
+   "alias": "",
    "nombre": "Lateral Plank to Row (Cable)",
    "categoria": "Core",
    "patron": "CAR",
@@ -120,6 +129,7 @@
    ]
   },
   {
+   "alias": "",
    "nombre": "empuje gluteo",
    "categoria": "Activación",
    "patron": "CD",
@@ -133,6 +143,7 @@
    ]
   },
   {
+   "alias": "",
    "nombre": "MQ - lateral Plank",
    "categoria": "Core",
    "patron": "CAE",
@@ -146,6 +157,7 @@
    ]
   },
   {
+   "alias": "sentadilla-isometrica-en-split",
    "nombre": "Split Squat Isometric",
    "categoria": "Fuerza",
    "patron": "RD",
@@ -160,6 +172,7 @@
    ]
   },
   {
+   "alias": "sentadilla-split-squat",
    "nombre": "Split Squat",
    "categoria": "Fuerza",
    "patron": "RD",
@@ -174,6 +187,7 @@
    ]
   },
   {
+   "alias": "hip-trust-unipodal",
    "nombre": "Single Leg Hip Thrust",
    "categoria": "Fuerza",
    "patron": "CD",
@@ -187,6 +201,7 @@
    ]
   },
   {
+   "alias": "",
    "nombre": "Bench Press - Dumbbell (Hips Off Bench)",
    "categoria": "Fuerza",
    "patron": "EH",
@@ -200,6 +215,7 @@
    ]
   },
   {
+   "alias": "",
    "nombre": "abs remo",
    "categoria": "Core",
    "patron": "CAE",
@@ -213,6 +229,7 @@
    ]
   },
   {
+   "alias": "",
    "nombre": "Good morning exercise",
    "categoria": "Fuerza",
    "patron": "CD",
@@ -226,6 +243,7 @@
    ]
   },
   {
+   "alias": "rdl-kettlebell",
    "nombre": "Romanian Deadlift - Kettlebell",
    "categoria": "Fuerza",
    "patron": "CD",
@@ -240,6 +258,7 @@
    ]
   },
   {
+   "alias": "",
    "nombre": "Bench Press - 1 Arm Dumbbell Contralateral Hip Flexion (Hips off)",
    "categoria": "Fuerza",
    "patron": "EH",
@@ -254,6 +273,7 @@
    ]
   },
   {
+   "alias": "",
    "nombre": "Glute Stretch on Incline Bench",
    "categoria": "Movilidad",
    "patron": "MOV",
@@ -267,6 +287,7 @@
    ]
   },
   {
+   "alias": "",
    "nombre": "Lateral Plank to Row (Tubing)",
    "categoria": "Core",
    "patron": "CAR",
@@ -280,6 +301,7 @@
    ]
   },
   {
+   "alias": "",
    "nombre": "remo en plancha",
    "categoria": "Core",
    "patron": "TH",
@@ -294,6 +316,7 @@
    ]
   },
   {
+   "alias": "",
    "nombre": "Bench Press - 1 Arm Dumbbell (Lateral Trunk Off Bench)",
    "categoria": "Fuerza",
    "patron": "EH",
@@ -308,6 +331,7 @@
    ]
   },
   {
+   "alias": "",
    "nombre": "RDL.Kettlebell",
    "categoria": "Fuerza",
    "patron": "CD",
@@ -322,6 +346,7 @@
    ]
   },
   {
+   "alias": "hip-trust-normal-continuo",
    "nombre": "Barbell - Hip Thrust",
    "categoria": "Fuerza",
    "patron": "CD",
@@ -335,6 +360,7 @@
    ]
   },
   {
+   "alias": "",
    "nombre": "lateral walk",
    "categoria": "Activación",
    "patron": "CD",
@@ -348,6 +374,7 @@
    ]
   },
   {
+   "alias": "",
    "nombre": "remo en posición base. polea",
    "categoria": "Fuerza",
    "patron": "TH",
@@ -361,6 +388,7 @@
    ]
   },
   {
+   "alias": "",
    "nombre": "Leg Curl (Slide)",
    "categoria": "Fuerza",
    "patron": "CD",
@@ -374,6 +402,7 @@
    ]
   },
   {
+   "alias": "press-de-banca-con-mancuernas",
    "nombre": "Bench Press - Dumbbell",
    "categoria": "Fuerza",
    "patron": "EH",
@@ -387,6 +416,7 @@
    ]
   },
   {
+   "alias": "",
    "nombre": "Hex Bar Romanian Deadlift",
    "categoria": "Fuerza",
    "patron": "CD",
@@ -401,6 +431,7 @@
    ]
   },
   {
+   "alias": "sentadilla-lateral-lateral-squat",
    "nombre": "Lateral Squat",
    "categoria": "Fuerza",
    "patron": "RD",
@@ -415,6 +446,7 @@
    ]
   },
   {
+   "alias": "",
    "nombre": "kettlebell deep squat",
    "categoria": "Fuerza",
    "patron": "RD",
@@ -429,6 +461,7 @@
    ]
   },
   {
+   "alias": "",
    "nombre": "Landmine wood chop",
    "categoria": "Core",
    "patron": "CAR",
@@ -442,6 +475,7 @@
    ]
   },
   {
+   "alias": "",
    "nombre": "Pull unilateral split stance",
    "categoria": "Fuerza",
    "patron": "TH",
@@ -455,6 +489,7 @@
    ]
   },
   {
+   "alias": "",
    "nombre": "kettlebell. one leg dead lift",
    "categoria": "Fuerza",
    "patron": "CD",
@@ -469,6 +504,7 @@
    ]
   },
   {
+   "alias": "",
    "nombre": "Split Squat - Rear Foot Elevated Dumbbell",
    "categoria": "Fuerza",
    "patron": "RD",
@@ -483,6 +519,7 @@
    ]
   },
   {
+   "alias": "",
    "nombre": "lateral plank + rotational",
    "categoria": "Core",
    "patron": "CAR",
@@ -496,6 +533,7 @@
    ]
   },
   {
+   "alias": "",
    "nombre": "Sentadilla unilateral",
    "categoria": "Fuerza",
    "patron": "RD",
@@ -510,6 +548,7 @@
    ]
   },
   {
+   "alias": "",
    "nombre": "Chop rotacional con disco",
    "categoria": "Core",
    "patron": "CAR",
@@ -521,6 +560,7 @@
    ]
   },
   {
+   "alias": "puente-glteo-en-fitball",
    "nombre": "Puente gluteo + fitball",
    "categoria": "Activación",
    "patron": "CD",
@@ -535,6 +575,7 @@
    ]
   },
   {
+   "alias": "",
    "nombre": "Curl de isquios unilateral",
    "categoria": "Fuerza",
    "patron": "CD",
@@ -548,6 +589,7 @@
    ]
   },
   {
+   "alias": "rdl-landmine",
    "nombre": "Romanian Deadlift - Landmine",
    "categoria": "Fuerza",
    "patron": "CD",
@@ -562,6 +604,7 @@
    ]
   },
   {
+   "alias": "",
    "nombre": "Reverse plank",
    "categoria": "Core",
    "patron": "CAE",
@@ -576,6 +619,7 @@
    ]
   },
   {
+   "alias": "",
    "nombre": "Dns + traccion",
    "categoria": "Core",
    "patron": "CAE",
@@ -589,6 +633,7 @@
    ]
   },
   {
+   "alias": "",
    "nombre": "Drop single leg",
    "categoria": "Pliometría",
    "patron": "RD",
@@ -602,6 +647,7 @@
    ]
   },
   {
+   "alias": "",
    "nombre": "Drop split squat",
    "categoria": "Pliometría",
    "patron": "RD",
@@ -615,6 +661,7 @@
    ]
   },
   {
+   "alias": "",
    "nombre": "Drop (frenada) bipodal",
    "categoria": "Pliometría",
    "patron": "RD",
@@ -628,6 +675,7 @@
    ]
   },
   {
+   "alias": "",
    "nombre": "run",
    "categoria": "Cardio",
    "patron": "",
@@ -639,6 +687,7 @@
    "grupos": []
   },
   {
+   "alias": "copenhague-palanca-corta",
    "nombre": "Copenhaguen palanca corta",
    "categoria": "Fuerza",
    "patron": "AIS",
@@ -652,6 +701,7 @@
    ]
   },
   {
+   "alias": "",
    "nombre": "Plancha lateral + traccion polea",
    "categoria": "Core",
    "patron": "CAR",
