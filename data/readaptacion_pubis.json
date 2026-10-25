@@ -2,159 +2,36 @@
  "nombre": "Readaptación de pubis",
  "ejercicios": [
   {
-   "alias": "",
-   "nombre": "Adductor. bench step",
-   "categoria": "Fuerza",
-   "patron": "AIS",
-   "rol": "Accesorio",
-   "unilateral": "",
-   "material": [
-    "Peso corporal"
-   ],
-   "grupos": [
-    "Aductores"
-   ]
+   "nombre": "Copenhague palanca corta",
+   "alias": "copenhague-palanca-corta"
   },
   {
-   "alias": "",
-   "nombre": "adductor fitball",
-   "categoria": "Fuerza",
-   "patron": "AIS",
-   "rol": "Accesorio",
-   "unilateral": "",
-   "material": [
-    "Fitball"
-   ],
-   "grupos": [
-    "Aductores"
-   ]
+   "nombre": "Plancha con distorsión unilateral",
+   "alias": "plancha-con-distorsin-unilateral"
   },
   {
-   "alias": "",
-   "nombre": "lateral plank + leg raise",
-   "categoria": "Core",
-   "patron": "CAE",
-   "rol": "Accesorio",
-   "unilateral": "sí",
-   "material": [
-    "Peso corporal"
-   ],
-   "grupos": [
-    "Core",
-    "Aductores"
-   ]
+   "nombre": "Pallof rotacional. kneeling",
+   "alias": "pallof-rotacional-kneeling"
   },
   {
-   "alias": "",
-   "nombre": "press pallof kneeling",
-   "categoria": "Core",
-   "patron": "CAR",
-   "rol": "Accesorio",
-   "unilateral": "",
-   "material": [
-    "Banda elástica"
-   ],
-   "grupos": [
-    "Core"
-   ]
+   "nombre": "Bench Plank. Knee flexion",
+   "alias": "bench-plank-knee-flexion"
   },
   {
-   "alias": "",
-   "nombre": "Plank",
-   "categoria": "Core",
-   "patron": "CAE",
-   "rol": "Accesorio",
-   "unilateral": "",
-   "material": [
-    "Peso corporal"
-   ],
-   "grupos": [
-    "Core"
-   ]
+   "nombre": "push up",
+   "alias": "push-up"
   },
   {
-   "alias": "",
-   "nombre": "pallof rotacional",
-   "categoria": "Core",
-   "patron": "CAR",
-   "rol": "Accesorio",
-   "unilateral": "sí",
-   "material": [
-    "Banda elástica"
-   ],
-   "grupos": [
-    "Core"
-   ]
+   "nombre": "Plancha lateral desde rodillas",
+   "alias": "plancha-lateral-desde-rodillas"
   },
   {
-   "alias": "",
-   "nombre": "Push Up - Eccentric",
-   "categoria": "Fuerza",
-   "patron": "EH",
-   "rol": "Secundario",
-   "unilateral": "",
-   "material": [
-    "Peso corporal"
-   ],
-   "grupos": [
-    "Pectoral"
-   ]
+   "nombre": "Remo unilateral en plancha lateral isométrica",
+   "alias": "remo-unilateral-en-plancha-lateral-isomtrica"
   },
   {
-   "alias": "",
-   "nombre": "Banded Side Plank Clamshell",
-   "categoria": "Activación",
-   "patron": "CD",
-   "rol": "Accesorio",
-   "unilateral": "sí",
-   "material": [
-    "Banda elástica"
-   ],
-   "grupos": [
-    "Glúteo medio"
-   ]
-  },
-  {
-   "alias": "",
-   "nombre": "Lateral Plank to Row (Cable)",
-   "categoria": "Core",
-   "patron": "CAR",
-   "rol": "Accesorio",
-   "unilateral": "sí",
-   "material": [
-    "Máquina específica"
-   ],
-   "grupos": [
-    "Core"
-   ]
-  },
-  {
-   "alias": "",
-   "nombre": "empuje gluteo",
-   "categoria": "Activación",
-   "patron": "CD",
-   "rol": "Accesorio",
-   "unilateral": "sí",
-   "material": [
-    "Peso corporal"
-   ],
-   "grupos": [
-    "Glúteo mayor"
-   ]
-  },
-  {
-   "alias": "",
-   "nombre": "MQ - lateral Plank",
-   "categoria": "Core",
-   "patron": "CAE",
-   "rol": "Accesorio",
-   "unilateral": "sí",
-   "material": [
-    "Peso corporal"
-   ],
-   "grupos": [
-    "Core"
-   ]
+   "nombre": "Puente gluteo. Cotinuo",
+   "alias": "puente-gluteo-cotinuo"
   },
   {
    "alias": "sentadilla-isometrica-en-split",
@@ -201,46 +78,16 @@
    ]
   },
   {
-   "alias": "",
-   "nombre": "Bench Press - Dumbbell (Hips Off Bench)",
-   "categoria": "Fuerza",
-   "patron": "EH",
-   "rol": "Secundario",
-   "unilateral": "",
-   "material": [
-    "Mancuerna"
-   ],
-   "grupos": [
-    "Pectoral"
-   ]
+   "nombre": "Press de banca con mancuernas",
+   "alias": "press-de-banca-con-mancuernas"
   },
   {
-   "alias": "",
-   "nombre": "abs remo",
-   "categoria": "Core",
-   "patron": "CAE",
-   "rol": "Accesorio",
-   "unilateral": "",
-   "material": [
-    "Máquina específica"
-   ],
-   "grupos": [
-    "Core"
-   ]
+   "nombre": "Remo en posición de cuadrúpedia",
+   "alias": "remo-en-posicin-de-cuadrpedia"
   },
   {
-   "alias": "",
-   "nombre": "Good morning exercise",
-   "categoria": "Fuerza",
-   "patron": "CD",
-   "rol": "Secundario",
-   "unilateral": "",
-   "material": [
-    "Peso corporal"
-   ],
-   "grupos": [
-    "Isquiotibiales"
-   ]
+   "nombre": "Peso muerto. Barra",
+   "alias": "peso-muerto-barra"
   },
   {
    "alias": "rdl-kettlebell",
@@ -258,77 +105,20 @@
    ]
   },
   {
-   "alias": "",
-   "nombre": "Bench Press - 1 Arm Dumbbell Contralateral Hip Flexion (Hips off)",
-   "categoria": "Fuerza",
-   "patron": "EH",
-   "rol": "Secundario",
-   "unilateral": "sí",
-   "material": [
-    "Mancuerna"
-   ],
-   "grupos": [
-    "Pectoral",
-    "Core"
-   ]
+   "nombre": "Puente gluteo + floor press unilateral",
+   "alias": "puente-gluteo--floor-press-unilateral"
   },
   {
-   "alias": "",
-   "nombre": "Glute Stretch on Incline Bench",
-   "categoria": "Movilidad",
-   "patron": "MOV",
-   "rol": "Accesorio",
-   "unilateral": "sí",
-   "material": [
-    "Peso corporal"
-   ],
-   "grupos": [
-    "Glúteo mayor"
-   ]
+   "nombre": "Movilidad de cadera",
+   "alias": "movilidad-de-cadera"
   },
   {
-   "alias": "",
-   "nombre": "Lateral Plank to Row (Tubing)",
-   "categoria": "Core",
-   "patron": "CAR",
-   "rol": "Accesorio",
-   "unilateral": "sí",
-   "material": [
-    "Banda elástica"
-   ],
-   "grupos": [
-    "Core"
-   ]
+   "nombre": "Plancha en banco + remo con mancuerna unilateral",
+   "alias": "plancha-en-banco--remo-con-mancuerna-unilateral"
   },
   {
-   "alias": "",
-   "nombre": "remo en plancha",
-   "categoria": "Core",
-   "patron": "TH",
-   "rol": "Accesorio",
-   "unilateral": "",
-   "material": [
-    "Máquina específica"
-   ],
-   "grupos": [
-    "Core",
-    "Dorsal"
-   ]
-  },
-  {
-   "alias": "",
-   "nombre": "Bench Press - 1 Arm Dumbbell (Lateral Trunk Off Bench)",
-   "categoria": "Fuerza",
-   "patron": "EH",
-   "rol": "Secundario",
-   "unilateral": "sí",
-   "material": [
-    "Mancuerna"
-   ],
-   "grupos": [
-    "Pectoral",
-    "Core"
-   ]
+   "nombre": "dummbell Floor press",
+   "alias": "dummbell-floor-press"
   },
   {
    "alias": "",
@@ -374,32 +164,12 @@
    ]
   },
   {
-   "alias": "",
-   "nombre": "remo en posición base. polea",
-   "categoria": "Fuerza",
-   "patron": "TH",
-   "rol": "Secundario",
-   "unilateral": "",
-   "material": [
-    "Máquina específica"
-   ],
-   "grupos": [
-    "Dorsal"
-   ]
+   "nombre": "Remo uniliteral en polea. Posición base",
+   "alias": "remo-uniliteral-en-polea-posicin-base"
   },
   {
-   "alias": "",
-   "nombre": "Leg Curl (Slide)",
-   "categoria": "Fuerza",
-   "patron": "CD",
-   "rol": "Accesorio",
-   "unilateral": "",
-   "material": [
-    "Peso corporal"
-   ],
-   "grupos": [
-    "Isquiotibiales"
-   ]
+   "nombre": "Nordico",
+   "alias": "nordico"
   },
   {
    "alias": "press-de-banca-con-mancuernas",
@@ -416,19 +186,8 @@
    ]
   },
   {
-   "alias": "",
-   "nombre": "Hex Bar Romanian Deadlift",
-   "categoria": "Fuerza",
-   "patron": "CD",
-   "rol": "Principal",
-   "unilateral": "",
-   "material": [
-    "Barra"
-   ],
-   "grupos": [
-    "Isquiotibiales",
-    "Glúteo mayor"
-   ]
+   "nombre": "Hip Hinge. Barra hexagonal",
+   "alias": "hip-hinge-barra-hexagonal"
   },
   {
    "alias": "sentadilla-lateral-lateral-squat",
@@ -446,22 +205,11 @@
    ]
   },
   {
-   "alias": "",
-   "nombre": "kettlebell deep squat",
-   "categoria": "Fuerza",
-   "patron": "RD",
-   "rol": "Secundario",
-   "unilateral": "",
-   "material": [
-    "Mancuerna"
-   ],
-   "grupos": [
-    "Cuádriceps",
-    "Aductores"
-   ]
+   "nombre": "Sentadilla Bipodal. Goblet",
+   "alias": "sentadilla-bipodal-goblet"
   },
   {
-   "alias": "",
+   "alias": "landmine-wood-chop",
    "nombre": "Landmine wood chop",
    "categoria": "Core",
    "patron": "CAR",
@@ -489,48 +237,16 @@
    ]
   },
   {
-   "alias": "",
-   "nombre": "kettlebell. one leg dead lift",
-   "categoria": "Fuerza",
-   "patron": "CD",
-   "rol": "Secundario",
-   "unilateral": "sí",
-   "material": [
-    "Mancuerna"
-   ],
-   "grupos": [
-    "Isquiotibiales",
-    "Glúteo mayor"
-   ]
+   "nombre": "RDL. Kettlebell",
+   "alias": "rdl-kettlebell"
   },
   {
-   "alias": "",
-   "nombre": "Split Squat - Rear Foot Elevated Dumbbell",
-   "categoria": "Fuerza",
-   "patron": "RD",
-   "rol": "Principal",
-   "unilateral": "sí",
-   "material": [
-    "Mancuerna"
-   ],
-   "grupos": [
-    "Cuádriceps",
-    "Glúteo mayor"
-   ]
+   "nombre": "Sentadilla split squat",
+   "alias": "sentadilla-split-squat"
   },
   {
-   "alias": "",
-   "nombre": "lateral plank + rotational",
-   "categoria": "Core",
-   "patron": "CAR",
-   "rol": "Accesorio",
-   "unilateral": "sí",
-   "material": [
-    "Peso corporal"
-   ],
-   "grupos": [
-    "Core"
-   ]
+   "nombre": "Plancha rotacional",
+   "alias": "plancha-rotacional"
   },
   {
    "alias": "",
@@ -545,18 +261,6 @@
    "grupos": [
     "Cuádriceps",
     "Glúteo mayor"
-   ]
-  },
-  {
-   "alias": "",
-   "nombre": "Chop rotacional con disco",
-   "categoria": "Core",
-   "patron": "CAR",
-   "rol": "Accesorio",
-   "unilateral": "sí",
-   "material": [],
-   "grupos": [
-    "Core"
    ]
   },
   {
@@ -619,21 +323,11 @@
    ]
   },
   {
-   "alias": "",
-   "nombre": "Dns + traccion",
-   "categoria": "Core",
-   "patron": "CAE",
-   "rol": "Accesorio",
-   "unilateral": "",
-   "material": [
-    "Banda elástica"
-   ],
-   "grupos": [
-    "Core"
-   ]
+   "nombre": "DNS + Remo unilateral",
+   "alias": "dns--remo-unilateral"
   },
   {
-   "alias": "",
+   "alias": "drop-single-leg",
    "nombre": "Drop single leg",
    "categoria": "Pliometría",
    "patron": "RD",
@@ -653,20 +347,6 @@
    "patron": "RD",
    "rol": "Accesorio",
    "unilateral": "sí",
-   "material": [
-    "Caja pliométrica"
-   ],
-   "grupos": [
-    "Cuádriceps"
-   ]
-  },
-  {
-   "alias": "",
-   "nombre": "Drop (frenada) bipodal",
-   "categoria": "Pliometría",
-   "patron": "RD",
-   "rol": "Accesorio",
-   "unilateral": "",
    "material": [
     "Caja pliométrica"
    ],
@@ -721,7 +401,7 @@
    "tipo": "activacion",
    "ex": [
     {
-     "n": "Adductor. bench step",
+     "n": "Copenhague palanca corta",
      "p": [
       [
        "series",
@@ -742,32 +422,7 @@
      ]
     },
     {
-     "n": "adductor fitball",
-     "p": [
-      [
-       "series",
-       "3"
-      ],
-      [
-       "reps",
-       "6"
-      ],
-      [
-       "rpe",
-       "8"
-      ],
-      [
-       "descanso",
-       "10s"
-      ],
-      [
-       "notas",
-       "Isométrico 5 s"
-      ]
-     ]
-    },
-    {
-     "n": "lateral plank + leg raise",
+     "n": "Plancha con distorsión unilateral",
      "p": [
       [
        "series",
@@ -792,7 +447,7 @@
      ]
     },
     {
-     "n": "press pallof kneeling",
+     "n": "Pallof rotacional. kneeling",
      "p": [
       [
        "series",
@@ -809,7 +464,7 @@
      ]
     },
     {
-     "n": "Plank",
+     "n": "Bench Plank. Knee flexion",
      "p": [
       [
        "series",
@@ -818,23 +473,6 @@
       [
        "duracion",
        "30"
-      ]
-     ]
-    },
-    {
-     "n": "pallof rotacional",
-     "p": [
-      [
-       "series",
-       "3"
-      ],
-      [
-       "reps",
-       "8 c/lado"
-      ],
-      [
-       "pct_rm",
-       "50"
       ]
      ]
     }
@@ -846,7 +484,7 @@
    "tipo": "activacion",
    "ex": [
     {
-     "n": "Adductor. bench step",
+     "n": "Copenhague palanca corta",
      "p": [
       [
        "series",
@@ -867,7 +505,7 @@
      ]
     },
     {
-     "n": "lateral plank + leg raise",
+     "n": "Plancha con distorsión unilateral",
      "p": [
       [
        "series",
@@ -892,7 +530,7 @@
      ]
     },
     {
-     "n": "press pallof kneeling",
+     "n": "Pallof rotacional. kneeling",
      "p": [
       [
        "series",
@@ -909,7 +547,7 @@
      ]
     },
     {
-     "n": "Push Up - Eccentric",
+     "n": "push up",
      "p": [
       [
        "series",
@@ -922,7 +560,7 @@
      ]
     },
     {
-     "n": "Banded Side Plank Clamshell",
+     "n": "Plancha lateral desde rodillas",
      "p": [
       [
        "series",
@@ -939,7 +577,7 @@
      ]
     },
     {
-     "n": "Lateral Plank to Row (Cable)",
+     "n": "Remo unilateral en plancha lateral isométrica",
      "p": [
       [
        "series",
@@ -956,7 +594,7 @@
      ]
     },
     {
-     "n": "empuje gluteo",
+     "n": "Puente gluteo. Cotinuo",
      "p": [
       [
        "series",
@@ -980,7 +618,7 @@
    "tipo": "activacion",
    "ex": [
     {
-     "n": "MQ - lateral Plank",
+     "n": "Plancha lateral desde rodillas",
      "p": [
       [
        "series",
@@ -993,24 +631,7 @@
      ]
     },
     {
-     "n": "Banded Side Plank Clamshell",
-     "p": [
-      [
-       "series",
-       "2"
-      ],
-      [
-       "reps",
-       "12 c/lado"
-      ],
-      [
-       "notas",
-       "Banda Very Heavy"
-      ]
-     ]
-    },
-    {
-     "n": "Lateral Plank to Row (Cable)",
+     "n": "Remo unilateral en plancha lateral isométrica",
      "p": [
       [
        "series",
@@ -1088,7 +709,7 @@
      ]
     },
     {
-     "n": "Bench Press - Dumbbell (Hips Off Bench)",
+     "n": "Press de banca con mancuernas",
      "p": [
       [
        "series",
@@ -1112,7 +733,7 @@
    "tipo": "activacion",
    "ex": [
     {
-     "n": "Adductor. bench step",
+     "n": "Copenhague palanca corta",
      "p": [
       [
        "series",
@@ -1133,32 +754,7 @@
      ]
     },
     {
-     "n": "adductor fitball",
-     "p": [
-      [
-       "series",
-       "3"
-      ],
-      [
-       "reps",
-       "6"
-      ],
-      [
-       "rpe",
-       "8"
-      ],
-      [
-       "descanso",
-       "10s"
-      ],
-      [
-       "notas",
-       "Isométrico 5 s"
-      ]
-     ]
-    },
-    {
-     "n": "lateral plank + leg raise",
+     "n": "Plancha con distorsión unilateral",
      "p": [
       [
        "series",
@@ -1183,7 +779,7 @@
      ]
     },
     {
-     "n": "press pallof kneeling",
+     "n": "Pallof rotacional. kneeling",
      "p": [
       [
        "series",
@@ -1200,7 +796,7 @@
      ]
     },
     {
-     "n": "abs remo",
+     "n": "Remo en posición de cuadrúpedia",
      "p": [
       [
        "series",
@@ -1215,23 +811,6 @@
        "40"
       ]
      ]
-    },
-    {
-     "n": "pallof rotacional",
-     "p": [
-      [
-       "series",
-       "3"
-      ],
-      [
-       "reps",
-       "8 c/lado"
-      ],
-      [
-       "pct_rm",
-       "50"
-      ]
-     ]
     }
    ],
    "key": "f2_d3"
@@ -1241,7 +820,7 @@
    "tipo": "fuerza",
    "ex": [
     {
-     "n": "Good morning exercise",
+     "n": "Peso muerto. Barra",
      "p": [
       [
        "series",
@@ -1275,7 +854,7 @@
      ]
     },
     {
-     "n": "Bench Press - 1 Arm Dumbbell Contralateral Hip Flexion (Hips off)",
+     "n": "Puente gluteo + floor press unilateral",
      "p": [
       [
        "series",
@@ -1292,7 +871,7 @@
      ]
     },
     {
-     "n": "Glute Stretch on Incline Bench",
+     "n": "Movilidad de cadera",
      "p": [
       [
        "series",
@@ -1312,7 +891,7 @@
    "tipo": "activacion",
    "ex": [
     {
-     "n": "Adductor. bench step",
+     "n": "Copenhague palanca corta",
      "p": [
       [
        "series",
@@ -1333,32 +912,7 @@
      ]
     },
     {
-     "n": "adductor fitball",
-     "p": [
-      [
-       "series",
-       "3"
-      ],
-      [
-       "reps",
-       "6"
-      ],
-      [
-       "rpe",
-       "8"
-      ],
-      [
-       "descanso",
-       "10s"
-      ],
-      [
-       "notas",
-       "Isométrico 5 s"
-      ]
-     ]
-    },
-    {
-     "n": "Lateral Plank to Row (Tubing)",
+     "n": "Remo unilateral en plancha lateral isométrica",
      "p": [
       [
        "series",
@@ -1383,7 +937,7 @@
      ]
     },
     {
-     "n": "press pallof kneeling",
+     "n": "Pallof rotacional. kneeling",
      "p": [
       [
        "series",
@@ -1400,7 +954,7 @@
      ]
     },
     {
-     "n": "remo en plancha",
+     "n": "Plancha en banco + remo con mancuerna unilateral",
      "p": [
       [
        "series",
@@ -1419,23 +973,6 @@
        "30s"
       ]
      ]
-    },
-    {
-     "n": "pallof rotacional",
-     "p": [
-      [
-       "series",
-       "3"
-      ],
-      [
-       "reps",
-       "8 c/lado"
-      ],
-      [
-       "pct_rm",
-       "50"
-      ]
-     ]
     }
    ],
    "key": "f2_d4"
@@ -1445,7 +982,7 @@
    "tipo": "fuerza",
    "ex": [
     {
-     "n": "Bench Press - 1 Arm Dumbbell (Lateral Trunk Off Bench)",
+     "n": "dummbell Floor press",
      "p": [
       [
        "series",
@@ -1528,7 +1065,7 @@
      ]
     },
     {
-     "n": "remo en posición base. polea",
+     "n": "Remo uniliteral en polea. Posición base",
      "p": [
       [
        "series",
@@ -1545,7 +1082,7 @@
      ]
     },
     {
-     "n": "Leg Curl (Slide)",
+     "n": "Nordico",
      "p": [
       [
        "series",
@@ -1579,7 +1116,7 @@
      ]
     },
     {
-     "n": "Hex Bar Romanian Deadlift",
+     "n": "Hip Hinge. Barra hexagonal",
      "p": [
       [
        "series",
@@ -1603,7 +1140,7 @@
    "tipo": "fuerza",
    "ex": [
     {
-     "n": "Bench Press - 1 Arm Dumbbell Contralateral Hip Flexion (Hips off)",
+     "n": "Puente gluteo + floor press unilateral",
      "p": [
       [
        "series",
@@ -1637,7 +1174,7 @@
      ]
     },
     {
-     "n": "kettlebell deep squat",
+     "n": "Sentadilla Bipodal. Goblet",
      "p": [
       [
        "series",
@@ -1688,7 +1225,7 @@
      ]
     },
     {
-     "n": "abs remo",
+     "n": "Remo en posición de cuadrúpedia",
      "p": [
       [
        "series",
@@ -1712,7 +1249,7 @@
    "tipo": "fuerza",
    "ex": [
     {
-     "n": "kettlebell. one leg dead lift",
+     "n": "RDL. Kettlebell",
      "p": [
       [
        "series",
@@ -1729,7 +1266,7 @@
      ]
     },
     {
-     "n": "Split Squat - Rear Foot Elevated Dumbbell",
+     "n": "Sentadilla split squat",
      "p": [
       [
        "series",
@@ -1746,7 +1283,7 @@
      ]
     },
     {
-     "n": "pallof rotacional",
+     "n": "Pallof rotacional. kneeling",
      "p": [
       [
        "series",
@@ -1780,7 +1317,7 @@
      ]
     },
     {
-     "n": "Adductor. bench step",
+     "n": "Copenhague palanca corta",
      "p": [
       [
        "series",
@@ -1797,7 +1334,7 @@
      ]
     },
     {
-     "n": "lateral plank + rotational",
+     "n": "Plancha rotacional",
      "p": [
       [
        "series",
@@ -1821,7 +1358,7 @@
    "tipo": "fuerza",
    "ex": [
     {
-     "n": "pallof rotacional",
+     "n": "Pallof rotacional. kneeling",
      "p": [
       [
        "series",
@@ -1838,7 +1375,7 @@
      ]
     },
     {
-     "n": "Split Squat - Rear Foot Elevated Dumbbell",
+     "n": "Sentadilla split squat",
      "p": [
       [
        "series",
@@ -1855,7 +1392,7 @@
      ]
     },
     {
-     "n": "kettlebell. one leg dead lift",
+     "n": "RDL. Kettlebell",
      "p": [
       [
        "series",
@@ -1889,7 +1426,7 @@
      ]
     },
     {
-     "n": "Adductor. bench step",
+     "n": "Copenhague palanca corta",
      "p": [
       [
        "series",
@@ -1906,7 +1443,7 @@
      ]
     },
     {
-     "n": "lateral plank + rotational",
+     "n": "Plancha rotacional",
      "p": [
       [
        "series",
@@ -1930,7 +1467,7 @@
    "tipo": "activacion",
    "ex": [
     {
-     "n": "lateral plank + leg raise",
+     "n": "Plancha con distorsión unilateral",
      "p": [
       [
        "series",
@@ -1955,7 +1492,7 @@
      ]
     },
     {
-     "n": "Banded Side Plank Clamshell",
+     "n": "Plancha lateral desde rodillas",
      "p": [
       [
        "series",
@@ -1985,7 +1522,7 @@
      ]
     },
     {
-     "n": "press pallof kneeling",
+     "n": "Pallof rotacional. kneeling",
      "p": [
       [
        "series",
@@ -2002,7 +1539,7 @@
      ]
     },
     {
-     "n": "Push Up - Eccentric",
+     "n": "push up",
      "p": [
       [
        "series",
@@ -2043,7 +1580,7 @@
    "tipo": "activacion",
    "ex": [
     {
-     "n": "lateral plank + leg raise",
+     "n": "Plancha con distorsión unilateral",
      "p": [
       [
        "series",
@@ -2068,7 +1605,7 @@
      ]
     },
     {
-     "n": "Banded Side Plank Clamshell",
+     "n": "Plancha lateral desde rodillas",
      "p": [
       [
        "series",
@@ -2098,7 +1635,7 @@
      ]
     },
     {
-     "n": "Push Up - Eccentric",
+     "n": "push up",
      "p": [
       [
        "series",
@@ -2139,7 +1676,7 @@
    "tipo": "fuerza",
    "ex": [
     {
-     "n": "Bench Press - 1 Arm Dumbbell Contralateral Hip Flexion (Hips off)",
+     "n": "Puente gluteo + floor press unilateral",
      "p": [
       [
        "series",
@@ -2173,7 +1710,7 @@
      ]
     },
     {
-     "n": "kettlebell deep squat",
+     "n": "Sentadilla Bipodal. Goblet",
      "p": [
       [
        "series",
@@ -2197,7 +1734,7 @@
    "tipo": "fuerza",
    "ex": [
     {
-     "n": "Bench Press - 1 Arm Dumbbell Contralateral Hip Flexion (Hips off)",
+     "n": "Puente gluteo + floor press unilateral",
      "p": [
       [
        "series",
@@ -2289,7 +1826,7 @@
      ]
     },
     {
-     "n": "abs remo",
+     "n": "Remo en posición de cuadrúpedia",
      "p": [
       [
        "series",
@@ -2345,23 +1882,6 @@
        "7"
       ]
      ]
-    },
-    {
-     "n": "Chop rotacional con disco",
-     "p": [
-      [
-       "series",
-       "3"
-      ],
-      [
-       "reps",
-       "8 c/lado"
-      ],
-      [
-       "pct_rm",
-       "50"
-      ]
-     ]
     }
    ],
    "key": "f4_traA3"
@@ -2371,7 +1891,7 @@
    "tipo": "activacion",
    "ex": [
     {
-     "n": "adductor fitball",
+     "n": "Copenhague palanca corta",
      "p": [
       [
        "series",
@@ -2396,7 +1916,7 @@
      ]
     },
     {
-     "n": "lateral plank + leg raise",
+     "n": "Plancha con distorsión unilateral",
      "p": [
       [
        "series",
@@ -2421,7 +1941,7 @@
      ]
     },
     {
-     "n": "pallof rotacional",
+     "n": "Pallof rotacional. kneeling",
      "p": [
       [
        "series",
@@ -2434,27 +1954,6 @@
       [
        "pct_rm",
        "50"
-      ]
-     ]
-    },
-    {
-     "n": "Adductor. bench step",
-     "p": [
-      [
-       "series",
-       "3"
-      ],
-      [
-       "rpe",
-       "8"
-      ],
-      [
-       "duracion",
-       "20"
-      ],
-      [
-       "descanso",
-       "5s"
       ]
      ]
     },
@@ -2472,7 +1971,7 @@
      ]
     },
     {
-     "n": "empuje gluteo",
+     "n": "Puente gluteo. Cotinuo",
      "p": [
       [
        "series",
@@ -2496,7 +1995,7 @@
    "tipo": "activacion",
    "ex": [
     {
-     "n": "adductor fitball",
+     "n": "Copenhague palanca corta",
      "p": [
       [
        "series",
@@ -2521,7 +2020,7 @@
      ]
     },
     {
-     "n": "lateral plank + leg raise",
+     "n": "Plancha con distorsión unilateral",
      "p": [
       [
        "series",
@@ -2546,7 +2045,7 @@
      ]
     },
     {
-     "n": "pallof rotacional",
+     "n": "Pallof rotacional. kneeling",
      "p": [
       [
        "series",
@@ -2576,27 +2075,6 @@
       [
        "pct_rm",
        "60"
-      ]
-     ]
-    },
-    {
-     "n": "Adductor. bench step",
-     "p": [
-      [
-       "series",
-       "3"
-      ],
-      [
-       "rpe",
-       "8"
-      ],
-      [
-       "duracion",
-       "20"
-      ],
-      [
-       "descanso",
-       "5s"
       ]
      ]
     },
@@ -2659,7 +2137,7 @@
      ]
     },
     {
-     "n": "remo en posición base. polea",
+     "n": "Remo uniliteral en polea. Posición base",
      "p": [
       [
        "series",
@@ -2676,7 +2154,7 @@
      ]
     },
     {
-     "n": "abs remo",
+     "n": "Remo en posición de cuadrúpedia",
      "p": [
       [
        "series",
@@ -2738,7 +2216,7 @@
      ]
     },
     {
-     "n": "remo en posición base. polea",
+     "n": "Remo uniliteral en polea. Posición base",
      "p": [
       [
        "series",
@@ -2830,7 +2308,7 @@
      ]
     },
     {
-     "n": "Dns + traccion",
+     "n": "DNS + Remo unilateral",
      "p": [
       [
        "series",
@@ -2878,19 +2356,6 @@
        "6"
       ]
      ]
-    },
-    {
-     "n": "Drop (frenada) bipodal",
-     "p": [
-      [
-       "series",
-       "2"
-      ],
-      [
-       "reps",
-       "6"
-      ]
-     ]
     }
    ],
    "key": "f4_plio"
@@ -2928,7 +2393,7 @@
    "tipo": "activacion",
    "ex": [
     {
-     "n": "adductor fitball",
+     "n": "Copenhague palanca corta",
      "p": [
       [
        "series",
@@ -2953,7 +2418,7 @@
      ]
     },
     {
-     "n": "Lateral Plank to Row (Tubing)",
+     "n": "Remo unilateral en plancha lateral isométrica",
      "p": [
       [
        "series",
@@ -2978,7 +2443,7 @@
      ]
     },
     {
-     "n": "remo en plancha",
+     "n": "Plancha en banco + remo con mancuerna unilateral",
      "p": [
       [
        "series",
@@ -2999,7 +2464,7 @@
      ]
     },
     {
-     "n": "pallof rotacional",
+     "n": "Pallof rotacional. kneeling",
      "p": [
       [
        "series",
@@ -3016,7 +2481,7 @@
      ]
     },
     {
-     "n": "Bench Press - 1 Arm Dumbbell (Lateral Trunk Off Bench)",
+     "n": "dummbell Floor press",
      "p": [
       [
        "series",
@@ -3040,7 +2505,7 @@
    "tipo": "fuerza",
    "ex": [
     {
-     "n": "kettlebell. one leg dead lift",
+     "n": "RDL. Kettlebell",
      "p": [
       [
        "series",
@@ -3057,7 +2522,7 @@
      ]
     },
     {
-     "n": "Split Squat - Rear Foot Elevated Dumbbell",
+     "n": "Sentadilla split squat",
      "p": [
       [
        "series",
@@ -3074,7 +2539,7 @@
      ]
     },
     {
-     "n": "pallof rotacional",
+     "n": "Pallof rotacional. kneeling",
      "p": [
       [
        "series",
@@ -3132,7 +2597,7 @@
      ]
     },
     {
-     "n": "lateral plank + rotational",
+     "n": "Plancha rotacional",
      "p": [
       [
        "series",
@@ -3190,7 +2655,7 @@
      ]
     },
     {
-     "n": "lateral plank + rotational",
+     "n": "Plancha rotacional",
      "p": [
       [
        "series",
@@ -3231,7 +2696,7 @@
    "tipo": "activacion",
    "ex": [
     {
-     "n": "adductor fitball",
+     "n": "Copenhague palanca corta",
      "p": [
       [
        "series",
@@ -3256,7 +2721,7 @@
      ]
     },
     {
-     "n": "lateral plank + leg raise",
+     "n": "Plancha con distorsión unilateral",
      "p": [
       [
        "series",
@@ -3281,7 +2746,7 @@
      ]
     },
     {
-     "n": "press pallof kneeling",
+     "n": "Pallof rotacional. kneeling",
      "p": [
       [
        "series",
@@ -3294,23 +2759,6 @@
       [
        "pct_rm",
        "60"
-      ]
-     ]
-    },
-    {
-     "n": "pallof rotacional",
-     "p": [
-      [
-       "series",
-       "3"
-      ],
-      [
-       "reps",
-       "8 c/lado"
-      ],
-      [
-       "pct_rm",
-       "50"
       ]
      ]
     },
@@ -3364,7 +2812,7 @@
    "tipo": "fuerza",
    "ex": [
     {
-     "n": "Hex Bar Romanian Deadlift",
+     "n": "Hip Hinge. Barra hexagonal",
      "p": [
       [
        "series",
@@ -3381,7 +2829,7 @@
      ]
     },
     {
-     "n": "Leg Curl (Slide)",
+     "n": "Nordico",
      "p": [
       [
        "series",
@@ -3398,7 +2846,7 @@
      ]
     },
     {
-     "n": "Bench Press - Dumbbell (Hips Off Bench)",
+     "n": "Press de banca con mancuernas",
      "p": [
       [
        "series",
@@ -3415,7 +2863,7 @@
      ]
     },
     {
-     "n": "lateral plank + leg raise",
+     "n": "Plancha con distorsión unilateral",
      "p": [
       [
        "series",
@@ -3465,7 +2913,7 @@
      "tipo": "activacion",
      "ex": [
       {
-       "n": "MQ - lateral Plank",
+       "n": "Plancha lateral desde rodillas",
        "p": [
         [
          "series",
@@ -3478,24 +2926,7 @@
        ]
       },
       {
-       "n": "Banded Side Plank Clamshell",
-       "p": [
-        [
-         "series",
-         "2"
-        ],
-        [
-         "reps",
-         "12 c/lado"
-        ],
-        [
-         "notas",
-         "Banda Very Heavy"
-        ]
-       ]
-      },
-      {
-       "n": "Lateral Plank to Row (Cable)",
+       "n": "Remo unilateral en plancha lateral isométrica",
        "p": [
         [
          "series",
@@ -3527,7 +2958,7 @@
      "tipo": "activacion",
      "ex": [
       {
-       "n": "MQ - lateral Plank",
+       "n": "Plancha lateral desde rodillas",
        "p": [
         [
          "series",
@@ -3540,7 +2971,7 @@
        ]
       },
       {
-       "n": "Lateral Plank to Row (Cable)",
+       "n": "Remo unilateral en plancha lateral isométrica",
        "p": [
         [
          "series",
@@ -3553,23 +2984,6 @@
         [
          "pct_rm",
          "40"
-        ]
-       ]
-      },
-      {
-       "n": "Banded Side Plank Clamshell",
-       "p": [
-        [
-         "series",
-         "2"
-        ],
-        [
-         "reps",
-         "12 c/lado"
-        ],
-        [
-         "notas",
-         "Banda Very Heavy"
         ]
        ]
       }
@@ -3589,7 +3003,7 @@
      "tipo": "activacion",
      "ex": [
       {
-       "n": "Lateral Plank to Row (Cable)",
+       "n": "Remo unilateral en plancha lateral isométrica",
        "p": [
         [
          "series",
@@ -3606,7 +3020,7 @@
        ]
       },
       {
-       "n": "Banded Side Plank Clamshell",
+       "n": "Plancha lateral desde rodillas",
        "p": [
         [
          "series",
@@ -3619,19 +3033,6 @@
         [
          "notas",
          "Banda Very Heavy"
-        ]
-       ]
-      },
-      {
-       "n": "MQ - lateral Plank",
-       "p": [
-        [
-         "series",
-         "2"
-        ],
-        [
-         "duracion",
-         "20"
         ]
        ]
       }

@@ -794,6 +794,7 @@ function aplicarCodigoAcceso(){
         <div class="section-title">Base de ejercicios</div>
         <div style="display:flex;gap:10px;align-items:center;">
           <input id="ex-search" type="text" placeholder="🔍 Buscar..." style="padding:9px 14px;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;outline:none;width:200px;" oninput="renderEjercicios()">
+          <button class="btn btn-secondary" onclick="limpAbrir()">🧹 Limpiar sin vídeo/ilustración</button>
           <button class="btn btn-secondary" onclick="ytAbrir()">🔗 Enlazar vídeos YouTube</button>
           <button class="btn btn-primary" onclick="openEjercicio()">+ Nuevo ejercicio</button>
         </div>
@@ -2198,8 +2199,8 @@ async function importarPaquete(url){
   if(window._impBusy)return;
   var pkg;
   try{pkg=await (await fetch(url+'?v='+Date.now(),{cache:'no-store'})).json();}catch(e){toast('No se pudo leer el paquete','err');return;}
-  if(DB.programas.some(function(p){return p.name===pkg.nombre;})&&!confirm('Ya existe un plan «'+pkg.nombre+'». ¿Importar de nuevo y crear otro?'))return;
-  if(!confirm('Se van a crear en tu biblioteca: ejercicios que falten, '+pkg.bloques.length+' bloques y el plan «'+pkg.nombre+'» de '+pkg.semanas.length+' semanas (sin crear programas sueltos). ¿Continuar?'))return;
+  var prevIdx=DB.programas.findIndex(function(p){return p.name===pkg.nombre;});
+  if(!confirm((prevIdx>=0?'Ya existe el plan «'+pkg.nombre+'»: se REEMPLAZARÁ por esta versión y se actualizarán los bloques con el mismo nombre. ':'Se van a crear en tu biblioteca: ejercicios que falten, '+pkg.bloques.length+' bloques y el plan «'+pkg.nombre+'» de '+pkg.semanas.length+' semanas (sin crear programas sueltos). ')+'¿Continuar?'))return;
   window._impBusy=true;
   try{
     // 1. Ejercicios
@@ -2221,7 +2222,8 @@ async function importarPaquete(url){
     // 2. Biblioteca de bloques
     var lst=bgList(),hechos=0;
     pkg.bloques.forEach(function(b){
-      if(lst.some(function(x){return x.nombre===b.nombre;}))return;
+      var ya=lst.find(function(x){return x.nombre===b.nombre;});
+      if(ya){ya.tipo=b.tipo;ya.ex=conv(b.ex);hechos++;return;}
       lst.push({id:'bg_'+Date.now()+'_'+(hechos++),nombre:b.nombre,tipo:b.tipo,ex:conv(b.ex)});
     });
     if(!(await bgPersist()))throw new Error('No se pudieron guardar los bloques');
@@ -2236,13 +2238,13 @@ async function importarPaquete(url){
       });
       cop[se.key]={nombre:se.nombre,bloques:bl,bloqueMeta:meta};
     });
-    var plan={id:'prog_'+Date.now(),name:pkg.nombre,weeks:pkg.semanas.map(function(w){
+    var plan={id:prevIdx>=0?DB.programas[prevIdx].id:'prog_'+Date.now(),name:pkg.nombre,weeks:pkg.semanas.map(function(w){
       var dias={},ses={};
       Object.keys(w.dias).forEach(function(k){dias[k]='__custom__';var c=JSON.parse(JSON.stringify(cop[w.dias[k]]));c.tplId='';ses[k]=c;});
       return {dias:dias,sesiones:ses,fase:'Fase '+w.fase};
     })};
     var rp=await apiPost({action:'saveProgram',program:plan});
-    DB.programas.push(plan);try{localStorage.setItem('gc_programas',JSON.stringify(DB.programas));}catch(e){}
+    if(prevIdx>=0)DB.programas[prevIdx]=plan;else DB.programas.push(plan);if(currentPrograma&&currentPrograma.id===plan.id){currentPrograma=plan;psWeek=0;}try{localStorage.setItem('gc_programas',JSON.stringify(DB.programas));}catch(e){}
     if(!rp||!rp.ok)toast('Plan guardado solo en este navegador: '+((rp&&rp.error)||'el servidor no lo aceptó'),'err');
     renderProgramaList();if(typeof bgRender==='function')bgRender();
     toast('✅ Importado: '+nuevos+' ejercicios nuevos, '+hechos+' bloques y el plan');
@@ -3313,6 +3315,38 @@ async function ytAplicar(){
     if(r&&r.ok){DB.ejercicios[sel[i].id]=d;n++;}else{toast('Error en '+e.nombre+': '+(r&&r.error),'err');}
   }
   renderEjercicios();toast('✅ '+n+' vídeos enlazados');document.getElementById('yt-ov').remove();
+}
+
+// ── Limpieza de ejercicios sin vídeo ni ilustración ──
+function limpUso(){
+  var u={};function add(id,t){if(!id)return;(u[id]=u[id]||[]).push(t);}
+  (DB.programas||[]).forEach(function(p){var ids={};(p.weeks||[]).forEach(function(w){Object.keys(w.sesiones||{}).forEach(function(k){var se=w.sesiones[k];Object.keys(se.bloques||{}).forEach(function(b){(se.bloques[b]||[]).forEach(function(x){ids[x.id]=1;});});});});Object.keys(ids).forEach(function(i){add(i,'plan «'+p.name+'»');});});
+  (DB.templates||[]).forEach(function(t){var ids={};Object.keys(t.bloques||{}).forEach(function(b){(t.bloques[b]||[]).forEach(function(x){ids[x.id]=1;});});Object.keys(ids).forEach(function(i){add(i,'programa «'+t.name+'»');});});
+  bgList().forEach(function(b){(b.ex||[]).forEach(function(x){add(x.id,'bloque «'+b.nombre+'»');});});
+  return u;
+}
+var limpSel={};
+function limpAbrir(){
+  var o=document.getElementById('limp-ov');if(o)o.remove();
+  var u=limpUso(),L=Object.keys(DB.ejercicios).filter(function(i){var e=DB.ejercicios[i];return !e.video&&!e.imagen;}).sort(function(a,b){return DB.ejercicios[a].nombre.localeCompare(DB.ejercicios[b].nombre);});
+  limpSel={};L.forEach(function(i){limpSel[i]=!u[i];});
+  o=document.createElement('div');o.id='limp-ov';o.style.cssText='position:fixed;inset:0;background:rgba(10,15,25,.55);z-index:9999;display:flex;align-items:flex-start;justify-content:center;padding:30px 16px;overflow:auto';
+  o.innerHTML='<div style="background:var(--surface);border-radius:14px;max-width:900px;width:100%;padding:22px;box-shadow:0 20px 60px rgba(0,0,0,.4)">'
+   +'<div style="display:flex;justify-content:space-between;align-items:center"><b style="font-size:18px">Ejercicios sin vídeo ni ilustración ('+L.length+')</b><button class="btn btn-secondary btn-sm" onclick="document.getElementById(\'limp-ov\').remove()">✕</button></div>'
+   +'<p style="font-size:13px;color:var(--text-muted);margin:8px 0">Marcados por defecto los que no están en ningún plan, programa ni bloque. Los que sí se usan salen desmarcados con el detalle: si los borras, quedarán huecos en esos planes. El borrado es definitivo.</p>'
+   +'<div style="max-height:55vh;overflow:auto;border:1px solid var(--border);border-radius:8px"><table style="width:100%;font-size:12px;border-collapse:collapse">'
+   +L.map(function(i){var e=DB.ejercicios[i],us=u[i]||[];return '<tr style="border-bottom:1px solid var(--border)"><td style="padding:6px"><input type="checkbox" '+(limpSel[i]?'checked ':'')+'onchange="limpSel[\''+escAttr(i)+'\']=this.checked;limpCuenta()"></td><td style="padding:6px;font-weight:600">'+escapeHtml(e.nombre)+'</td><td style="padding:6px;color:var(--text-muted)">'+escapeHtml(e.categoria||'')+'</td><td style="padding:6px;color:'+(us.length?'#b45309':'var(--text-muted)')+'">'+(us.length?'⚠ en '+escapeHtml(us.slice(0,3).join(', '))+(us.length>3?' y '+(us.length-3)+' más':''):'sin uso')+'</td></tr>';}).join('')
+   +'</table></div><div style="margin-top:12px;display:flex;gap:10px;align-items:center"><button class="btn btn-primary btn-sm" style="background:#dc2626;border-color:#dc2626;color:#fff" onclick="limpBorrar()">Borrar marcados</button><span id="limp-n" style="font-size:12px;color:var(--text-muted)"></span></div></div>';
+  document.body.appendChild(o);limpCuenta();
+}
+function limpCuenta(){var n=Object.keys(limpSel).filter(function(i){return limpSel[i];}).length,e=document.getElementById('limp-n');if(e)e.textContent=n+' marcados';}
+async function limpBorrar(){
+  var ids=Object.keys(limpSel).filter(function(i){return limpSel[i];});
+  if(!ids.length)return;
+  if(!confirm('Se borrarán '+ids.length+' ejercicios de forma definitiva. ¿Continuar?'))return;
+  var ok=0,msg=document.getElementById('limp-n');
+  for(var k=0;k<ids.length;k++){msg.textContent='Borrando '+(k+1)+' de '+ids.length+'…';var r=await apiPost({action:'deleteEjercicio',id:ids[k]});if(r&&r.ok){delete DB.ejercicios[ids[k]];ok++;}else toast('Error en '+ids[k]+': '+(r&&r.error),'err');}
+  renderEjercicios();toast('🗑 '+ok+' ejercicios borrados');document.getElementById('limp-ov').remove();
 }
 async function saveEjercicio(){
   await esperarSubidas(document.getElementById('btn-save-ej'));
