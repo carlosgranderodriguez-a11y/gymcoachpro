@@ -692,7 +692,6 @@ function aplicarCodigoAcceso(){
     <div class="sb-group">Entrenamiento</div>
     <div class="tab" onclick="switchTab('biblioteca',this)"><svg viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg><span>Biblioteca</span></div>
     <div class="sb-group">Sistema</div>
-    <div class="tab" id="tab-entrenadores" style="display:none" onclick="switchTab('entrenadores',this)"><svg viewBox="0 0 24 24"><path d="M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6z"/><path d="M9 12l2 2 4-4"/></svg><span>Entrenadores</span></div>
     <div class="tab" onclick="switchTab('ajustes',this)"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg><span>Ajustes</span></div>
   </nav>
   <div class="sb-foot"><div id="auth-chip" style="display:none;font-size:12px;color:#cbd5e1;margin-bottom:10px;line-height:1.4"></div><div class="status-badge" id="status">⏳ Conectando...</div></div>
@@ -973,8 +972,11 @@ function aplicarCodigoAcceso(){
 
 
   <!-- AJUSTES -->
-  <div id="page-entrenadores" class="page">
-  <div class="section-header"><div><div class="section-title">Entrenadores</div><div style="font-size:13px;color:var(--text-muted);margin-top:2px">Tú ves todo y das de alta a cada entrenador con email y contraseña. Cada entrenador ve sus atletas, equipos y planes, y la biblioteca común.</div></div></div>
+<div id="page-ajustes" class="page">
+    <div class="section-header"><div class="section-title">Ajustes</div></div>
+    <div id="ajustes-entrenadores" style="display:none;margin-bottom:24px">
+      <div style="font-size:15px;font-weight:700;margin-bottom:2px">👥 Entrenadores</div>
+      <div style="font-size:13px;color:var(--text-muted);margin-bottom:12px">Tú ves todo y das de alta a cada entrenador con email y contraseña. Cada entrenador ve sus atletas, equipos y planes, y la biblioteca común.</div>
   <div class="template-editor" style="padding:20px;margin-bottom:18px">
     <div style="font-weight:700;margin-bottom:10px">Cuentas con acceso</div>
     <div id="ent-lista" style="margin-bottom:14px"></div>
@@ -991,9 +993,8 @@ function aplicarCodigoAcceso(){
       <select id="ent-filtro" onchange="entRenderAtletas()" style="padding:7px 10px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text)"></select></div>
     <div id="ent-atletas"></div>
   </div>
-</div>
-<div id="page-ajustes" class="page">
-    <div class="section-header"><div class="section-title">Ajustes</div></div>
+    </div>
+
     <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:16px;">
       <div style="font-size:14px;font-weight:600;margin-bottom:14px;">🏋️ Tipos de contracción</div>
       <div id="cfg-contraccion" class="cfg-chip-list"></div>
@@ -1794,7 +1795,7 @@ async function authInit(){
   if(!AUTH.me)return false;
   var rc=await api({action:'getCompaneros'});if(rc&&rc.ok)AUTH.companeros=rc.companeros||[];
   document.body.classList.toggle('es-admin',AUTH.me.rol==='admin');
-  var t=document.getElementById('tab-entrenadores');if(t)t.style.display=AUTH.me.rol==='admin'?'':'none';
+  var t=document.getElementById('ajustes-entrenadores');if(t)t.style.display=AUTH.me.rol==='admin'?'':'none';
   var ch=document.getElementById('auth-chip');if(ch){ch.style.display='block';ch.innerHTML='👤 '+escapeHtml(AUTH.me.nombre||AUTH.me.email)+'<br><span style="opacity:.7">'+(AUTH.me.rol==='admin'?'Administrador':'Entrenador')+'</span> · <a href="#" onclick="authSalir();return false" style="color:#ccff66">Salir</a><br><a href="#" onclick="authCambiarClave();return false" style="color:#94a3b8;font-size:11px">Cambiar contraseña</a>';}
   return true;
 }
@@ -1976,7 +1977,7 @@ function switchTab(tab,el){
   if(tab==='calendario') renderCalendar();
   if(tab==='generador') initGenerador();
   if(tab==='semequipo') seRender();
-  if(tab==='entrenadores') entCargar();
+  if(tab==='ajustes'&&AUTH.on&&AUTH.me&&AUTH.me.rol==='admin') entCargar();
   if(tab==='programas'||tab==='generador'||tab==='biblioteca'){
     if(tab!=='biblioteca')bibActual=(tab==='programas'?'planes':tab);
     var bt=document.querySelector('.tab[onclick*="\'biblioteca\'"]');
