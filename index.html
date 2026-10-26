@@ -616,7 +616,11 @@ input:focus,select:focus,textarea:focus{border-color:#8aa0d6 !important;box-shad
   <div style="background:#fff;border-radius:16px;max-width:380px;width:100%;padding:30px 26px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.5)">
     <div style="font-size:22px;font-weight:800;margin-bottom:4px">GymCoach<span style="color:#7aa800">Pro</span></div>
     <div style="font-size:13px;color:#667;margin-bottom:20px">Acceso para entrenadores</div>
-    <div id="auth-btn" style="display:flex;justify-content:center;min-height:44px"></div>
+    <form onsubmit="authEnviar();return false" style="display:flex;flex-direction:column;gap:10px;text-align:left">
+      <input id="auth-email" type="email" autocomplete="username" placeholder="Email" required style="padding:11px 12px;border:1px solid #cbd5e1;border-radius:8px;font-size:15px">
+      <input id="auth-clave" type="password" autocomplete="current-password" placeholder="Contraseña" required style="padding:11px 12px;border:1px solid #cbd5e1;border-radius:8px;font-size:15px">
+      <button id="auth-ok" type="submit" style="padding:12px;border:0;border-radius:8px;background:#0f1729;color:#ccff66;font-weight:700;font-size:15px;cursor:pointer">Entrar</button>
+    </form>
     <div id="auth-msg" style="font-size:12.5px;color:#b45309;margin-top:14px;min-height:16px"></div>
   </div>
 </div>
@@ -970,13 +974,15 @@ function aplicarCodigoAcceso(){
 
   <!-- AJUSTES -->
   <div id="page-entrenadores" class="page">
-  <div class="section-header"><div><div class="section-title">Entrenadores</div><div style="font-size:13px;color:var(--text-muted);margin-top:2px">Tú ves todo. Cada entrenador ve sus atletas, equipos y planes, y la biblioteca común.</div></div></div>
+  <div class="section-header"><div><div class="section-title">Entrenadores</div><div style="font-size:13px;color:var(--text-muted);margin-top:2px">Tú ves todo y das de alta a cada entrenador con email y contraseña. Cada entrenador ve sus atletas, equipos y planes, y la biblioteca común.</div></div></div>
   <div class="template-editor" style="padding:20px;margin-bottom:18px">
     <div style="font-weight:700;margin-bottom:10px">Cuentas con acceso</div>
     <div id="ent-lista" style="margin-bottom:14px"></div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-      <input id="ent-email" type="email" placeholder="email de Google del entrenador" style="flex:2;min-width:220px;padding:9px 12px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text)">
+      <input id="ent-email" type="email" placeholder="email del entrenador" style="flex:2;min-width:220px;padding:9px 12px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text)">
       <input id="ent-nombre" type="text" placeholder="Nombre" style="flex:1;min-width:140px;padding:9px 12px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text)">
+      <input id="ent-clave" type="text" autocomplete="off" placeholder="Contraseña (mín. 8)" style="flex:1;min-width:150px;padding:9px 12px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text)">
+      <button class="btn btn-secondary" type="button" onclick="document.getElementById('ent-clave').value=entGenClave()">🎲 Generar</button>
       <button class="btn btn-primary" onclick="entAdd()">+ Añadir entrenador</button>
     </div>
   </div>
@@ -1738,38 +1744,34 @@ var DEFAULT_PARAMS_CATALOG = [
   {id:'notas',  label:'Notas',    type:'text'}
 ];
 
-// ── ACCESO CON GOOGLE (multi-entrenador) ──
-// Rellena GOOGLE_CLIENT_ID con el ID de cliente de Google Cloud. Vacío = sin inicio de sesión (como antes).
-var GOOGLE_CLIENT_ID='320047603187-mvpa01k81siq2qvvflngj9009f1utf2o.apps.googleusercontent.com';
-var AUTH={on:!!GOOGLE_CLIENT_ID,token:'',me:null,companeros:[],entrenadores:[]};
-function jwtDatos(t){try{return JSON.parse(decodeURIComponent(escape(atob(t.split('.')[1].replace(/-/g,'+').replace(/_/g,'/')))));}catch(e){return {};}}
-function authCargarGIS(){return new Promise(function(res){if(window.google&&google.accounts&&google.accounts.id)return res();var sc=document.createElement('script');sc.src='https://accounts.google.com/gsi/client';sc.onload=res;sc.onerror=res;document.head.appendChild(sc);});}
+// ── ACCESO CON EMAIL Y CONTRASEÑA (multi-entrenador) ──
+// El servidor firma un token de sesión (14 días). Si el servidor no exige acceso, se entra como siempre.
+var AUTH={on:true,token:'',me:null,companeros:[],entrenadores:[]};
+function jwtDatos(t){try{var p=JSON.parse(atob(String(t).split('.')[1].replace(/-/g,'+').replace(/_/g,'/')));return {exp:Number(p.x)/1000,email:p.e};}catch(e){return {exp:0};}}
+var _authRes=null;
 function authPedir(msg){
-  return new Promise(async function(resolve){
-    await authCargarGIS();
+  return new Promise(function(resolve){
+    _authRes=resolve;
     var g=document.getElementById('auth-gate');g.style.display='flex';document.getElementById('auth-msg').textContent=msg||'';
-    if(!(window.google&&google.accounts)){document.getElementById('auth-msg').textContent='No se pudo cargar el acceso con Google. Revisa la conexión y recarga.';return;}
-    google.accounts.id.initialize({client_id:GOOGLE_CLIENT_ID,auto_select:false,callback:function(r){AUTH.token=r.credential;try{localStorage.setItem('gc_idtoken',r.credential);}catch(e){}g.style.display='none';resolve(r.credential);}});
-    var b=document.getElementById('auth-btn');b.innerHTML='';google.accounts.id.renderButton(b,{theme:'outline',size:'large',text:'signin_with',locale:'es'});
+    try{var e=document.getElementById('auth-email');if(!e.value)e.value=localStorage.getItem('gc_email')||'';(e.value?document.getElementById('auth-clave'):e).focus();}catch(x){}
   });
 }
-// Renovación silenciosa (el token dura ~1 h): si no se puede, vuelve a pedir
-function authRenovar(){
-  return new Promise(async function(resolve){
-    await authCargarGIS();var hecho=false;
-    var fin=function(t){if(hecho)return;hecho=true;resolve(t);};
-    try{
-      google.accounts.id.initialize({client_id:GOOGLE_CLIENT_ID,auto_select:true,callback:function(r){AUTH.token=r.credential;try{localStorage.setItem('gc_idtoken',r.credential);}catch(e){}fin(r.credential);}});
-      google.accounts.id.prompt();
-    }catch(e){}
-    setTimeout(function(){if(!hecho){hecho=true;authPedir('La sesión ha caducado. Entra de nuevo.').then(resolve);}},3500);
-  });
+async function authEnviar(){
+  var em=document.getElementById('auth-email').value.trim(),cl=document.getElementById('auth-clave').value,m=document.getElementById('auth-msg'),b=document.getElementById('auth-ok');
+  if(!em||!cl)return;b.disabled=true;m.textContent='Entrando…';
+  var r=null;try{r=await(await fetch(API,{method:'POST',body:JSON.stringify({action:'loginEntrenador',email:em,clave:cl})})).json();}catch(e){}
+  b.disabled=false;
+  if(!r||!r.ok){m.textContent=(r&&r.error)||'No se pudo conectar. Revisa la conexión.';return;}
+  AUTH.token=r.token;document.getElementById('auth-clave').value='';
+  try{localStorage.setItem('gc_idtoken',r.token);localStorage.setItem('gc_email',em);}catch(e){}
+  document.getElementById('auth-gate').style.display='none';
+  if(_authRes){var f=_authRes;_authRes=null;f(r.token);}
 }
 async function authToken(forzar){
   if(!AUTH.on)return '';
   if(!forzar&&AUTH.token&&jwtDatos(AUTH.token).exp*1000-60000>Date.now())return AUTH.token;
-  if(AUTH.token&&!forzar){AUTH.token='';return await authRenovar();}
-  AUTH.token='';return await authPedir('Entra con tu cuenta de Google.');
+  AUTH.token='';try{localStorage.removeItem('gc_idtoken');}catch(e){}
+  return await authPedir(forzar?'La sesión ha caducado. Entra de nuevo.':'Entra con tu email y contraseña.');
 }
 function authSoyAdmin(){return !AUTH.on||(AUTH.me&&AUTH.me.rol==='admin');}
 function authEsMio(a){return !AUTH.on||!AUTH.me||authSoyAdmin()||(a.propietario||'')===AUTH.me.email;}
@@ -1783,21 +1785,27 @@ async function authInit(){
   if(guard&&jwtDatos(guard).exp*1000-60000>Date.now())AUTH.token=guard;
   var msg='';
   for(var i=0;i<6;i++){
-    if(!AUTH.token)await authPedir(msg||'Entra con tu cuenta de Google.');
+    if(!AUTH.token)await authPedir(msg||'Entra con tu email y contraseña.');
     var r=await api({action:'whoami'});
     if(r&&r.ok){AUTH.me=r;break;}
-    var em=jwtDatos(AUTH.token).email||'';
-    msg='La cuenta '+em+' no tiene acceso. Pídele al administrador que la añada o entra con otra.';
-    AUTH.token='';try{localStorage.removeItem('gc_idtoken');if(window.google&&google.accounts)google.accounts.id.disableAutoSelect();}catch(e){}
+    msg='Esa cuenta ya no tiene acceso. Pídeselo al administrador.';
+    AUTH.token='';try{localStorage.removeItem('gc_idtoken');}catch(e){}
   }
   if(!AUTH.me)return false;
   var rc=await api({action:'getCompaneros'});if(rc&&rc.ok)AUTH.companeros=rc.companeros||[];
   document.body.classList.toggle('es-admin',AUTH.me.rol==='admin');
   var t=document.getElementById('tab-entrenadores');if(t)t.style.display=AUTH.me.rol==='admin'?'':'none';
-  var ch=document.getElementById('auth-chip');if(ch){ch.style.display='block';ch.innerHTML='👤 '+escapeHtml(AUTH.me.nombre||AUTH.me.email)+'<br><span style="opacity:.7">'+(AUTH.me.rol==='admin'?'Administrador':'Entrenador')+'</span> · <a href="#" onclick="authSalir();return false" style="color:#ccff66">Salir</a>';}
+  var ch=document.getElementById('auth-chip');if(ch){ch.style.display='block';ch.innerHTML='👤 '+escapeHtml(AUTH.me.nombre||AUTH.me.email)+'<br><span style="opacity:.7">'+(AUTH.me.rol==='admin'?'Administrador':'Entrenador')+'</span> · <a href="#" onclick="authSalir();return false" style="color:#ccff66">Salir</a><br><a href="#" onclick="authCambiarClave();return false" style="color:#94a3b8;font-size:11px">Cambiar contraseña</a>';}
   return true;
 }
-function authSalir(){AUTH.token='';AUTH.me=null;try{localStorage.removeItem('gc_idtoken');if(window.google&&google.accounts)google.accounts.id.disableAutoSelect();}catch(e){}location.reload();}
+function authSalir(){AUTH.token='';AUTH.me=null;try{localStorage.removeItem('gc_idtoken');}catch(e){}location.reload();}
+async function authCambiarClave(){
+  var act=prompt('Contraseña actual:');if(act===null)return;
+  var nue=prompt('Contraseña nueva (mínimo 8 caracteres):');if(nue===null)return;
+  if(nue.length<8){toast('Mínimo 8 caracteres','err');return;}
+  var r=await apiPost({action:'cambiarClave',actual:act,nueva:nue});
+  if(r&&r.ok)toast('✅ Contraseña cambiada');else toast('Error: '+(r&&r.error),'err');
+}
 
 // ── API ──
 async function api(p){
@@ -1847,6 +1855,7 @@ function entRender(){
   l.innerHTML='<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)"><b style="flex:1">'+escapeHtml((AUTH.me&&AUTH.me.nombre)||'Tú')+'</b><span style="font-size:12px;color:var(--text-muted)">'+escapeHtml(adm)+'</span><span class="pill">Administrador</span></div>'
    +(AUTH.entrenadores||[]).map(function(e,i){return '<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);flex-wrap:wrap"><b style="flex:1;min-width:120px;'+(e.activo?'':'opacity:.5')+'">'+escapeHtml(e.nombre||'(sin nombre)')+'</b><span style="font-size:12px;color:var(--text-muted)">'+escapeHtml(e.email)+'</span>'
      +'<select onchange="entCambia('+i+',\'rol\',this.value)" style="padding:4px 6px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text)"><option value="entrenador"'+(e.rol!=='admin'?' selected':'')+'>Entrenador</option><option value="admin"'+(e.rol==='admin'?' selected':'')+'>Administrador</option></select>'
+     +'<button class="btn btn-secondary btn-sm" onclick="entClave('+i+')" title="Poner nueva contraseña">🔑 '+(e.tieneClave?'Cambiar':'Poner')+' clave</button>'
      +'<button class="btn btn-secondary btn-sm" onclick="entCambia('+i+',\'activo\','+(!e.activo)+')">'+(e.activo?'Desactivar':'Activar')+'</button>'
      +'<button class="btn btn-danger btn-sm" onclick="entBorra('+i+')">✕</button></div>';}).join('')
    +((AUTH.entrenadores||[]).length?'':'<div style="font-size:13px;color:var(--text-muted);padding:8px 0">Aún no has añadido a ningún entrenador.</div>');
@@ -1873,9 +1882,19 @@ async function entDueno(nombre,email){
 }
 async function entRefrescaCompaneros(){var rc=await api({action:'getCompaneros'});if(rc&&rc.ok)AUTH.companeros=rc.companeros||[];}
 async function entAdd(){
-  var email=document.getElementById('ent-email').value.trim(),nombre=document.getElementById('ent-nombre').value.trim();
-  var r=await apiPost({action:'saveEntrenador',email:email,nombre:nombre,rol:'entrenador',activo:true});
-  if(r&&r.ok){document.getElementById('ent-email').value='';document.getElementById('ent-nombre').value='';toast('✅ Entrenador añadido');await entCargar();await entRefrescaCompaneros();}else toast('Error: '+(r&&r.error),'err');
+  var email=document.getElementById('ent-email').value.trim(),nombre=document.getElementById('ent-nombre').value.trim(),clave=document.getElementById('ent-clave').value;
+  if(clave.length<8){toast('La contraseña necesita al menos 8 caracteres','err');return;}
+  var r=await apiPost({action:'saveEntrenador',email:email,nombre:nombre,rol:'entrenador',activo:true,clave:clave});
+  if(r&&r.ok){document.getElementById('ent-email').value='';document.getElementById('ent-nombre').value='';document.getElementById('ent-clave').value='';
+    prompt('✅ Entrenador creado. Pásale estos datos (la contraseña no se puede volver a ver):',email+'  /  '+clave);toast('✅ Entrenador añadido');await entCargar();await entRefrescaCompaneros();}else toast('Error: '+(r&&r.error),'err');
+}
+function entGenClave(){var c='abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789',o='',a=new Uint32Array(10);crypto.getRandomValues(a);for(var i=0;i<10;i++)o+=c[a[i]%c.length];return o;}
+async function entClave(i){
+  var e=AUTH.entrenadores[i],n=entGenClave();
+  var c=prompt('Nueva contraseña para '+(e.nombre||e.email)+' (mínimo 8). Puedes cambiar la sugerida:',n);if(c===null)return;
+  if(c.length<8){toast('Mínimo 8 caracteres','err');return;}
+  var r=await apiPost({action:'saveEntrenador',email:e.email,nombre:e.nombre,rol:e.rol,activo:e.activo,clave:c});
+  if(r&&r.ok){prompt('✅ Contraseña cambiada. Pásasela:',e.email+'  /  '+c);await entCargar();}else toast('Error: '+(r&&r.error),'err');
 }
 async function entCambia(i,campo,val){
   var e=Object.assign({},AUTH.entrenadores[i]);e[campo]=val;
