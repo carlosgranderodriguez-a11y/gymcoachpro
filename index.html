@@ -976,6 +976,7 @@ function aplicarCodigoAcceso(){
     <div class="section-header"><div class="section-title">Ajustes</div></div>
     <div id="ajustes-entrenadores" style="display:none;margin-bottom:24px">
       <div style="font-size:15px;font-weight:700;margin-bottom:2px">👥 Entrenadores</div>
+      <div id="ent-aviso" style="display:none;background:#fff7e0;border:1px solid #f0d58a;color:#7a5b00;border-radius:8px;padding:9px 12px;font-size:13px;margin-bottom:10px">⚠️ El acceso con contraseña todavía no está activado en el servidor (falta la propiedad <b>AUTH_ENFORCED = 1</b> en Apps Script). Puedes dar de alta a los entrenadores ya; hasta activarlo, la app sigue abierta como antes.</div>
       <div style="font-size:13px;color:var(--text-muted);margin-bottom:12px">Tú ves todo y das de alta a cada entrenador con email y contraseña. Cada entrenador ve sus atletas, equipos y planes, y la biblioteca común.</div>
   <div class="template-editor" style="padding:20px;margin-bottom:18px">
     <div style="font-weight:700;margin-bottom:10px">Cuentas con acceso</div>
@@ -1781,7 +1782,7 @@ async function authInit(){
   if(!AUTH.on)return true;
   // Sondeo sin token: si el servidor aún no exige inicio de sesión (o no está actualizado), se entra como siempre
   var pre=null;try{pre=await(await fetch(API+'?action=whoami')).json();}catch(e){}
-  if(!pre||(pre.ok&&pre.libre)||(pre.ok===false&&pre.code!=='AUTH')){AUTH.on=false;return true;}
+  if(!pre||(pre.ok&&pre.libre)||(pre.ok===false&&pre.code!=='AUTH')){AUTH.on=false;if(pre&&pre.ok&&pre.libre){AUTH.libre=true;var sl=document.getElementById('ajustes-entrenadores');if(sl)sl.style.display='';var av=document.getElementById('ent-aviso');if(av)av.style.display='';}return true;}
   var guard=null;try{guard=localStorage.getItem('gc_idtoken');}catch(e){}
   if(guard&&jwtDatos(guard).exp*1000-60000>Date.now())AUTH.token=guard;
   var msg='';
@@ -1846,14 +1847,14 @@ async function compartirGuardar(nombre){
 }
 async function entCargar(){
   var r=await api({action:'getEntrenadores'});
-  if(r&&r.ok){AUTH.entrenadores=r.entrenadores||[];}
+  if(r&&r.ok){AUTH.entrenadores=r.entrenadores||[];AUTH.adminEmail=r.admin||'';}
   var rf=await api({action:'getAtletasFull'});if(rf&&rf.ok)DB.atletasFull=rf.atletas||[];
   entRender();
 }
 function entRender(){
   var l=document.getElementById('ent-lista');if(!l)return;
-  var adm=(AUTH.me&&AUTH.me.email)||'';
-  l.innerHTML='<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)"><b style="flex:1">'+escapeHtml((AUTH.me&&AUTH.me.nombre)||'Tú')+'</b><span style="font-size:12px;color:var(--text-muted)">'+escapeHtml(adm)+'</span><span class="pill">Administrador</span></div>'
+  var adm=(AUTH.me&&AUTH.me.email)||AUTH.adminEmail||'';
+  l.innerHTML='<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)"><b style="flex:1">'+escapeHtml((AUTH.me&&AUTH.me.nombre)||'Administrador (tú)')+'</b><span style="font-size:12px;color:var(--text-muted)">'+escapeHtml(adm)+'</span><span class="pill">Administrador</span></div>'
    +(AUTH.entrenadores||[]).map(function(e,i){return '<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);flex-wrap:wrap"><b style="flex:1;min-width:120px;'+(e.activo?'':'opacity:.5')+'">'+escapeHtml(e.nombre||'(sin nombre)')+'</b><span style="font-size:12px;color:var(--text-muted)">'+escapeHtml(e.email)+'</span>'
      +'<select onchange="entCambia('+i+',\'rol\',this.value)" style="padding:4px 6px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text)"><option value="entrenador"'+(e.rol!=='admin'?' selected':'')+'>Entrenador</option><option value="admin"'+(e.rol==='admin'?' selected':'')+'>Administrador</option></select>'
      +'<button class="btn btn-secondary btn-sm" onclick="entClave('+i+')" title="Poner nueva contraseña">🔑 '+(e.tieneClave?'Cambiar':'Poner')+' clave</button>'
@@ -1865,7 +1866,7 @@ function entRender(){
   f.value=cur;entRenderAtletas();
 }
 function entRenderAtletas(){
-  var w=document.getElementById('ent-atletas'),f=document.getElementById('ent-filtro').value,adm=(AUTH.me&&AUTH.me.email)||'';
+  var w=document.getElementById('ent-atletas'),f=document.getElementById('ent-filtro').value,adm=(AUTH.me&&AUTH.me.email)||AUTH.adminEmail||'';
   var L=(DB.atletasFull||[]).filter(function(a){return !f||(f==='__sin'?!a.propietario:(a.propietario||adm)===f);}).sort(function(a,b){return a.nombre.localeCompare(b.nombre);});
   var opts=[{email:adm,nombre:'Yo (admin)'}].concat((AUTH.entrenadores||[]).filter(function(e){return e.activo;}));
   w.innerHTML='<table style="width:100%;font-size:13px;border-collapse:collapse">'+L.map(function(a){
@@ -1977,7 +1978,7 @@ function switchTab(tab,el){
   if(tab==='calendario') renderCalendar();
   if(tab==='generador') initGenerador();
   if(tab==='semequipo') seRender();
-  if(tab==='ajustes'&&AUTH.on&&AUTH.me&&AUTH.me.rol==='admin') entCargar();
+  if(tab==='ajustes'&&((AUTH.on&&AUTH.me&&AUTH.me.rol==='admin')||AUTH.libre)) entCargar();
   if(tab==='programas'||tab==='generador'||tab==='biblioteca'){
     if(tab!=='biblioteca')bibActual=(tab==='programas'?'planes':tab);
     var bt=document.querySelector('.tab[onclick*="\'biblioteca\'"]');
