@@ -256,6 +256,23 @@ input[type=range]{width:100%;}
 .ses-chip .ok{font-size:14px;flex-shrink:0;}
 
 /* PLAN EXTERNO (planificación semanal que manda el propio deportista) — chips estilo ESGRIMA-26 */
+.day-ev{border-top:1px dashed var(--border);padding:8px 12px 10px;}
+.ev-head{display:flex;align-items:center;justify-content:space-between;font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;color:#fbbf24;font-weight:700;margin-bottom:4px;}
+.ev-add{background:transparent;border:1px solid rgba(251,191,36,.45);color:#fbbf24;border-radius:14px;padding:3px 10px;font-size:11px;font-weight:700;cursor:pointer;}
+.ev-chip{display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:8px;background:rgba(251,191,36,.07);border-left:3px solid #fbbf24;margin-top:6px;cursor:pointer;}
+.ev-chip .ic{font-size:15px;flex-shrink:0;}.ev-chip .body{flex:1;font-size:13.5px;line-height:1.35;min-width:0;}
+.ev-chip .meta{font-size:11px;color:var(--text-dim);margin-top:2px;white-space:pre-wrap;}.ev-chip .chev{color:var(--text-dim);font-size:13px;}
+.ev-h{color:var(--text-dim);font-size:12px;margin-left:4px;}
+.ev-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:900;align-items:flex-end;justify-content:center;}
+.ev-modal.on{display:flex;}
+.ev-box{background:var(--surface);border:1px solid var(--border);border-radius:18px 18px 0 0;width:100%;max-width:520px;padding:18px 18px 26px;max-height:92vh;overflow-y:auto;}
+.ev-box h3{margin:0 0 12px;font-size:16px;}
+.ev-box label{display:block;font-size:11px;color:var(--text-dim);margin:10px 0 4px;text-transform:uppercase;letter-spacing:.05em;}
+.ev-box input,.ev-box select,.ev-box textarea{width:100%;padding:11px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:15px;box-sizing:border-box;font-family:inherit;}
+.ev-row{display:flex;gap:10px;}.ev-row>div{flex:1;}
+.ev-actions{display:flex;gap:10px;margin-top:16px;}
+.ev-actions button{flex:1;padding:12px;border-radius:10px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-weight:700;font-size:14px;cursor:pointer;}
+.ev-actions #ev-guardar{background:var(--accent);color:#111;border-color:var(--accent);}
 .day-plan-externo{border-top:1px dashed var(--border);padding:10px 12px 12px;background:rgba(255,255,255,.02);}
 .dpe-lane{border-radius:9px;padding:7px 8px 8px;display:flex;flex-direction:column;gap:6px;background:rgba(167,139,250,.045);border:1px dashed rgba(167,139,250,.28);}
 .dpe-head{display:flex;align-items:center;justify-content:space-between;font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;color:#c4b5fd;font-weight:700;}
@@ -444,6 +461,14 @@ input[type=range]{width:100%;}
   </div>
 </div>
 
+<div class="ev-modal" id="ev-modal" onclick="if(event.target===this)evCerrar()"><div class="ev-box">
+  <h3 id="ev-titulo-modal">Nuevo evento</h3>
+  <label>Título</label><input id="ev-titulo" type="text" maxlength="120" placeholder="Ej. Partido en Algeciras">
+  <div class="ev-row"><div><label>Fecha</label><input id="ev-fecha" type="date"></div><div><label>Hora (opcional)</label><input id="ev-hora" type="time"></div></div>
+  <label>Tipo</label><select id="ev-tipo"><option value="partido">⚽ Partido</option><option value="clase">🎓 Clase / colegio</option><option value="viaje">✈️ Viaje</option><option value="descanso">😴 Descanso</option><option value="medico">🩺 Médico / fisio</option><option value="otro">📌 Otro</option></select>
+  <label>Nota (opcional)</label><textarea id="ev-nota" rows="2" maxlength="400" placeholder="Lo que tu entrenador deba saber"></textarea>
+  <div class="ev-actions"><button onclick="evCerrar()">Cancelar</button><button id="ev-borrar" style="display:none;color:#f87171" onclick="evBorrar()">Borrar</button><button id="ev-guardar" onclick="evGuardar()">Guardar</button></div>
+</div></div>
 <div class="toast" id="toast"></div>
 
 <script>
@@ -457,6 +482,7 @@ var DISC={swim:{e:'🏊',n:'Natación',metric:'Pace (min/100m)',col:'var(--blue)
 // ── DATOS DE SESIONES ASIGNADAS POR EL ENTRENADOR ──
 var FUERZA_SESIONES=[];   // Sesiones (fuerza) del atleta
 var RES_SESIONES=[];      // Resistencia (tipo:'sesion') del atleta
+var EVENTOS=[];          // Eventos que el propio atleta apunta (partidos, clases, viajes...)
 var PLAN_EXTERNO=[];      // Planificación semanal que el propio atleta manda (club/federación) — no la mete el coach como sesión
 
 // Fecha ISO (YYYY-MM-DD) usando componentes LOCALES, no UTC.
@@ -579,14 +605,15 @@ function enterApp(){
 
 async function loadAsignadas(){
   try{
-    var [rS,rR,rReg,rEj,rW,rC,rPE]=await Promise.all([
+    var [rS,rR,rReg,rEj,rW,rC,rPE,rEV]=await Promise.all([
       api({action:'getAllSesiones'}),
       api({action:'getResistencia'}),
       api({action:'getHistorial',atleta:ATLETA}),
       api({action:'getEjercicios'}),
       api({action:'getWellness',atleta:ATLETA}),
       api({action:'getConfig'}),
-      api({action:'getPlanExterno'})
+      api({action:'getPlanExterno'}),
+      api({action:'getEventosAtleta',atleta:ATLETA})
     ]);
     if(rS&&rS.ok) FUERZA_SESIONES=(rS.sesiones||[]).filter(function(s){return mismoAtleta(s.atleta,ATLETA);});
     if(rR&&rR.ok) RES_SESIONES=(rR.items||[]).filter(function(r){return r.tipo==='sesion'&&mismoAtleta(r.atleta,ATLETA);});
@@ -594,6 +621,7 @@ async function loadAsignadas(){
     if(rEj&&rEj.ok) EJERCICIOS_DB=rEj.ejercicios||{};
     if(rW&&rW.ok) WELLNESS=rW.items||[];
     if(rPE&&rPE.ok) PLAN_EXTERNO=(rPE.items||[]).filter(function(p){return mismoAtleta(p.atleta,ATLETA);});
+    if(rEV&&rEV.ok) EVENTOS=(rEV.items||[]).filter(function(e){return mismoAtleta(e.atleta,ATLETA);});
     if(rC&&rC.ok&&rC.config.bloques_ejercicio&&rC.config.bloques_ejercicio.length) BLOQUES=rC.config.bloques_ejercicio;
     renderSemana();
     var _pe=document.getElementById('page-entreno');if(_pe&&_pe.classList.contains('active'))renderEntreno();
@@ -657,6 +685,55 @@ function sesionesDelDia(ds){
   var f=FUERZA_SESIONES.filter(function(s){return s.fecha===ds;}).map(function(s){return {kind:'fuerza',data:s};});
   var r=RES_SESIONES.filter(function(s){return s.fecha===ds;}).map(function(s){return {kind:'resistencia',data:s};});
   return f.concat(r);
+}
+function eventosDelDia(ds){
+  return EVENTOS.filter(function(e){return e.fecha===ds;}).sort(function(a,b){return (a.hora||'99').localeCompare(b.hora||'99');});
+}
+var EV_TIPOS={partido:['⚽','Partido'],clase:['🎓','Clase / colegio'],viaje:['✈️','Viaje'],descanso:['😴','Descanso'],medico:['🩺','Médico / fisio'],otro:['📌','Otro']};
+function evChip(e){
+  var t=EV_TIPOS[e.tipo]||EV_TIPOS.otro;
+  return '<div class="ev-chip" onclick="evAbrir(\''+e.id+'\')"><span class="ic">'+t[0]+'</span><div class="body"><b>'+escapeHtml(e.titulo)+'</b>'+(e.hora?' <span class="ev-h">'+escapeHtml(e.hora)+'</span>':'')
+    +(e.nota?'<div class="meta">'+escapeHtml(e.nota)+'</div>':'')+'</div><span class="chev">✎</span></div>';
+}
+var EV_EDIT=null;
+function evAbrir(id,ds){
+  var e=id?EVENTOS.find(function(x){return x.id===id;}):null;
+  EV_EDIT=e?e.id:null;
+  document.getElementById('ev-titulo-modal').textContent=e?'Editar evento':'Nuevo evento';
+  document.getElementById('ev-fecha').value=e?e.fecha:(ds||fechaLocalISO());
+  document.getElementById('ev-hora').value=e?(e.hora||''):'';
+  document.getElementById('ev-titulo').value=e?e.titulo:'';
+  document.getElementById('ev-tipo').value=e?(e.tipo||'otro'):'partido';
+  document.getElementById('ev-nota').value=e?(e.nota||''):'';
+  document.getElementById('ev-borrar').style.display=e?'inline-block':'none';
+  document.getElementById('ev-modal').classList.add('on');
+}
+function evCerrar(){document.getElementById('ev-modal').classList.remove('on');}
+async function evGuardar(){
+  var b={action:'saveEventoAtleta',atleta:ATLETA,fecha:document.getElementById('ev-fecha').value,hora:document.getElementById('ev-hora').value,
+    titulo:document.getElementById('ev-titulo').value.trim(),tipo:document.getElementById('ev-tipo').value,nota:document.getElementById('ev-nota').value.trim()};
+  if(!b.titulo){toast('Ponle un título','err');return;}
+  if(!b.fecha){toast('Elige la fecha','err');return;}
+  if(EV_EDIT)b.id=EV_EDIT;
+  var btn=document.getElementById('ev-guardar');btn.disabled=true;
+  try{
+    var r=await apiPost(b);
+    if(r&&r.ok){
+      var obj={id:r.id,atleta:ATLETA,fecha:b.fecha,hora:b.hora,titulo:b.titulo,tipo:b.tipo,nota:b.nota};
+      var i=EVENTOS.findIndex(function(x){return x.id===r.id;});
+      if(i>=0)EVENTOS[i]=obj;else EVENTOS.push(obj);
+      evCerrar();renderSemana();toast('✅ Evento guardado');
+    }else toast('No se pudo guardar: '+((r&&r.error)||'sin respuesta'),'err');
+  }catch(e){toast('No se pudo guardar. Revisa la conexión.','err');}
+  btn.disabled=false;
+}
+async function evBorrar(){
+  if(!EV_EDIT||!confirm('¿Borrar este evento?'))return;
+  try{
+    var r=await apiPost({action:'deleteEventoAtleta',id:EV_EDIT,atleta:ATLETA});
+    if(r&&r.ok){EVENTOS=EVENTOS.filter(function(x){return x.id!==EV_EDIT;});evCerrar();renderSemana();toast('🗑 Evento borrado');}
+    else toast('No se pudo borrar','err');
+  }catch(e){toast('No se pudo borrar','err');}
 }
 function planExternoDelDia(ds){
   return PLAN_EXTERNO.filter(function(p){return p.fecha===ds;});
@@ -726,7 +803,8 @@ function renderSemana(){
     var ses=sesionesDelDia(ds);
     var isToday=ds===todayISO;
     var dots=ses.slice(0,3).map(function(x){return '<span class="ds-dot" style="background:'+(x.kind==='fuerza'?'#ccff66':'#60a5fa')+'"></span>';}).join('')
-      +(planExternoDelDia(ds).length?'<span class="ds-dot" style="background:#a78bfa"></span>':'');
+      +(planExternoDelDia(ds).length?'<span class="ds-dot" style="background:#a78bfa"></span>':'')
+      +(eventosDelDia(ds).length?'<span class="ds-dot" style="background:#fbbf24"></span>':'');
     return '<div class="ds-pill'+(isToday?' today':'')+'" onclick="jumpToDay('+i+')">'
       +'<span class="ds-wd">'+stripWd[i]+'</span>'
       +'<span class="ds-num">'+d.getDate()+'</span>'
@@ -761,7 +839,9 @@ function renderSemana(){
         +planDia.map(dpeChip).join('')
       +'</div></div>';
     }
-    return '<div class="day-card'+(isToday?' today':'')+'" id="daycard-'+i+'">'+head+body+planBody+'</div>';
+    var evs=eventosDelDia(ds);
+    var evBody='<div class="day-ev"><div class="ev-head"><span>📅 MIS EVENTOS</span><button class="ev-add" onclick="evAbrir(null,\''+ds+'\')">+ Añadir</button></div>'+evs.map(evChip).join('')+'</div>';
+    return '<div class="day-card'+(isToday?' today':'')+'" id="daycard-'+i+'">'+head+body+planBody+evBody+'</div>';
   }).join('');
 }
 
