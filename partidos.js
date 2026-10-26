@@ -52,6 +52,19 @@ window.PARTIDOS={
           acc:{v:30},
           dec:{v:54},
           vmax:{v:31.2}
+        }},
+      // J09: Informe general MC LAB (26 oct 2026). Faltan el rival, HMLD y los % POC: completar con el Match Day Report
+      // esf28 = esfuerzos >24 km/h según el informe (28). v28 = distancia >28 km/h (80 m)
+      {id:'j09',jornada:'J09',partido:'J09',fecha:'domingo 25 oct 2026',min:96,carga:'',
+        m:{
+          dt:{v:10473},
+          hsr:{v:922},
+          v28:{v:80},
+          sprint:{v:482},
+          esf28:{v:28},
+          acc:{v:24},
+          dec:{v:45},
+          vmax:{v:32.1}
         }}
     ]
   }
