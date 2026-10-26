@@ -1740,7 +1740,7 @@ var DEFAULT_PARAMS_CATALOG = [
 
 // ── ACCESO CON GOOGLE (multi-entrenador) ──
 // Rellena GOOGLE_CLIENT_ID con el ID de cliente de Google Cloud. Vacío = sin inicio de sesión (como antes).
-var GOOGLE_CLIENT_ID='';
+var GOOGLE_CLIENT_ID='320047603187-mvpa01k81siq2qvvflngj9009f1utf2o.apps.googleusercontent.com';
 var AUTH={on:!!GOOGLE_CLIENT_ID,token:'',me:null,companeros:[],entrenadores:[]};
 function jwtDatos(t){try{return JSON.parse(decodeURIComponent(escape(atob(t.split('.')[1].replace(/-/g,'+').replace(/_/g,'/')))));}catch(e){return {};}}
 function authCargarGIS(){return new Promise(function(res){if(window.google&&google.accounts&&google.accounts.id)return res();var sc=document.createElement('script');sc.src='https://accounts.google.com/gsi/client';sc.onload=res;sc.onerror=res;document.head.appendChild(sc);});}
@@ -1776,6 +1776,9 @@ function authEsMio(a){return !AUTH.on||!AUTH.me||authSoyAdmin()||(a.propietario|
 function authNombreDe(email){if(AUTH.me&&email===AUTH.me.email)return 'Yo';var c=(AUTH.companeros||[]).find(function(x){return x.email===email;});return c?(c.nombre||email):(email||'');}
 async function authInit(){
   if(!AUTH.on)return true;
+  // Sondeo sin token: si el servidor aún no exige inicio de sesión (o no está actualizado), se entra como siempre
+  var pre=null;try{pre=await(await fetch(API+'?action=whoami')).json();}catch(e){}
+  if(!pre||(pre.ok&&pre.libre)||(pre.ok===false&&pre.code!=='AUTH')){AUTH.on=false;return true;}
   var guard=null;try{guard=localStorage.getItem('gc_idtoken');}catch(e){}
   if(guard&&jwtDatos(guard).exp*1000-60000>Date.now())AUTH.token=guard;
   var msg='';
