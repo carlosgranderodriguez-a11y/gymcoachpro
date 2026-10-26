@@ -1,7 +1,7 @@
 // GymCoach Pro — Service Worker
 // Cachea el "app shell" (HTML/CSS/JS/iconos) para que la app abra al instante
 // aunque haya poca cobertura, y deja pasar las llamadas a la API siempre a red.
-const CACHE_VERSION = 'gcp-v55';
+const CACHE_VERSION = 'gcp-v56';
 const APP_SHELL = [
   './atleta.html',
   './index.html',
@@ -43,8 +43,8 @@ self.addEventListener('fetch', function(e){
 
   if(e.request.method !== 'GET') return;
 
-  // Páginas HTML: red primero (siempre la versión nueva); caché solo si no hay conexión
-  if(e.request.mode==='navigate' || /\.html($|\?)/.test(url)){
+  // HTML, JS y JSON: red primero (siempre la versión nueva); caché solo si no hay conexión
+  if(e.request.mode==='navigate' || /\.(html|js|json)($|\?)/.test(url)){
     e.respondWith(fetch(e.request).then(function(r){
       if(r && r.ok){var c=r.clone();caches.open(CACHE_VERSION).then(function(k){k.put(e.request,c);});}
       return r;
