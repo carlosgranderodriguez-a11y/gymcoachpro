@@ -4871,6 +4871,18 @@ function paRenderCarga(nombre){
 
 
 // ── Pestaña Planificado ──
+function paEditarSesion(id){editSesion(id);}
+function paNuevaSesion(){
+  var f=(document.getElementById('pa-nueva-fecha')||{}).value||fechaLocalISO();
+  selectedDate=f;perfilAtletaActivo=paAtletaActual;
+  openNewSesion();
+}
+function paRefrescaSesiones(){
+  var ov=document.getElementById('pa-overlay');
+  if(!ov||!ov.classList.contains('on')||!paAtletaActual)return;
+  try{paRenderPlan(paAtletaActual);}catch(e){}
+  try{cxRender();}catch(e){}
+}
 function paSesAt(nombre){var nm=(nombre||'').trim();return DB.sesiones.filter(function(s){return (s.atleta||'').trim()===nm&&s.fecha;});}
 function paExNombre(id){return (DB.ejercicios[id]&&DB.ejercicios[id].nombre)||id;}
 function paRenderPlan(nombre){
@@ -4888,9 +4900,10 @@ function paRenderPlan(nombre){
          return '<div style="display:flex;justify-content:space-between;gap:10px;font-size:12.5px;padding:3px 0;color:var(--text-dim)"><span>'+escapeHtml(paExNombre(ex.id))+'</span><span style="color:var(--text-muted);white-space:nowrap">'+[(se||re)?(se+'×'+re):'',kg?kg+' kg':'',rp?'RPE '+rp:'',de?'desc. '+de:''].filter(Boolean).join(' · ')+'</span></div>';
        }).join('')+'</div>';
     }).join('');
-    return '<div class="pa-card" style="margin-bottom:12px"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px"><div><div style="font-weight:700;font-size:15px">'+escapeHtml(s.nombre||'Sesión')+'</div><div class="pa-ms" style="text-transform:capitalize">'+f+'</div></div><div style="text-align:right"><div style="font-weight:700">'+ua+' UA</div><div class="pa-ms">'+min+" min"+(reg?' · ✅ completada':(pasada?' · sin completar':''))+'</div></div></div>'+bh+'</div>';
+    return '<div class="pa-card" style="margin-bottom:12px"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px"><div><div style="font-weight:700;font-size:15px">'+escapeHtml(s.nombre||'Sesión')+'</div><div class="pa-ms" style="text-transform:capitalize">'+f+'</div></div><div style="text-align:right"><div style="font-weight:700">'+ua+' UA</div><div class="pa-ms">'+min+" min"+(reg?' · ✅ completada':(pasada?' · sin completar':''))+'</div><button class="btn btn-secondary btn-sm" style="margin-top:6px" onclick="paEditarSesion(\''+s.id+'\')">✏️ Editar</button></div></div>'+bh+'</div>';
   }
-  el.innerHTML=(prox.length?prox.map(function(s){return card(s,false);}).join(''):'<div class="pa-empty">No hay sesiones planificadas a partir de hoy.</div>')
+  var barra='<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px"><input type="date" id="pa-nueva-fecha" value="'+hoy+'" style="padding:8px 10px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text)"><button class="btn btn-primary btn-sm" onclick="paNuevaSesion()">+ Añadir sesión</button><span style="font-size:12px;color:var(--text-muted)">Pulsa ✏️ Editar en una sesión para modificar ejercicios, series, cargas o el nombre.</span></div>';
+  el.innerHTML=barra+(prox.length?prox.map(function(s){return card(s,false);}).join(''):'<div class="pa-empty">No hay sesiones planificadas a partir de hoy.</div>')
     +(ult.length?'<div class="pa-ct" style="margin:18px 0 8px">Últimas sesiones</div>'+ult.map(function(s){return card(s,true);}).join(''):'');
 }
 
@@ -5599,10 +5612,10 @@ async function saveSesion(){
   if(r.ok){
     if(editingSesion.id){var i=DB.sesiones.findIndex(function(s){return s.id===editingSesion.id;});if(i>=0)DB.sesiones[i]={id:editingSesion.id,atleta:editingSesion.atleta,fecha:editingSesion.fecha,nombre:editingSesion.nombre,ejercicios:ejercicios};}
     else{DB.sesiones.push({id:r.id,atleta:editingSesion.atleta,fecha:editingSesion.fecha,nombre:editingSesion.nombre,ejercicios:ejercicios});}
-    closeModal('sesion');renderCalendar();renderAssignPanel();toast('✅ Guardado');
+    closeModal('sesion');renderCalendar();renderAssignPanel();paRefrescaSesiones();toast('✅ Guardado');
   }else toast('Error: '+r.error,'err');
 }
-async function deleteSesion(){if(!editingSesion.id)return;if(!confirm('¿Eliminar este entrenamiento?'))return;var r=await apiPost({action:'deleteSesion',id:editingSesion.id});if(r.ok){DB.sesiones=DB.sesiones.filter(function(s){return s.id!==editingSesion.id;});closeModal('sesion');renderCalendar();renderAssignPanel();toast('🗑 Eliminado');}else toast('Error: '+r.error,'err');}
+async function deleteSesion(){if(!editingSesion.id)return;if(!confirm('¿Eliminar este entrenamiento?'))return;var r=await apiPost({action:'deleteSesion',id:editingSesion.id});if(r.ok){DB.sesiones=DB.sesiones.filter(function(s){return s.id!==editingSesion.id;});closeModal('sesion');renderCalendar();renderAssignPanel();paRefrescaSesiones();toast('🗑 Eliminado');}else toast('Error: '+r.error,'err');}
 function getParamVal(ex,pid){var p=(ex.params||[]).find(function(p){return p.id===pid;});return p?p.val:'';}
 
 // ═══════════════════════════════════════════
