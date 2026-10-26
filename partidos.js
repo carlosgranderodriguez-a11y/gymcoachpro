@@ -53,9 +53,9 @@ window.PARTIDOS={
           dec:{v:54},
           vmax:{v:31.2}
         }},
-      // J09: Informe general MC LAB (26 oct 2026). Faltan el rival, HMLD y los % POC: completar con el Match Day Report
+      // J09: Informe general MC LAB (26 oct 2026). Rival Algeciras, derrota 2-0. Faltan HMLD y los % POC: completar con el Match Day Report
       // esf28 = esfuerzos >24 km/h según el informe (28). v28 = distancia >28 km/h (80 m)
-      {id:'j09',jornada:'J09',partido:'J09',fecha:'domingo 25 oct 2026',min:96,carga:'',
+      {id:'j09',jornada:'J09',partido:'RM Castilla vs Algeciras · Derrota 2-0',rival:'Algeciras',resultado:'Derrota 2-0',fecha:'domingo 25 oct 2026',min:96,carga:'',
         m:{
           dt:{v:10473},
           hsr:{v:922},
