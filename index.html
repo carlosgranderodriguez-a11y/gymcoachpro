@@ -695,7 +695,7 @@ function aplicarCodigoAcceso(){
     <div class="sb-group">Sistema</div>
     <div class="tab" onclick="switchTab('ajustes',this)"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg><span>Ajustes</span></div>
   </nav>
-  <div class="sb-foot"><div id="auth-chip" style="display:none;font-size:12px;color:#cbd5e1;margin-bottom:10px;line-height:1.4"></div><div style="font-size:10px;color:#64748b;margin-bottom:6px">versión 59</div><div class="status-badge" id="status">⏳ Conectando...</div></div>
+  <div class="sb-foot"><div id="auth-chip" style="display:none;font-size:12px;color:#cbd5e1;margin-bottom:10px;line-height:1.4"></div><div style="font-size:10px;color:#64748b;margin-bottom:6px">versión 60</div><div class="status-badge" id="status">⏳ Conectando...</div></div>
 </aside>
 <div class="sb-backdrop" onclick="closeSidebar()"></div>
 <div class="main">
@@ -5486,7 +5486,7 @@ function renderSesionBloques(){
     var bDef=resolveBloqueMeta(bloqueId,editingSesion);
     var exs=editingSesion.bloques[bloqueId]||[];
     var div=document.createElement('div');div.className='bloque';
-    div.innerHTML='<div class="bloque-header"><div class="bloque-color" style="background:'+bDef.color+'"></div><div class="bloque-name">'+bDef.name+'</div><div class="bloque-count">'+exs.length+' ej.</div><button class="btn btn-danger btn-xs" onclick="removeBloqueFromSesion(\''+bloqueId+'\')">✕</button></div><div class="bloque-body"><div class="bloque-add"><button class="btn btn-secondary btn-sm" onclick="openEjPicker(\'sesion\',\''+bloqueId+'\')">+ Añadir ejercicio</button></div><div id="sblist-'+bloqueId+'"></div></div>';
+    div.innerHTML='<div class="bloque-header"><div class="bloque-color" style="background:'+bDef.color+'"></div><div class="bloque-name">'+bDef.name+'</div><div class="bloque-count">'+exs.length+' ej.</div><div class="bloque-move"><button title="Subir bloque" onclick="moveBloqueSesion(\''+bloqueId+'\',-1)"'+(Object.keys(editingSesion.bloques).indexOf(bloqueId)===0?' disabled':'')+'>▲</button><button title="Bajar bloque" onclick="moveBloqueSesion(\''+bloqueId+'\',1)"'+(Object.keys(editingSesion.bloques).indexOf(bloqueId)===Object.keys(editingSesion.bloques).length-1?' disabled':'')+'>▼</button></div><button class="btn btn-danger btn-xs" onclick="removeBloqueFromSesion(\''+bloqueId+'\')">✕</button></div><div class="bloque-body"><div class="bloque-add"><button class="btn btn-secondary btn-sm" onclick="openEjPicker(\'sesion\',\''+bloqueId+'\')">+ Añadir ejercicio</button></div><div id="sblist-'+bloqueId+'"></div></div>';
     c.appendChild(div);renderSesionBloqueExs(bloqueId);
   });
   if(!Object.keys(editingSesion.bloques).length)c.innerHTML='<div style="text-align:center;padding:30px;color:var(--text-muted);font-size:13px">Sin bloques. Pulsa "+ Añadir bloque" abajo.</div>';
@@ -5539,6 +5539,13 @@ function removeSesionParam(b,ei,pi){if(!editingSesion.bloques[b]||!editingSesion
 function showSesionParamPicker(e,bloqueId,exIdx){e.stopPropagation();var picker=document.getElementById('param-picker');var existing=(editingSesion.bloques[bloqueId][exIdx].params||[]).map(function(p){return p.id;});var available=getParamsCatalog().filter(function(p){return !existing.includes(p.id);});if(!available.length){toast('Todos los parámetros añadidos');return;}picker.innerHTML=available.map(function(p){return '<div class="param-picker-item" onclick="addSesionParam(\''+bloqueId+'\','+exIdx+',\''+p.id+'\')">'+p.label+(p.unidad?' <span style="color:var(--text-muted);">('+p.unidad+')</span>':'')+'</div>';}).join('');positionPicker(picker,e.target.getBoundingClientRect());}
 function addSesionParam(b,ei,pid){var cat=getParamsCatalog().find(function(c){return c.id===pid;});var val=cat&&cat.type==='select'&&cat.options?cat.options[0]:'';editingSesion.bloques[b][ei].params.push({id:pid,val:val});document.getElementById('param-picker').style.display='none';renderSesionBloqueExs(b);}
 function addExToSesionBloque(bloqueId,sel){var id=sel.value;if(!id)return;if(!editingSesion.bloques[bloqueId])editingSesion.bloques[bloqueId]=[];editingSesion.bloques[bloqueId].push({id:id,params:[{id:'series',val:'3'},{id:'reps',val:'10'},{id:'kg',val:''},{id:'descanso',val:'90s'}]});sel.value='';renderSesionBloques();}
+function moveBloqueSesion(bloqueId,dir){
+  var ids=Object.keys(editingSesion.bloques),i=ids.indexOf(bloqueId),j=i+dir;
+  if(i<0||j<0||j>=ids.length)return;
+  ids.splice(i,1);ids.splice(j,0,bloqueId);
+  var nb={};ids.forEach(function(k){nb[k]=editingSesion.bloques[k];});
+  editingSesion.bloques=nb;renderSesionBloques();
+}
 function removeExFromSesion(b,idx){editingSesion.bloques[b].splice(idx,1);renderSesionBloques();}
 function dropExSesion(targetBloque,targetIdx){if(!dragSrc||dragSrc.context!=='sesion')return;var srcEx=editingSesion.bloques[dragSrc.bloque].splice(dragSrc.idx,1)[0];if(!editingSesion.bloques[targetBloque])editingSesion.bloques[targetBloque]=[];editingSesion.bloques[targetBloque].splice(targetIdx,0,srcEx);renderSesionBloques();dragSrc=null;}
 function removeBloqueFromSesion(bloqueId){var exs=editingSesion.bloques[bloqueId]||[];if(exs.length&&!confirm('Este bloque tiene ejercicios. ¿Eliminar?'))return;delete editingSesion.bloques[bloqueId];renderSesionBloques();}
