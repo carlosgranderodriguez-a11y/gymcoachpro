@@ -695,7 +695,7 @@ function aplicarCodigoAcceso(){
     <div class="sb-group">Sistema</div>
     <div class="tab" onclick="switchTab('ajustes',this)"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg><span>Ajustes</span></div>
   </nav>
-  <div class="sb-foot"><div id="auth-chip" style="display:none;font-size:12px;color:#cbd5e1;margin-bottom:10px;line-height:1.4"></div><div style="font-size:10px;color:#64748b;margin-bottom:6px">versión 61</div><div class="status-badge" id="status">⏳ Conectando...</div></div>
+  <div class="sb-foot"><div id="auth-chip" style="display:none;font-size:12px;color:#cbd5e1;margin-bottom:10px;line-height:1.4"></div><div style="font-size:10px;color:#64748b;margin-bottom:6px">versión 62</div><div class="status-badge" id="status">⏳ Conectando...</div></div>
 </aside>
 <div class="sb-backdrop" onclick="closeSidebar()"></div>
 <div class="main">
@@ -4577,7 +4577,7 @@ function cxDiaHTML(iso,fuera,hoy){
   var vacio=!d.ses.length&&!d.res.length&&!d.ext.length&&!d.par.length&&!d.fz.length&&!d.ev.length&&!cont.length&&!d.man.nota&&!ft;
   var depCh=d.par.map(function(p){return cxChip((p.jornada?p.jornada+' · ':'')+'vs '+cxRival(p),'⚽',[p.min?p.min+"'":'',p.m&&p.m.dt?cxFmt(p.m.dt.v)+' m':''].filter(Boolean).join(' · '),null,false,'Partido');}).join('')
     +cont.filter(function(x){return x.t==='dep';}).map(cxManChip).join('')
-    +d.ev.map(function(e){return cxChip(e.titulo||'Evento','📅',[e.hora||'',e.nota||''].filter(Boolean).join(' · '),null,true,'Evento');}).join('')
+    +d.ev.map(function(e){return cxChip(e.titulo||'Evento',(e.tipo==='partido'&&cxDeporte().label==='Esgrima')?'🤺':'📅',[e.hora||'',e.nota||''].filter(Boolean).join(' · '),null,true,'Evento');}).join('')
     +d.ext.map(function(p){return cxChip(p.disciplina||'Plan externo','📋',(p.texto||'').slice(0,60),null,true,'Plan externo');}).join('');
   var fisCh=d.ses.map(function(x){
     return '<div class="cx-sh">'+(x.hecha?'✅ ':'🏋️ ')+escapeHtml(x.s.nombre||'Sesión')+'</div>'+x.bl.map(function(b){
@@ -4701,7 +4701,7 @@ async function openAtletaPerfil(nombre){
   document.getElementById('pa-overlay').classList.add('on');
 
   CX.mes=null;CX.tem=[];CX.reg=[];CX.ev=[];PAR_SEL=null;paEvoEj=null;
-  var _tp=document.getElementById('pa-tab-par');if(_tp)_tp.style.display=cxPartidosDe(nombre).length?'':'none';
+  var _tp=document.getElementById('pa-tab-par');if(_tp)_tp.style.display=cxPartidosDe(nombre).length?'':'none';if(_tp)_tp.textContent=(f&&f.deporte==='esgrima')?'Competiciones':'Partidos';
   cxRender();paRenderPartidos(nombre);
 
   var [rw,rt,rh,rev]=await Promise.all([

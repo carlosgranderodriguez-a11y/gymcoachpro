@@ -465,7 +465,7 @@ input[type=range]{width:100%;}
   <h3 id="ev-titulo-modal">Nuevo evento</h3>
   <label>Título</label><input id="ev-titulo" type="text" maxlength="120" placeholder="Ej. Partido en Algeciras">
   <div class="ev-row"><div><label>Fecha</label><input id="ev-fecha" type="date"></div><div><label>Hora (opcional)</label><input id="ev-hora" type="time"></div></div>
-  <label>Tipo</label><select id="ev-tipo"><option value="partido">⚽ Partido</option><option value="clase">🎓 Clase / colegio</option><option value="viaje">✈️ Viaje</option><option value="descanso">😴 Descanso</option><option value="medico">🩺 Médico / fisio</option><option value="otro">📌 Otro</option></select>
+  <label>Tipo</label><select id="ev-tipo"><option value="partido" id="ev-opt-partido">⚽ Partido</option><option value="clase">🎓 Clase / colegio</option><option value="viaje">✈️ Viaje</option><option value="descanso">😴 Descanso</option><option value="medico">🩺 Médico / fisio</option><option value="otro">📌 Otro</option></select>
   <label>Nota (opcional)</label><textarea id="ev-nota" rows="2" maxlength="400" placeholder="Lo que tu entrenador deba saber"></textarea>
   <div class="ev-actions"><button onclick="evCerrar()">Cancelar</button><button id="ev-borrar" style="display:none;color:#f87171" onclick="evBorrar()">Borrar</button><button id="ev-guardar" onclick="evGuardar()">Guardar</button></div>
 </div></div>
@@ -621,6 +621,7 @@ async function loadAsignadas(){
     if(rEj&&rEj.ok) EJERCICIOS_DB=rEj.ejercicios||{};
     if(rW&&rW.ok) WELLNESS=rW.items||[];
     if(rPE&&rPE.ok) PLAN_EXTERNO=(rPE.items||[]).filter(function(p){return mismoAtleta(p.atleta,ATLETA);});
+    if(rEV&&rEV.ok&&rEV.deporte) EV_DEPORTE=rEV.deporte;
     if(rEV&&rEV.ok) EVENTOS=(rEV.items||[]).filter(function(e){return mismoAtleta(e.atleta,ATLETA);});
     if(rC&&rC.ok&&rC.config.bloques_ejercicio&&rC.config.bloques_ejercicio.length) BLOQUES=rC.config.bloques_ejercicio;
     renderSemana();
@@ -689,9 +690,12 @@ function sesionesDelDia(ds){
 function eventosDelDia(ds){
   return EVENTOS.filter(function(e){return e.fecha===ds;}).sort(function(a,b){return (a.hora||'99').localeCompare(b.hora||'99');});
 }
+var EV_DEPORTE='';
+function evEsEsgrima(){return /esgrima/i.test(EV_DEPORTE);}
 var EV_TIPOS={partido:['⚽','Partido'],clase:['🎓','Clase / colegio'],viaje:['✈️','Viaje'],descanso:['😴','Descanso'],medico:['🩺','Médico / fisio'],otro:['📌','Otro']};
+function evTipo(k){if(k==='partido'&&evEsEsgrima())return ['🤺','Competición'];return EV_TIPOS[k]||EV_TIPOS.otro;}
 function evChip(e){
-  var t=EV_TIPOS[e.tipo]||EV_TIPOS.otro;
+  var t=evTipo(e.tipo);
   return '<div class="ev-chip" onclick="evAbrir(\''+e.id+'\')"><span class="ic">'+t[0]+'</span><div class="body"><b>'+escapeHtml(e.titulo)+'</b>'+(e.hora?' <span class="ev-h">'+escapeHtml(e.hora)+'</span>':'')
     +(e.nota?'<div class="meta">'+escapeHtml(e.nota)+'</div>':'')+'</div><span class="chev">✎</span></div>';
 }
@@ -703,6 +707,8 @@ function evAbrir(id,ds){
   document.getElementById('ev-fecha').value=e?e.fecha:(ds||fechaLocalISO());
   document.getElementById('ev-hora').value=e?(e.hora||''):'';
   document.getElementById('ev-titulo').value=e?e.titulo:'';
+  var op=document.getElementById('ev-opt-partido');if(op)op.textContent=evTipo('partido').join(' ');
+  document.getElementById('ev-titulo').placeholder=evEsEsgrima()?'Ej. Copa del Mundo en Budapest':'Ej. Partido en Algeciras';
   document.getElementById('ev-tipo').value=e?(e.tipo||'otro'):'partido';
   document.getElementById('ev-nota').value=e?(e.nota||''):'';
   document.getElementById('ev-borrar').style.display=e?'inline-block':'none';
