@@ -561,6 +561,9 @@ input:focus,select:focus,textarea:focus{border-color:#8aa0d6 !important;box-shad
 .ps-day{flex:0 0 255px !important;}
 .assign-box{margin-top:22px;padding:16px 18px;border:1px solid var(--border);border-radius:12px;background:var(--surface2);}
 /* ── Programas: tablero semanal ── */
+.ps-drop{outline:2px dashed #9bbd3a;outline-offset:-2px;background:rgba(155,189,58,.12)!important;}
+.ps-grab{cursor:grab;}
+.ps-day-btns{display:flex;gap:4px;align-items:center;}
 .ps-toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px;}
 .ps-toolbar select{padding:8px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;outline:none;}
 .ps-board{display:flex;gap:10px;overflow-x:auto;padding-bottom:12px;align-items:flex-start;}
@@ -695,7 +698,7 @@ function aplicarCodigoAcceso(){
     <div class="sb-group">Sistema</div>
     <div class="tab" onclick="switchTab('ajustes',this)"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg><span>Ajustes</span></div>
   </nav>
-  <div class="sb-foot"><div id="auth-chip" style="display:none;font-size:12px;color:#cbd5e1;margin-bottom:10px;line-height:1.4"></div><div style="font-size:10px;color:#64748b;margin-bottom:6px">versión 62</div><div class="status-badge" id="status">⏳ Conectando...</div></div>
+  <div class="sb-foot"><div id="auth-chip" style="display:none;font-size:12px;color:#cbd5e1;margin-bottom:10px;line-height:1.4"></div><div style="font-size:10px;color:#64748b;margin-bottom:6px">versión 63</div><div class="status-badge" id="status">⏳ Conectando...</div></div>
 </aside>
 <div class="sb-backdrop" onclick="closeSidebar()"></div>
 <div class="main">
@@ -4100,7 +4103,9 @@ function psDayHtml(wi,di){
   var tplId=(week.dias||{})[dk]||'';
   var sel='<option value="">— Descanso —</option><option value="__custom__"'+(tplId==='__custom__'?' selected':'')+'>✚ Sesión en blanco</option>'
     +DB.templates.map(function(t){return '<option value="'+escAttr(t.id)+'"'+(t.id===tplId?' selected':'')+'>'+escapeHtml(t.name)+'</option>';}).join('');
-  var h='<div class="ps-day"><div class="ps-day-head"><span>Día '+dk+' · '+DIAS_SEMANA[di]+'</span><small>'+(ses?total+' ej.':'')+'</small></div>'
+  var h='<div class="ps-day" ondragover="psDragOver(event)" ondragleave="psDragLeave(event)" ondrop="psDrop(event,'+wi+','+dk+')"><div class="ps-day-head'+(ses?' ps-grab':'')+'"'+(ses?' draggable="true" ondragstart="psDragStart(event,'+wi+','+dk+')" ondragend="psDragEnd(event)" title="Arrastra para mover a otro día · Alt/Ctrl + arrastrar para copiar"':'')+'><span>'+(ses?'⠿ ':'')+'Día '+dk+' · '+DIAS_SEMANA[di]+'</span><span class="ps-day-btns"><small>'+(ses?total+' ej.':'')+'</small>'
+    +(ses?'<button class="ps-mini" title="Copiar este día" onclick="psCopyDay('+wi+','+dk+')">⧉ Copiar</button>':'')
+    +(PS_CLIP?'<button class="ps-mini" title="Pegar el día copiado aquí" onclick="psPasteDay('+wi+','+dk+')">📋 Pegar</button>':'')+'</span></div>'
     +'<div class="ps-day-tpl"><select onchange="psSetTpl('+wi+','+dk+',this.value)">'+sel+'</select>';
   if(ses){
     h+='<div class="ps-ses-row"><input class="ps-ses-name" value="'+escAttr(ses.nombre||'')+'" placeholder="Nombre de la sesión" oninput="psRename('+wi+','+dk+',this.value)">'
@@ -4168,11 +4173,12 @@ function psColFase(wi){
 }
 function psCeldaHtml(wi,di,compacto){
   var dk=di+1,ses=psSesion(wi,dk);
-  if(!ses)return '<div style="min-height:'+(compacto?'34':'64')+'px;border:1px dashed var(--border);border-radius:8px;opacity:.45;font-size:10px;display:flex;align-items:center;justify-content:center;color:var(--text-muted)">—</div>';
+  var dz=' ondragover="psDragOver(event)" ondragleave="psDragLeave(event)" ondrop="psDrop(event,'+wi+','+dk+')"';
+  if(!ses)return '<div'+dz+' style="min-height:'+(compacto?'34':'64')+'px;border:1px dashed var(--border);border-radius:8px;opacity:.45;font-size:10px;display:flex;align-items:center;justify-content:center;color:var(--text-muted)">—</div>';
   var bls=Object.keys(ses.bloques||{}),tot=bls.reduce(function(a,b){return a+(ses.bloques[b]||[]).length;},0);
   var col=psColFase(wi);
   var chips=compacto?'':'<div style="display:flex;gap:3px;flex-wrap:wrap;margin-top:5px">'+bls.map(function(b){var m=(ses.bloqueMeta||{})[b]||{},bt=getBloques().find(function(x){return x.id===tipoDeBloqueKey(b);})||{color:'#aaa'};return '<span title="'+escAttr(m.name||bt.name||b)+'" style="width:9px;height:9px;border-radius:50%;background:'+(m.color||bt.color)+'"></span>';}).join('')+'</div>';
-  return '<div onclick="psWeek='+wi+';psVista=\'semana\';renderProgramaBoard()" style="cursor:pointer;border:1px solid var(--border);border-left:4px solid '+col+';border-radius:8px;padding:'+(compacto?'4px 6px':'8px 10px')+';background:var(--surface);min-width:0" title="'+escAttr(ses.nombre||'')+'">'
+  return '<div'+dz+' draggable="true" ondragstart="psDragStart(event,'+wi+','+dk+')" ondragend="psDragEnd(event)" onclick="psWeek='+wi+';psVista=\'semana\';renderProgramaBoard()" style="cursor:grab;border:1px solid var(--border);border-left:4px solid '+col+';border-radius:8px;padding:'+(compacto?'4px 6px':'8px 10px')+';background:var(--surface);min-width:0" title="'+escAttr(ses.nombre||'')+'">'
     +'<div style="font-size:'+(compacto?'10':'12')+'px;font-weight:600;line-height:1.25;overflow:hidden;text-overflow:ellipsis;'+(compacto?'white-space:nowrap':'display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical')+'">'+escapeHtml((ses.nombre||'Sesión').replace(/^Pubis /,''))+'</div>'
     +(compacto?'':'<div style="font-size:11px;color:var(--text-muted);margin-top:2px">'+tot+' ejercicios</div>'+chips)+'</div>';
 }
@@ -4185,6 +4191,7 @@ function psVistaGrid(){
       +'<b style="font-size:14px;padding:0 10px">Semanas '+(ini+1)+' a '+fin+' de '+n+'</b>'
       +'<button class="btn btn-secondary btn-sm" onclick="psWeek='+Math.min(n-1,ini+4)+';renderProgramaBoard()"'+(fin>=n?' disabled':'')+'>›</button></div>';
   }
+  h+='<div style="font-size:11px;color:var(--text-muted);margin-bottom:8px">💡 Arrastra un día a otro para moverlo o intercambiarlo · Alt (Ctrl) al soltar = copiar.</div>';
   h+='<div style="overflow-x:auto"><div style="min-width:'+(total?'760':'900')+'px">'
     +'<div style="display:grid;grid-template-columns:'+(total?'92px':'110px')+' repeat(7,minmax(0,1fr));gap:'+(total?'4':'8')+'px;margin-bottom:6px;font-size:11px;color:var(--text-muted)"><span></span>'+DIAS_SEMANA.map(function(d){return '<span style="text-align:center">'+d+'</span>';}).join('')+'</div>';
   var prev=null;
@@ -4216,6 +4223,7 @@ function renderProgramaBoard(){
     +'<button class="btn btn-secondary btn-sm" onclick="addSemana()">+ Semana</button>'
     +'<button class="btn btn-secondary btn-sm" onclick="duplicarSemana('+psWeek+')">⧉ Duplicar semana</button>'
     +'<button class="btn btn-danger btn-sm" onclick="removeSemana('+psWeek+')">✕ Quitar semana</button></div>'
+    +'<div style="font-size:11px;color:var(--text-muted);margin:-4px 0 10px">💡 Arrastra un día por su cabecera a otro para moverlo o intercambiarlo · mantén Alt (Ctrl) al soltar para copiarlo · o usa «Copiar» y «Pegar» (vale también para otra semana).</div>'
     +'<div class="ps-board">';
   for(var di=0;di<7;di++)h+=psDayHtml(psWeek,di);
   h+='</div>';
@@ -4246,6 +4254,33 @@ function psSetTpl(wi,dk,val){
     w.dias[dk]='__custom__';
     w.sesiones[dk]={nombre:'Sesión',tplId:'',bloques:{},bloqueMeta:{}};
   } else w.dias[dk]=val;
+  markDirtyPrograma();renderProgramaBoard();renderProgramaList();
+}
+// ── copiar / mover días del plan ──
+var PS_CLIP=null,PS_DRAG=null;
+function psDayGet(wi,dk){var w=currentPrograma.weeks[wi];var dia=(w.dias||{})[dk],ses=(w.sesiones||{})[dk];if(!dia&&!ses)return null;return JSON.parse(JSON.stringify({dia:dia||'',ses:ses||null}));}
+function psDaySet(wi,dk,o){var w=currentPrograma.weeks[wi];if(!w.dias)w.dias={};if(!w.sesiones)w.sesiones={};delete w.dias[dk];delete w.sesiones[dk];if(o){if(o.dia)w.dias[dk]=o.dia;if(o.ses)w.sesiones[dk]=JSON.parse(JSON.stringify(o.ses));}}
+function psCopyDay(wi,dk){var o=psDayGet(wi,dk);if(!o){toast('Ese día es descanso: no hay nada que copiar','err');return;}PS_CLIP=o;toast('Día copiado · pulsa «Pegar» en el día que quieras');renderProgramaBoard();}
+function psPasteDay(wi,dk){
+  if(!PS_CLIP)return;
+  if(psDayGet(wi,dk)&&!confirm('Ese día ya tiene entrenamiento y se sustituirá. ¿Continuar?'))return;
+  psDaySet(wi,dk,PS_CLIP);markDirtyPrograma();renderProgramaBoard();renderProgramaList();toast('Día pegado');
+}
+function psDragStart(e,wi,dk){PS_DRAG={wi:wi,dk:dk};try{e.dataTransfer.effectAllowed='copyMove';e.dataTransfer.setData('text/plain','dia');}catch(x){}e.currentTarget.style.opacity='.5';}
+function psDragEnd(e){PS_DRAG=null;e.currentTarget.style.opacity='';document.querySelectorAll('.ps-drop').forEach(function(x){x.classList.remove('ps-drop');});}
+function psDragOver(e){if(!PS_DRAG)return;e.preventDefault();e.dataTransfer.dropEffect=(e.altKey||e.ctrlKey||e.metaKey)?'copy':'move';e.currentTarget.classList.add('ps-drop');}
+function psDragLeave(e){e.currentTarget.classList.remove('ps-drop');}
+function psDrop(e,wi,dk){
+  if(!PS_DRAG)return;e.preventDefault();e.currentTarget.classList.remove('ps-drop');
+  var src=PS_DRAG;PS_DRAG=null;
+  if(src.wi===wi&&src.dk===dk)return;
+  var copiar=e.altKey||e.ctrlKey||e.metaKey,a=psDayGet(src.wi,src.dk),b=psDayGet(wi,dk);
+  if(copiar){
+    if(b&&!confirm('Ese día ya tiene entrenamiento y se sustituirá. ¿Continuar?'))return;
+    psDaySet(wi,dk,a);toast('Día copiado');
+  } else {
+    psDaySet(wi,dk,a);psDaySet(src.wi,src.dk,b);toast(b?'Días intercambiados':'Día movido');
+  }
   markDirtyPrograma();renderProgramaBoard();renderProgramaList();
 }
 function psRename(wi,dk,v){psMat(wi,dk).nombre=v;markDirtyPrograma();}
