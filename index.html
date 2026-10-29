@@ -698,7 +698,7 @@ function aplicarCodigoAcceso(){
     <div class="sb-group">Sistema</div>
     <div class="tab" onclick="switchTab('ajustes',this)"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg><span>Ajustes</span></div>
   </nav>
-  <div class="sb-foot"><div id="auth-chip" style="display:none;font-size:12px;color:#cbd5e1;margin-bottom:10px;line-height:1.4"></div><div style="font-size:10px;color:#64748b;margin-bottom:6px">versión 63</div><div class="status-badge" id="status">⏳ Conectando...</div></div>
+  <div class="sb-foot"><div id="auth-chip" style="display:none;font-size:12px;color:#cbd5e1;margin-bottom:10px;line-height:1.4"></div><div style="font-size:10px;color:#64748b;margin-bottom:6px">versión 64</div><div class="status-badge" id="status">⏳ Conectando...</div></div>
 </aside>
 <div class="sb-backdrop" onclick="closeSidebar()"></div>
 <div class="main">
@@ -5047,10 +5047,13 @@ function paRenderEvo(nombre){
   var ejs={};
   ses.forEach(function(s){(s.ejercicios||[]).forEach(function(ex){
     var kg=parseFloat(getParamVal(ex,'kg'))||0,se=parseInt(getParamVal(ex,'series')||ex.sets)||0,re=parseInt(getParamVal(ex,'reps')||ex.reps)||0;
+    if(!kg){var pc=parseFloat(getParamVal(ex,'pct_rm'))||0,rm=pc?rmVigente(nombre,ex.id,s.fecha):null;if(pc&&rm&&rm.kg)kg=Math.round(rm.kg*pc/100*2)/2;}
     var o=ejs[ex.id]=ejs[ex.id]||{id:ex.id,h:[]};o.h.push({f:s.fecha,kg:kg,vol:se*re*kg,ser:se,reps:re});
   });});
   var lista=Object.keys(ejs).map(function(k){return ejs[k];}).sort(function(a,b){return b.h.length-a.h.length;});
-  var conKg=lista.filter(function(o){return o.h.some(function(x){return x.kg;});});
+  lista.forEach(function(o){o.m=o.h.some(function(x){return x.kg;})?'kg':'rep';});
+  var evoV=function(o,x){return o.m==='kg'?x.kg:x.ser*x.reps;};
+  var conKg=lista.filter(function(o){return o.m==='kg';}).concat(lista.filter(function(o){return o.m!=='kg';}));
   if(!paEvoEj||!ejs[paEvoEj])paEvoEj=(conKg[0]||lista[0]).id;
   // semanal
   var lun0=paLunes(ses[0].fecha),lunHoy=paLunes(hoy),sem=[];
@@ -5064,20 +5067,20 @@ function paRenderEvo(nombre){
     if(s.fecha<=hoy){plan++;if(cxRegDe(s.id))hechas++;}
   });
   var tabla=conKg.map(function(o){
-    var a=o.h[0],b=o.h[o.h.length-1],d=a.kg?Math.round((b.kg-a.kg)/a.kg*100):0;
-    return '<div style="display:grid;grid-template-columns:minmax(0,2fr) 50px 1fr 1fr 60px;gap:8px;padding:7px 0;border-top:1px solid var(--border);font-size:12.5px;cursor:pointer" onclick="paEvoEj=\''+o.id+'\';paRenderEvo(paAtletaActual)"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap'+(o.id===paEvoEj?';font-weight:700;color:var(--accent-ink,inherit)':'')+'">'+escapeHtml(paExNombre(o.id))+'</span><span style="color:var(--text-muted)">'+o.h.length+'×</span><span>'+cxFmt(a.kg,a.kg%1?1:0)+' kg</span><span>'+cxFmt(b.kg,b.kg%1?1:0)+' kg</span><span style="font-weight:700;color:'+(d>0?'var(--green)':d<0?'var(--orange)':'var(--text-muted)')+'">'+(d>0?'+':'')+d+'%</span></div>';
+    var a=o.h[0],b=o.h[o.h.length-1],va=evoV(o,a),vb=evoV(o,b),d=va?Math.round((vb-va)/va*100):0,u=o.m==='kg'?' kg':' rep';a={kg:va};b={kg:vb};
+    return '<div style="display:grid;grid-template-columns:minmax(0,2fr) 50px 1fr 1fr 60px;gap:8px;padding:7px 0;border-top:1px solid var(--border);font-size:12.5px;cursor:pointer" onclick="paEvoEj=\''+o.id+'\';paRenderEvo(paAtletaActual)"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap'+(o.id===paEvoEj?';font-weight:700;color:var(--accent-ink,inherit)':'')+'">'+escapeHtml(paExNombre(o.id))+'</span><span style="color:var(--text-muted)">'+o.h.length+'×</span><span>'+cxFmt(a.kg,a.kg%1?1:0)+u+'</span><span>'+cxFmt(b.kg,b.kg%1?1:0)+u+'</span><span style="font-weight:700;color:'+(d>0?'var(--green)':d<0?'var(--orange)':'var(--text-muted)')+'">'+(d>0?'+':'')+d+'%</span></div>';
   }).join('')||'<div class="pa-empty">Ningún ejercicio lleva kg todavía; al añadirlos verás su evolución.</div>';
   var kpi=function(l,v,sub){return '<div class="pa-card pa-card-sm"><div class="pa-ct">'+l+'</div><div class="pa-mv" style="font-size:22px">'+v+'</div><div class="pa-ms">'+sub+'</div></div>';};
   var tonTot=0;sem.forEach(function(w){tonTot+=volS[w];});
   el.innerHTML='<div class="pa-g4">'+kpi('Cumplimiento',plan?Math.round(hechas/plan*100)+'%':'—',hechas+' de '+plan+' sesiones pasadas')+kpi('Sesiones planificadas',ses.length,'desde '+new Date(ses[0].fecha+'T12:00:00').toLocaleDateString('es-ES',{day:'numeric',month:'short'}))+kpi('Ejercicios distintos',lista.length,'en su historial')+kpi('Volumen total',cxFmt(Math.round(tonTot))+' kg','series × reps × kg')+'</div>'
    +'<div class="pa-g2" style="margin-top:14px"><div class="pa-card"><div class="pa-ct">Carga semanal (UA)</div><div class="pa-cw"><canvas id="pa-evo-ua"></canvas></div></div><div class="pa-card"><div class="pa-ct">Volumen semanal (kg)</div><div class="pa-cw"><canvas id="pa-evo-vol"></canvas></div></div></div>'
-   +'<div class="pa-g2" style="margin-top:14px"><div class="pa-card"><div class="pa-ct">Progresión · '+escapeHtml(paExNombre(paEvoEj))+'</div><div class="pa-cw"><canvas id="pa-evo-ex"></canvas></div></div><div class="pa-card"><div class="pa-ct">Cargas por ejercicio (pincha uno para verlo)</div><div style="display:grid;grid-template-columns:minmax(0,2fr) 50px 1fr 1fr 60px;gap:8px;font-size:10.5px;color:var(--text-muted);padding:4px 0"><span>EJERCICIO</span><span>VECES</span><span>PRIMERA</span><span>ÚLTIMA</span><span>CAMBIO</span></div>'+tabla+'</div></div>';
+   +'<div class="pa-g2" style="margin-top:14px"><div class="pa-card"><div class="pa-ct">Progresión · '+escapeHtml(paExNombre(paEvoEj))+(ejs[paEvoEj].m==='kg'?' (kg)':' (series × reps)')+'</div><div class="pa-cw"><canvas id="pa-evo-ex"></canvas></div></div><div class="pa-card"><div class="pa-ct">Evolución por ejercicio (kg, o series × reps si no lleva carga) · pincha uno para verlo</div><div style="display:grid;grid-template-columns:minmax(0,2fr) 50px 1fr 1fr 60px;gap:8px;font-size:10.5px;color:var(--text-muted);padding:4px 0"><span>EJERCICIO</span><span>VECES</span><span>PRIMERA</span><span>ÚLTIMA</span><span>CAMBIO</span></div>'+tabla+'</div></div>';
   var lab=sem.map(function(w){return (+w.slice(8))+'/'+(+w.slice(5,7));});
   var opt={responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{color:'#888'}},x:{ticks:{color:'#888'}}}};
   paEvoCharts.push(new Chart(document.getElementById('pa-evo-ua'),{type:'bar',data:{labels:lab,datasets:[{data:sem.map(function(w){return uaS[w];}),backgroundColor:'#9bd34a',borderRadius:5}]},options:opt}));
   paEvoCharts.push(new Chart(document.getElementById('pa-evo-vol'),{type:'bar',data:{labels:lab,datasets:[{data:sem.map(function(w){return Math.round(volS[w]);}),backgroundColor:'#93b8f0',borderRadius:5}]},options:opt}));
   var h=ejs[paEvoEj].h;
-  paEvoCharts.push(new Chart(document.getElementById('pa-evo-ex'),{type:'line',data:{labels:h.map(function(x){return x.f.slice(8)+'/'+x.f.slice(5,7);}),datasets:[{label:'kg',data:h.map(function(x){return x.kg;}),borderColor:'#6b8f2a',backgroundColor:'#c4f135',tension:.25,pointRadius:4}]},options:opt}));
+  paEvoCharts.push(new Chart(document.getElementById('pa-evo-ex'),{type:'line',data:{labels:h.map(function(x){return x.f.slice(8)+'/'+x.f.slice(5,7);}),datasets:[{label:ejs[paEvoEj].m==='kg'?'kg':'series × reps',data:h.map(function(x){return evoV(ejs[paEvoEj],x);}),borderColor:'#6b8f2a',backgroundColor:'#c4f135',tension:.25,pointRadius:4}]},options:opt}));
 }
 
 function paRenderEntrenamiento(nombre){
