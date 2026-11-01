@@ -39,7 +39,7 @@ input,select,textarea,button{font-family:inherit;}
 .logo{width:78px;height:78px;border-radius:20px;background:linear-gradient(135deg,var(--accent),var(--accent-dim));display:grid;place-items:center;font-size:38px;margin-bottom:18px;box-shadow:0 10px 34px rgba(204,255,102,.25);}
 .l-title{font-family:'Barlow Condensed',sans-serif;font-size:30px;font-weight:700;letter-spacing:2px;text-transform:uppercase;}
 .l-sub{color:var(--text-dim);font-size:13px;margin-bottom:28px;letter-spacing:1px;}
-#pin{width:200px;text-align:center;letter-spacing:12px;font-size:26px;font-weight:700;padding:14px;background:var(--surface);border:1px solid var(--border);border-radius:12px;color:var(--text);outline:none;}
+#pin{width:200px;text-align:center;letter-spacing:3px;font-size:20px;font-weight:700;padding:14px;background:var(--surface);border:1px solid var(--border);border-radius:12px;color:var(--text);outline:none;}
 #pin:focus{border-color:var(--accent);}
 #l-email{width:200px;text-align:center;font-size:15px;padding:12px;background:var(--surface);border:1px solid var(--border);border-radius:12px;color:var(--text);outline:none;margin-bottom:10px;}
 #l-email:focus{border-color:var(--accent);}
@@ -325,7 +325,7 @@ input[type=range]{width:100%;}
   <div class="l-title cond">GymCoach Pro</div>
   <div class="l-sub">Panel del atleta</div>
   <input id="l-email" type="email" placeholder="Tu email" autocomplete="username" inputmode="email">
-  <input id="pin" type="tel" inputmode="numeric" maxlength="6" placeholder="••••" autocomplete="off">
+  <input id="pin" type="password" maxlength="100" placeholder="PIN o contraseña" autocomplete="current-password">
   <button class="l-btn" onclick="doLogin()">Entrar</button>
   <div class="l-err" id="login-err"></div>
 </div>
@@ -338,7 +338,7 @@ input[type=range]{width:100%;}
       <div class="tb-name cond" id="who">—</div>
     </div>
     <div style="display:flex;gap:8px;">
-      <button class="tb-out" onclick="abrirCambiarPin()">🔑 PIN</button>
+      <button class="tb-out" onclick="abrirCambiarPin()">🔑 Contraseña</button>
       <button class="tb-out" onclick="logout()">Salir</button>
     </div>
   </div>
@@ -346,14 +346,14 @@ input[type=range]{width:100%;}
   <!-- CAMBIAR PIN -->
   <div id="pin-modal" style="display:none;position:fixed;inset:0;z-index:80;background:rgba(0,0,0,.7);align-items:center;justify-content:center;padding:24px;">
     <div style="width:100%;max-width:320px;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:22px;text-align:center;">
-      <div style="font-size:16px;font-weight:700;margin-bottom:4px;">Cambiar mi PIN</div>
-      <div style="font-size:12px;color:var(--text-dim);margin-bottom:16px;">De 4 a 6 cifras. Úsalo la próxima vez que entres.</div>
-      <input id="pin-actual" type="tel" inputmode="numeric" maxlength="6" placeholder="PIN actual" autocomplete="off" style="width:100%;padding:11px;margin-bottom:8px;text-align:center;background:var(--surface2);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:15px;outline:none;">
-      <input id="pin-nuevo" type="tel" inputmode="numeric" maxlength="6" placeholder="PIN nuevo" autocomplete="off" style="width:100%;padding:11px;margin-bottom:8px;text-align:center;background:var(--surface2);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:15px;outline:none;">
-      <input id="pin-nuevo2" type="tel" inputmode="numeric" maxlength="6" placeholder="Repite el PIN nuevo" autocomplete="off" style="width:100%;padding:11px;margin-bottom:8px;text-align:center;background:var(--surface2);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:15px;outline:none;">
+      <div id="pin-tit" style="font-size:16px;font-weight:700;margin-bottom:4px;">Mi contraseña</div>
+      <div id="pin-sub" style="font-size:12px;color:var(--text-dim);margin-bottom:16px;">Mínimo 6 caracteres. Úsala la próxima vez que entres, en lugar del PIN.</div>
+      <input id="pin-actual" type="password" maxlength="100" placeholder="PIN o contraseña actual" autocomplete="current-password" style="width:100%;padding:11px;margin-bottom:8px;text-align:center;background:var(--surface2);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:15px;outline:none;">
+      <input id="pin-nuevo" type="password" maxlength="100" placeholder="Contraseña nueva" autocomplete="new-password" style="width:100%;padding:11px;margin-bottom:8px;text-align:center;background:var(--surface2);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:15px;outline:none;">
+      <input id="pin-nuevo2" type="password" maxlength="100" placeholder="Repite la contraseña nueva" autocomplete="new-password" style="width:100%;padding:11px;margin-bottom:8px;text-align:center;background:var(--surface2);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:15px;outline:none;">
       <div id="pin-err" style="color:var(--red);font-size:12px;min-height:16px;margin-bottom:10px;"></div>
       <div style="display:flex;gap:8px;">
-        <button class="tb-out" style="flex:1;padding:12px;" onclick="cerrarCambiarPin()">Cancelar</button>
+        <button class="tb-out" style="flex:1;padding:12px;" id="pin-cancel" onclick="cerrarCambiarPin()">Cancelar</button>
         <button class="l-btn" id="pin-save" style="flex:1;margin:0;width:auto;padding:12px;" onclick="guardarNuevoPin()">Guardar</button>
       </div>
     </div>
@@ -575,42 +575,50 @@ async function doLogin(){
   var pin=document.getElementById('pin').value.trim();
   var err=document.getElementById('login-err');err.textContent='';
   if(!email){err.textContent='Escribe tu email';return;}
-  if(!pin){err.textContent='Escribe tu PIN';return;}
+  if(!pin){err.textContent='Escribe tu PIN o contraseña';return;}
   var btn=document.querySelector('.l-btn');btn.disabled=true;btn.textContent='Entrando…';
   try{
     var r=await api({action:'loginAtleta',email:email,pin:pin});
     if(r&&r.ok&&r.nombre){
-      ATLETA=r.nombre;
+      ATLETA=r.nombre;LOGIN_SECRET=pin;
       try{localStorage.setItem('gc_atleta',ATLETA);}catch(e){}
       enterApp();
-    }else{err.textContent=(r&&r.error)||'Email o PIN incorrecto';}
+      if(r.sinClave)setTimeout(function(){abrirCambiarPin(true);},700);
+    }else{err.textContent=(r&&r.error)||'Email o contraseña incorrectos';}
   }catch(e){err.textContent='Sin conexión. Reintenta.';}
   btn.disabled=false;btn.textContent='Entrar';
 }
-function abrirCambiarPin(){
+var LOGIN_SECRET=''; // PIN o contraseña con la que ha entrado en esta sesión (solo en memoria)
+function abrirCambiarPin(primera){
   ['pin-actual','pin-nuevo','pin-nuevo2'].forEach(function(id){document.getElementById(id).value='';});
   document.getElementById('pin-err').textContent='';
+  var pre=primera===true&&LOGIN_SECRET;
+  document.getElementById('pin-actual').style.display=pre?'none':'block';
+  document.getElementById('pin-tit').textContent=pre?'🔐 Crea tu contraseña':'Mi contraseña';
+  document.getElementById('pin-sub').textContent=pre?'Elige una contraseña personal (mínimo 6 caracteres). Desde ahora entrarás con ella en lugar del PIN.':'Mínimo 6 caracteres. Úsala la próxima vez que entres, en lugar del PIN.';
+  document.getElementById('pin-cancel').textContent=pre?'Ahora no':'Cancelar';
   document.getElementById('pin-modal').style.display='flex';
 }
 function cerrarCambiarPin(){document.getElementById('pin-modal').style.display='none';}
 async function guardarNuevoPin(){
-  var a=document.getElementById('pin-actual').value.trim();
-  var n=document.getElementById('pin-nuevo').value.trim();
-  var n2=document.getElementById('pin-nuevo2').value.trim();
+  var visible=document.getElementById('pin-actual').style.display!=='none';
+  var a=visible?document.getElementById('pin-actual').value:LOGIN_SECRET;
+  var n=document.getElementById('pin-nuevo').value;
+  var n2=document.getElementById('pin-nuevo2').value;
   var err=document.getElementById('pin-err');err.textContent='';
-  if(!a){err.textContent='Escribe tu PIN actual';return;}
-  if(!/^\d{4,6}$/.test(n)){err.textContent='El PIN nuevo debe tener de 4 a 6 cifras';return;}
-  if(n!==n2){err.textContent='Los dos PIN nuevos no coinciden';return;}
-  if(n===a){err.textContent='El PIN nuevo es igual al actual';return;}
+  if(!a){err.textContent='Escribe tu PIN o contraseña actual';return;}
+  if(n.length<6){err.textContent='La contraseña nueva debe tener al menos 6 caracteres';return;}
+  if(n!==n2){err.textContent='Las dos contraseñas nuevas no coinciden';return;}
+  if(n===a){err.textContent='La contraseña nueva es igual a la actual';return;}
   var btn=document.getElementById('pin-save');btn.disabled=true;btn.textContent='…';
   try{
-    var r=await apiPost({action:'cambiarPin',nombre:ATLETA,pinActual:a,pinNuevo:n});
-    if(r&&r.ok){cerrarCambiarPin();toast('✅ PIN cambiado','ok');}
-    else{err.textContent=(r&&r.error)||'No se pudo cambiar el PIN';}
+    var r=await apiPost({action:'cambiarClaveAtleta',nombre:ATLETA,actual:a,nueva:n});
+    if(r&&r.ok){LOGIN_SECRET=n;cerrarCambiarPin();toast('✅ Contraseña guardada','ok');}
+    else{err.textContent=(r&&r.error)||'No se pudo guardar la contraseña';}
   }catch(e){err.textContent='Sin conexión. Reintenta.';}
   btn.disabled=false;btn.textContent='Guardar';
 }
-function logout(){try{localStorage.removeItem('gc_atleta');}catch(e){}ATLETA=null;document.getElementById('app').style.display='none';document.getElementById('login').style.display='flex';document.getElementById('pin').value='';}
+function logout(){try{localStorage.removeItem('gc_atleta');}catch(e){}ATLETA=null;LOGIN_SECRET='';document.getElementById('app').style.display='none';document.getElementById('login').style.display='flex';document.getElementById('pin').value='';}
 function enterApp(){
   document.getElementById('login').style.display='none';
   document.getElementById('app').style.display='block';
