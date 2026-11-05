@@ -698,7 +698,7 @@ function aplicarCodigoAcceso(){
     <div class="sb-group">Sistema</div>
     <div class="tab" onclick="switchTab('ajustes',this)"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg><span>Ajustes</span></div>
   </nav>
-  <div class="sb-foot"><div id="auth-chip" style="display:none;font-size:12px;color:#cbd5e1;margin-bottom:10px;line-height:1.4"></div><div style="font-size:10px;color:#64748b;margin-bottom:6px">versión 66</div><div class="status-badge" id="status">⏳ Conectando...</div></div>
+  <div class="sb-foot"><div id="auth-chip" style="display:none;font-size:12px;color:#cbd5e1;margin-bottom:10px;line-height:1.4"></div><div style="font-size:10px;color:#64748b;margin-bottom:6px">versión 67</div><div class="status-badge" id="status">⏳ Conectando...</div></div>
 </aside>
 <div class="sb-backdrop" onclick="closeSidebar()"></div>
 <div class="main">
@@ -1030,6 +1030,15 @@ function aplicarCodigoAcceso(){
       <div style="display:flex;gap:8px;margin-top:10px;">
         <input id="new-disciplina" type="text" placeholder="Añadir disciplina..." style="flex:1;padding:8px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;outline:none;">
         <button class="btn btn-primary btn-sm" onclick="addConfigItem('disciplinas_resistencia','new-disciplina')">Añadir</button>
+      </div>
+    </div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:16px;">
+      <div style="font-size:14px;font-weight:600;margin-bottom:4px;">🧘 Actividades del calendario</div>
+      <div style="font-size:12px;color:var(--text-muted);margin-bottom:12px;">Yoga, pilates, crossfit… Las puedes poner tú en el calendario del atleta o apuntarlas él desde su app. Con duración y RPE suman a la carga (min × RPE).</div>
+      <div id="cfg-actividades" class="cfg-chip-list"></div>
+      <div style="display:flex;gap:8px;margin-top:10px;">
+        <input id="new-actividad" type="text" placeholder="Añadir actividad..." style="flex:1;padding:8px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;outline:none;">
+        <button class="btn btn-primary btn-sm" onclick="addConfigItem('tipos_actividad','new-actividad')">Añadir</button>
       </div>
     </div>
     <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:16px;">
@@ -3605,7 +3614,7 @@ function editFromDetail(){
 function toEmbedUrl(url){var yt=url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|v\/))([^&?\/\s]{11})/);if(yt)return 'https://www.youtube.com/embed/'+yt[1];var vi=url.match(/vimeo\.com\/(\d+)/);if(vi)return 'https://player.vimeo.com/video/'+vi[1];var dr=url.match(/drive\.google\.com\/file\/d\/([^\/]+)/);if(dr)return 'https://drive.google.com/file/d/'+dr[1]+'/preview';return null;}
 
 // ── AJUSTES ──
-function renderAjustes(){renderConfigList('cfg-contraccion','tipos_contraccion');renderConfigList('cfg-materiales','materiales');renderConfigList('cfg-grupos','grupos_musculares');renderConfigList('cfg-disciplinas','disciplinas_resistencia');renderConfigList('cfg-categorias','categorias');renderParamsConfig();renderBloquesConfig();document.getElementById('cfg-codigo-acceso').value=DB.config.codigo_acceso||'';}
+function renderAjustes(){renderConfigList('cfg-contraccion','tipos_contraccion');renderConfigList('cfg-materiales','materiales');renderConfigList('cfg-grupos','grupos_musculares');renderConfigList('cfg-disciplinas','disciplinas_resistencia');if(!(DB.config.tipos_actividad&&DB.config.tipos_actividad.length))DB.config.tipos_actividad=ACT_DEFAULT.slice();renderConfigList('cfg-actividades','tipos_actividad');renderConfigList('cfg-categorias','categorias');renderParamsConfig();renderBloquesConfig();document.getElementById('cfg-codigo-acceso').value=DB.config.codigo_acceso||'';}
 async function saveCodigoAcceso(){
   var val=document.getElementById('cfg-codigo-acceso').value.trim();
   var r=await apiPost({action:'saveConfig',key:'codigo_acceso',value:val});
@@ -4535,6 +4544,14 @@ function cxPartidosDe(nombre){var d=cxParData(nombre);return d&&d.partidos?d.par
 function cxRival(p){if(p.rival)return p.rival;var pt=String(p.partido||'').split(/\s+(?:vs\.?|–|—|-)\s+/i).map(function(x){return x.trim();}).filter(Boolean);if(pt.length<2)return p.partido||'';return pt.find(function(x){return !/castilla/i.test(x);})||pt[1];}
 function cxFmt(v,d){d=d||0;var s=Number(v).toFixed(d),pr=s.split('.'),i=pr[0];if(i.length>=5)i=i.replace(/\B(?=(\d{3})+(?!\d))/g,'.');return pr[1]?i+','+pr[1]:i;}
 // ── render del calendario mensual ──
+// ── Actividades (yoga, pilates, crossfit…) guardadas como eventos del atleta con tipo 'actividad' ──
+var ACT_DEFAULT=['Yoga','Pilates','CrossFit','Movilidad / estiramientos','Fisio / recuperación','Otro deporte'];
+var ACT_EMO={'yoga':'🧘','pilates':'🤸','crossfit':'🏋️','movilidad / estiramientos':'🙆','movilidad':'🙆','estiramientos':'🙆','fisio / recuperación':'💆','fisio':'💆','recuperación':'💆','otro deporte':'🏅'};
+function actTipos(){return (DB.config.tipos_actividad&&DB.config.tipos_actividad.length)?DB.config.tipos_actividad:ACT_DEFAULT;}
+function actEmo(n){return ACT_EMO[String(n||'').trim().toLowerCase()]||'🏅';}
+function actUA(e){var d=parseFloat(e.duracion),r=parseFloat(e.rpe);return (d>0&&r>0)?Math.round(d*r):0;}
+function esActividad(e){return e&&e.tipo==='actividad';}
+function actDet(e){return [e.hora||'',e.duracion?e.duracion+"'":'',e.rpe?'RPE '+e.rpe:'',actUA(e)?actUA(e)+' UA':''].filter(Boolean).join(' · ');}
 function cxChip(nombre,emo,det,color,extra,key){return '<div class="cx-c'+(extra?' ext':'')+'" style="'+cxChipStyle(key||nombre,color)+'"><div class="cx-cn"><span>'+emo+'</span><span>'+escapeHtml(nombre)+'</span></div>'+(det?'<div class="cx-cd">'+escapeHtml(det)+'</div>':'')+'</div>';}
 function cxRender(){
   var body=document.getElementById('cx-body');if(!body||!paAtletaActual)return;
@@ -4604,6 +4621,8 @@ function cxDatosDia(iso){
   out.fz=cxFuerzaDe(nombre,iso);
   out.man=cxMan(iso);
   (out.man.cont||[]).forEach(function(x){out.ua+=cxUA(x);});
+  out.act=out.ev.filter(esActividad);out.ev=out.ev.filter(function(e){return !esActividad(e);});
+  out.act.forEach(function(e){out.ua+=actUA(e);});
   return out;
 }
 function cxManChip(x){var ua=cxUA(x),det=[x.m||'',(x.dur?x.dur+"'":'')+(x.dur&&x.int?' × ':'')+(x.int||''),ua?ua+' UA':''].filter(Boolean).join(' · ');return cxChip(x.n,CX_EMO[x.n]||(x.t==='fis'?'💪':'🎯'),det,null,false);}
@@ -4611,7 +4630,7 @@ function cxFatTxt(d){var pre=d.man.fp||'',post=d.man.fq||'';d.fz.forEach(functio
 function cxDiaHTML(iso,fuera,hoy){
   var d=cxDatosDia(iso),dt=new Date(iso+'T12:00:00'),wi=(dt.getDay()+6)%7,tem=cxFaseDe(iso),fase=tem&&tem.fase?tem.fase:'';
   var dep=cxDeporte(),cont=d.man.cont||[],ft=cxFatTxt(d);
-  var vacio=!d.ses.length&&!d.res.length&&!d.ext.length&&!d.par.length&&!d.fz.length&&!d.ev.length&&!d.ex.length&&!cont.length&&!d.man.nota&&!ft;
+  var vacio=!d.ses.length&&!d.res.length&&!d.ext.length&&!d.par.length&&!d.fz.length&&!d.ev.length&&!d.act.length&&!d.ex.length&&!cont.length&&!d.man.nota&&!ft;
   var depCh=d.par.map(function(p){return cxChip((p.jornada?p.jornada+' · ':'')+'vs '+cxRival(p),'⚽',[p.min?p.min+"'":'',p.m&&p.m.dt?cxFmt(p.m.dt.v)+' m':''].filter(Boolean).join(' · '),null,false,'Partido');}).join('')
     +cont.filter(function(x){return x.t==='dep';}).map(cxManChip).join('')
     +d.ex.map(function(e){return cxChip(e.titulo||'Evento','📆',[e.todoDia?'todo el día':(e.hora||''),e.lugar||''].filter(Boolean).join(' · '),null,true,'Calendario');}).join('')
@@ -4623,6 +4642,7 @@ function cxDiaHTML(iso,fuera,hoy){
   }).join('')+d.fz.map(function(f){
     return '<div class="cx-sh">🏋️ '+escapeHtml(f.sesion||'Fuerza')+'</div>'+(f.bloques||[]).map(function(b){return cxChip(b.n,'💪',(b.series?b.series+' series · ':'')+b.ej.length+' ej',null,false);}).join('');
   }).join('')+cont.filter(function(x){return x.t==='fis';}).map(cxManChip).join('')
+    +d.act.map(function(e){return cxChip(e.titulo||e.actividad||'Actividad',actEmo(e.actividad),actDet(e),'#a78bfa',e.autor!=='entrenador','Actividad');}).join('')
     +d.res.map(function(x){return cxChip(x.r.nombre||'Resistencia','🏃',(x.r.duracion_real||x.r.duracion_min||'')+"' · "+x.ua+' UA',null,false);}).join('');
   var uaBox='';
   if(d.ua){var rp=rpeDeUA(d.ua,UA_DIA);uaBox='<div class="cx-ua"><b>⚡ '+d.ua+' UA</b><span style="color:'+RPE_COL[rp]+'">RPE '+rp+'</span></div>';}
@@ -4654,6 +4674,13 @@ function cxDia(iso){
   });
   d.res.forEach(function(x){h+='<div class="cx-pb"><div class="cx-pbh"><span>🏃 '+escapeHtml(x.r.nombre||'Resistencia')+'</span><span>'+x.ua+' UA</span></div></div>';});
   d.ext.forEach(function(p){h+='<div class="cx-pb" style="border-style:dashed"><div class="cx-pbh"><span>📋 '+escapeHtml(p.disciplina||'Plan externo')+'</span></div><div style="font-size:12px;margin-top:4px">'+escapeHtml(p.texto||'')+'</div></div>';});
+  // actividades (yoga, pilates, crossfit…): visibles también en la app del atleta
+  h+='<div class="cx-pb" style="border-color:#a78bfa"><div class="cx-pbh"><span>🧘 ACTIVIDADES</span><span style="font-size:10.5px;color:var(--text-muted)">el atleta también las ve y puede apuntarlas</span></div>'
+    +(d.act.length?d.act.map(function(e){return '<div class="cx-px" style="align-items:center"><span>'+actEmo(e.actividad)+' <b>'+escapeHtml(e.titulo||e.actividad)+'</b>'+(actDet(e)?' · '+escapeHtml(actDet(e)):'')+(e.nota?' · <i>'+escapeHtml(e.nota)+'</i>':'')
+      +' <span style="font-size:10.5px;color:var(--text-muted)">('+(e.autor==='entrenador'?'tuya':'del atleta')+')</span></span><button class="btn btn-danger btn-xs" title="Quitar" onclick="actBorrar(\''+e.id+'\',\''+iso+'\')">✕</button></div>';}).join(''):'<div style="font-size:12px;color:var(--text-muted);margin:6px 0">Sin actividades este día.</div>')
+    +'<div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:8px"><select id="act-tipo" style="flex:1;min-width:140px">'+actTipos().map(function(n){return '<option value="'+escapeHtml(n)+'">'+actEmo(n)+' '+escapeHtml(n)+'</option>';}).join('')+'</select>'
+    +'<input id="act-hora" type="time" style="flex:0 0 auto;min-width:96px"><input id="act-dur" type="number" min="5" step="5" placeholder="min" style="flex:0 0 64px"><input id="act-rpe" type="number" min="1" max="10" step="1" placeholder="RPE" style="flex:0 0 60px">'
+    +'<input id="act-nota" placeholder="Nota (opcional)" style="flex:1;min-width:120px"><button class="btn btn-primary btn-sm" onclick="actGuardar(\''+iso+'\')">+ Añadir</button></div></div>';
   // editor manual
   CXE.iso=iso;CXE.cont=JSON.parse(JSON.stringify(d.man.cont||[]));
   var dep=cxDeporte();
@@ -4690,6 +4717,31 @@ async function cxeGuardar(){
 }
 
 function cxCierra(){document.getElementById('cx-pop').classList.remove('on');}
+async function actGuardar(iso){
+  if(!paAtletaActual)return;
+  var b={action:'saveEventoAtleta',atleta:paAtletaActual,fecha:iso,tipo:'actividad',autor:'entrenador',
+    actividad:document.getElementById('act-tipo').value,hora:document.getElementById('act-hora').value,
+    duracion:parseInt(document.getElementById('act-dur').value,10)||'',rpe:parseFloat(document.getElementById('act-rpe').value)||'',
+    nota:document.getElementById('act-nota').value.trim()};
+  if(b.rpe&&(b.rpe<1||b.rpe>10)){toast('El RPE va de 1 a 10','err');return;}
+  b.titulo=b.actividad;
+  try{
+    var r=await apiPost(b);
+    if(r&&r.ok){
+      CX.ev.push({id:r.id,atleta:b.atleta,fecha:iso,hora:b.hora,titulo:b.titulo,tipo:'actividad',nota:b.nota,actividad:b.actividad,duracion:b.duracion,rpe:b.rpe,autor:'entrenador'});
+      cxRender();cxDia(iso);toast('✅ Actividad añadida');
+    }else toast('No se pudo guardar: '+((r&&r.error)||'sin respuesta'),'err');
+  }catch(e){toast('Sin conexión','err');}
+}
+async function actBorrar(id,iso){
+  var e=(CX.ev||[]).find(function(x){return x.id===id;});if(!e)return;
+  if(!confirm('¿Quitar "'+(e.titulo||e.actividad)+'" de este día?'))return;
+  try{
+    var r=await apiPost({action:'deleteEventoAtleta',id:id,atleta:e.atleta||paAtletaActual});
+    if(r&&r.ok){CX.ev=CX.ev.filter(function(x){return x.id!==id;});cxRender();cxDia(iso);toast('🗑 Actividad quitada');}
+    else toast('No se pudo quitar','err');
+  }catch(err){toast('Sin conexión','err');}
+}
 function cxNueva(iso){cxCierra();selectedDate=iso;perfilAtletaActivo=paAtletaActual;openNewSesion();}
 function cxNuevoExt(iso){cxCierra();selectedDate=iso;perfilAtletaActivo=paAtletaActual;openNewPlanExterno();}
 // ── pestaña Partidos ──

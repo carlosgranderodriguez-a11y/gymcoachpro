@@ -270,6 +270,8 @@ input[type=range]{width:100%;}
 .ev-box label{display:block;font-size:11px;color:var(--text-dim);margin:10px 0 4px;text-transform:uppercase;letter-spacing:.05em;}
 .ev-box input,.ev-box select,.ev-box textarea{width:100%;padding:11px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:15px;box-sizing:border-box;font-family:inherit;}
 .ev-row{display:flex;gap:10px;}.ev-row>div{flex:1;}
+.ev-chip.act{background:rgba(167,139,250,.09);border-left-color:#a78bfa;}
+.ev-act-ua{font-size:11px;font-weight:700;color:#a78bfa;margin-left:4px;}
 .ext-chip{display:flex;align-items:center;gap:9px;padding:7px 10px;border-radius:8px;background:rgba(96,165,250,.08);border-left:3px solid #60a5fa;margin-top:6px;}
 .ext-chip .ic{font-size:14px;flex-shrink:0;}.ext-chip .body{flex:1;font-size:13px;line-height:1.35;min-width:0;}.ext-chip .meta{font-size:11px;color:var(--text-dim);margin-top:1px;}
 .cal-pasos{font-size:13px;line-height:1.55;color:var(--text-dim);margin:0 0 6px;padding-left:18px;}.cal-pasos b{color:var(--text);}
@@ -469,7 +471,8 @@ input[type=range]{width:100%;}
   <h3 id="ev-titulo-modal">Nuevo evento</h3>
   <label>Título</label><input id="ev-titulo" type="text" maxlength="120" placeholder="Ej. Partido en Algeciras">
   <div class="ev-row"><div><label>Fecha</label><input id="ev-fecha" type="date"></div><div><label>Hora (opcional)</label><input id="ev-hora" type="time"></div></div>
-  <label>Tipo</label><select id="ev-tipo"><option value="partido" id="ev-opt-partido">⚽ Partido</option><option value="clase">🎓 Clase / colegio</option><option value="viaje">✈️ Viaje</option><option value="descanso">😴 Descanso</option><option value="medico">🩺 Médico / fisio</option><option value="otro">📌 Otro</option></select>
+  <label>Tipo</label><select id="ev-tipo" onchange="evTipoCambia()"><option value="actividad">🧘 Actividad (yoga, pilates, crossfit…)</option><option value="partido" id="ev-opt-partido">⚽ Partido</option><option value="clase">🎓 Clase / colegio</option><option value="viaje">✈️ Viaje</option><option value="descanso">😴 Descanso</option><option value="medico">🩺 Médico / fisio</option><option value="otro">📌 Otro</option></select>
+  <div id="ev-act-box" style="display:none"><label>Actividad</label><select id="ev-act"></select><div class="ev-row"><div><label>Duración (min)</label><input id="ev-dur" type="number" min="5" max="600" step="5" inputmode="numeric" placeholder="60"></div><div><label>Esfuerzo RPE (1-10)</label><input id="ev-rpe" type="number" min="1" max="10" step="1" inputmode="numeric" placeholder="5"></div></div></div>
   <label>Nota (opcional)</label><textarea id="ev-nota" rows="2" maxlength="400" placeholder="Lo que tu entrenador deba saber"></textarea>
   <div class="ev-actions"><button onclick="evCerrar()">Cancelar</button><button id="ev-borrar" style="display:none;color:#f87171" onclick="evBorrar()">Borrar</button><button id="ev-guardar" onclick="evGuardar()">Guardar</button></div>
 </div></div>
@@ -648,6 +651,7 @@ async function loadAsignadas(){
     if(rEV&&rEV.ok&&rEV.deporte) EV_DEPORTE=rEV.deporte;
     if(rEV&&rEV.ok) EVENTOS=(rEV.items||[]).filter(function(e){return mismoAtleta(e.atleta,ATLETA);});
     if(rC&&rC.ok&&rC.config.bloques_ejercicio&&rC.config.bloques_ejercicio.length) BLOQUES=rC.config.bloques_ejercicio;
+    if(rC&&rC.ok&&rC.config.tipos_actividad&&rC.config.tipos_actividad.length) ACT_TIPOS=rC.config.tipos_actividad;
     renderSemana();
     cargarExternos();
     var _pe=document.getElementById('page-entreno');if(_pe&&_pe.classList.contains('active'))renderEntreno();
@@ -751,15 +755,37 @@ function eventosDelDia(ds){
 }
 var EV_DEPORTE='';
 function evEsEsgrima(){return /esgrima/i.test(EV_DEPORTE);}
-var EV_TIPOS={partido:['⚽','Partido'],clase:['🎓','Clase / colegio'],viaje:['✈️','Viaje'],descanso:['😴','Descanso'],medico:['🩺','Médico / fisio'],otro:['📌','Otro']};
+var ACT_DEFAULT=['Yoga','Pilates','CrossFit','Movilidad / estiramientos','Fisio / recuperación','Otro deporte'];
+var ACT_TIPOS=ACT_DEFAULT.slice();
+var ACT_EMO={'yoga':'🧘','pilates':'🤸','crossfit':'🏋️','movilidad / estiramientos':'🙆','movilidad':'🙆','estiramientos':'🙆','fisio / recuperación':'💆','fisio':'💆','recuperación':'💆','otro deporte':'🏅'};
+function actEmo(n){return ACT_EMO[String(n||'').trim().toLowerCase()]||'🏅';}
+function actUA(e){var d=parseFloat(e.duracion),r=parseFloat(e.rpe);return (d>0&&r>0)?Math.round(d*r):0;}
+function evTipoCambia(){
+  var act=document.getElementById('ev-tipo').value==='actividad';
+  document.getElementById('ev-act-box').style.display=act?'block':'none';
+  document.getElementById('ev-titulo').placeholder=act?'Opcional · ej. Yoga en el club':(evEsEsgrima()?'Ej. Copa del Mundo en Budapest':'Ej. Partido en Algeciras');
+}
+function evRellenaActividades(sel){
+  var el=document.getElementById('ev-act'),lst=ACT_TIPOS.slice();
+  if(sel&&lst.indexOf(sel)<0)lst.push(sel);
+  el.innerHTML=lst.map(function(n){return '<option value="'+escapeHtml(n)+'">'+actEmo(n)+' '+escapeHtml(n)+'</option>';}).join('');
+  if(sel)el.value=sel;
+}
+var EV_TIPOS={actividad:['🧘','Actividad'],partido:['⚽','Partido'],clase:['🎓','Clase / colegio'],viaje:['✈️','Viaje'],descanso:['😴','Descanso'],medico:['🩺','Médico / fisio'],otro:['📌','Otro']};
 function evTipo(k){if(k==='partido'&&evEsEsgrima())return ['🤺','Competición'];return EV_TIPOS[k]||EV_TIPOS.otro;}
 function evChip(e){
+  if(e.tipo==='actividad'){
+    var ua=actUA(e),det=[e.duracion?e.duracion+"'":'',e.rpe?'RPE '+e.rpe:''].filter(Boolean).join(' · ');
+    return '<div class="ev-chip act" onclick="evAbrir(\''+e.id+'\')"><span class="ic">'+actEmo(e.actividad)+'</span><div class="body"><b>'+escapeHtml(e.titulo||e.actividad||'Actividad')+'</b>'+(e.hora?' <span class="ev-h">'+escapeHtml(e.hora)+'</span>':'')
+      +(det||ua?'<div class="meta">'+escapeHtml(det)+(ua?'<span class="ev-act-ua">⚡ '+ua+' UA</span>':'')+(e.autor==='entrenador'?' · 📌 de tu entrenador':'')+'</div>':'')
+      +(e.nota?'<div class="meta">'+escapeHtml(e.nota)+'</div>':'')+'</div><span class="chev">✎</span></div>';
+  }
   var t=evTipo(e.tipo);
   return '<div class="ev-chip" onclick="evAbrir(\''+e.id+'\')"><span class="ic">'+t[0]+'</span><div class="body"><b>'+escapeHtml(e.titulo)+'</b>'+(e.hora?' <span class="ev-h">'+escapeHtml(e.hora)+'</span>':'')
     +(e.nota?'<div class="meta">'+escapeHtml(e.nota)+'</div>':'')+'</div><span class="chev">✎</span></div>';
 }
 var EV_EDIT=null;
-function evAbrir(id,ds){
+function evAbrir(id,ds,tipoIni){
   var e=id?EVENTOS.find(function(x){return x.id===id;}):null;
   EV_EDIT=e?e.id:null;
   document.getElementById('ev-titulo-modal').textContent=e?'Editar evento':'Nuevo evento';
@@ -768,7 +794,13 @@ function evAbrir(id,ds){
   document.getElementById('ev-titulo').value=e?e.titulo:'';
   var op=document.getElementById('ev-opt-partido');if(op)op.textContent=evTipo('partido').join(' ');
   document.getElementById('ev-titulo').placeholder=evEsEsgrima()?'Ej. Copa del Mundo en Budapest':'Ej. Partido en Algeciras';
-  document.getElementById('ev-tipo').value=e?(e.tipo||'otro'):'partido';
+  document.getElementById('ev-tipo').value=e?(e.tipo||'otro'):(tipoIni||'partido');
+  evRellenaActividades(e&&e.actividad?e.actividad:'');
+  document.getElementById('ev-dur').value=e&&e.duracion?e.duracion:'';
+  document.getElementById('ev-rpe').value=e&&e.rpe?e.rpe:'';
+  var esAct=(e?e.tipo:tipoIni)==='actividad';
+  document.getElementById('ev-titulo-modal').textContent=e?(esAct?'Editar actividad':'Editar evento'):(esAct?'Nueva actividad':'Nuevo evento');
+  evTipoCambia();
   document.getElementById('ev-nota').value=e?(e.nota||''):'';
   document.getElementById('ev-borrar').style.display=e?'inline-block':'none';
   document.getElementById('ev-modal').classList.add('on');
@@ -777,6 +809,14 @@ function evCerrar(){document.getElementById('ev-modal').classList.remove('on');}
 async function evGuardar(){
   var b={action:'saveEventoAtleta',atleta:ATLETA,fecha:document.getElementById('ev-fecha').value,hora:document.getElementById('ev-hora').value,
     titulo:document.getElementById('ev-titulo').value.trim(),tipo:document.getElementById('ev-tipo').value,nota:document.getElementById('ev-nota').value.trim()};
+  if(b.tipo==='actividad'){
+    b.actividad=document.getElementById('ev-act').value;b.autor='atleta';
+    b.duracion=parseInt(document.getElementById('ev-dur').value,10)||'';
+    b.rpe=parseFloat(document.getElementById('ev-rpe').value)||'';
+    if(b.rpe&&(b.rpe<1||b.rpe>10)){toast('El RPE va de 1 a 10','err');return;}
+    if(!b.titulo)b.titulo=b.actividad;
+    var prevE=EV_EDIT?EVENTOS.find(function(x){return x.id===EV_EDIT;}):null;if(prevE&&prevE.autor)b.autor=prevE.autor;
+  }
   if(!b.titulo){toast('Ponle un título','err');return;}
   if(!b.fecha){toast('Elige la fecha','err');return;}
   if(EV_EDIT)b.id=EV_EDIT;
@@ -784,10 +824,10 @@ async function evGuardar(){
   try{
     var r=await apiPost(b);
     if(r&&r.ok){
-      var obj={id:r.id,atleta:ATLETA,fecha:b.fecha,hora:b.hora,titulo:b.titulo,tipo:b.tipo,nota:b.nota};
+      var obj={id:r.id,atleta:ATLETA,fecha:b.fecha,hora:b.hora,titulo:b.titulo,tipo:b.tipo,nota:b.nota,actividad:b.actividad||'',duracion:b.duracion||'',rpe:b.rpe||'',autor:b.autor||''};
       var i=EVENTOS.findIndex(function(x){return x.id===r.id;});
       if(i>=0)EVENTOS[i]=obj;else EVENTOS.push(obj);
-      evCerrar();renderSemana();toast('✅ Evento guardado');
+      evCerrar();renderSemana();toast(b.tipo==='actividad'?'✅ Actividad guardada':'✅ Evento guardado');
     }else toast('No se pudo guardar: '+((r&&r.error)||'sin respuesta'),'err');
   }catch(e){toast('No se pudo guardar. Revisa la conexión.','err');}
   btn.disabled=false;
@@ -905,7 +945,7 @@ function renderSemana(){
       +'</div></div>';
     }
     var evs=eventosDelDia(ds);
-    var evBody='<div class="day-ev"><div class="ev-head"><span>📅 MIS EVENTOS</span><span><button class="ev-add" style="border-color:rgba(96,165,250,.5);color:#60a5fa;margin-right:6px" onclick="calAbrir()">'+(CAL_CONECTADO?'📆 ✓':'📆 Conectar')+'</button><button class="ev-add" onclick="evAbrir(null,\''+ds+'\')">+ Añadir</button></span></div>'+externosDelDia(ds).map(extChip).join('')+evs.map(evChip).join('')+'</div>';
+    var evBody='<div class="day-ev"><div class="ev-head"><span>📅 MI DÍA</span><span><button class="ev-add" style="border-color:rgba(96,165,250,.5);color:#60a5fa;margin-right:6px" onclick="calAbrir()">'+(CAL_CONECTADO?'📆 ✓':'📆 Conectar')+'</button><button class="ev-add" style="border-color:rgba(167,139,250,.55);color:#a78bfa;margin-right:6px" onclick="evAbrir(null,\''+ds+'\',\'actividad\')">🧘 + Actividad</button><button class="ev-add" onclick="evAbrir(null,\''+ds+'\')">+ Evento</button></span></div>'+externosDelDia(ds).map(extChip).join('')+evs.map(evChip).join('')+'</div>';
     return '<div class="day-card'+(isToday?' today':'')+'" id="daycard-'+i+'">'+head+body+planBody+evBody+'</div>';
   }).join('');
 }
