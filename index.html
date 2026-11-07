@@ -698,7 +698,7 @@ function aplicarCodigoAcceso(){
     <div class="sb-group">Sistema</div>
     <div class="tab" onclick="switchTab('ajustes',this)"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg><span>Ajustes</span></div>
   </nav>
-  <div class="sb-foot"><div id="auth-chip" style="display:none;font-size:12px;color:#cbd5e1;margin-bottom:10px;line-height:1.4"></div><div style="font-size:10px;color:#64748b;margin-bottom:6px">versión 67</div><div class="status-badge" id="status">⏳ Conectando...</div></div>
+  <div class="sb-foot"><div id="auth-chip" style="display:none;font-size:12px;color:#cbd5e1;margin-bottom:10px;line-height:1.4"></div><div style="font-size:10px;color:#64748b;margin-bottom:6px">versión 68</div><div class="status-badge" id="status">⏳ Conectando...</div></div>
 </aside>
 <div class="sb-backdrop" onclick="closeSidebar()"></div>
 <div class="main">
@@ -4156,9 +4156,46 @@ function psFases(){
 }
 function psSetFase(wi,v){currentPrograma.weeks[wi].fase=v.trim();markDirtyPrograma();renderProgramaBoard();}
 function psFaseDesc(nombre,v){if(!currentPrograma.fasesDesc)currentPrograma.fasesDesc={};currentPrograma.fasesDesc[nombre]=v;markDirtyPrograma();}
+function psFaseRango(i){var f=psFases()[i];return f?{ini:f.ini,fin:f.ini+f.n,nombre:f.nombre}:null;}
+function psFaseRenombrar(i){
+  var r=psFaseRango(i);if(!r)return;
+  var nv=prompt('Nombre de la fase (se aplica a sus '+(r.fin-r.ini)+' semanas):',r.nombre||'');
+  if(nv===null)return;nv=nv.trim();if(nv===r.nombre)return;
+  for(var k=r.ini;k<r.fin;k++)currentPrograma.weeks[k].fase=nv;
+  var d=currentPrograma.fasesDesc||{};if(r.nombre&&d[r.nombre]!==undefined&&d[nv]===undefined){d[nv]=d[r.nombre];delete d[r.nombre];}
+  markDirtyPrograma();renderProgramaBoard();renderProgramaList();
+}
+function psFaseAddSemana(i){
+  var r=psFaseRango(i);if(!r)return;
+  var copia=JSON.parse(JSON.stringify(currentPrograma.weeks[r.fin-1]));
+  currentPrograma.weeks.splice(r.fin,0,copia);psWeek=r.fin;
+  markDirtyPrograma();renderProgramaBoard();renderProgramaList();toast('Semana añadida a '+(r.nombre||'la fase')+' (copia de la última)');
+}
+function psFaseDuplicar(i){
+  var r=psFaseRango(i);if(!r)return;
+  var m=String(r.nombre||'').match(/^(.*?)(\d+)\s*$/);var nom=m?m[1]+(parseInt(m[2],10)+1):(r.nombre?r.nombre+' (copia)':'Fase nueva');
+  var nv=prompt('Nombre de la nueva fase:',nom);if(nv===null)return;nv=nv.trim()||nom;
+  var copias=currentPrograma.weeks.slice(r.ini,r.fin).map(function(w){var c=JSON.parse(JSON.stringify(w));c.fase=nv;return c;});
+  Array.prototype.splice.apply(currentPrograma.weeks,[r.fin,0].concat(copias));psWeek=r.fin;
+  markDirtyPrograma();renderProgramaBoard();renderProgramaList();toast('Fase duplicada: '+nv);
+}
+function psFaseQuitar(i){
+  var r=psFaseRango(i);if(!r)return;var n=r.fin-r.ini;
+  if(n>=currentPrograma.weeks.length){toast('Debe quedar al menos una semana','err');return;}
+  if(!confirm('¿Quitar la fase «'+(r.nombre||'Sin fase')+'» y sus '+n+(n===1?' semana':' semanas')+'?'))return;
+  currentPrograma.weeks.splice(r.ini,n);if(psWeek>=currentPrograma.weeks.length)psWeek=currentPrograma.weeks.length-1;
+  markDirtyPrograma();renderProgramaBoard();renderProgramaList();
+}
+function psFaseNueva(){
+  var fs=psFases(),nom='Fase '+(fs.filter(function(f){return f.nombre;}).length+1);
+  var nv=prompt('Nombre de la nueva fase:',nom);if(nv===null)return;nv=nv.trim()||nom;
+  var ns=parseInt(prompt('¿Cuántas semanas?','3'),10);if(!(ns>0))return;ns=Math.min(ns,52);
+  for(var k=0;k<ns;k++)currentPrograma.weeks.push({dias:{},sesiones:{},fase:nv});
+  psWeek=currentPrograma.weeks.length-ns;markDirtyPrograma();renderProgramaBoard();renderProgramaList();toast('Fase añadida: '+nv);
+}
 function psFaseHtml(){
   var fs=psFases();
-  if(fs.length===1&&!fs[0].nombre)return '<div style="font-size:12px;color:var(--text-muted);margin-bottom:10px">Este plan no tiene fases. Escribe un nombre en «Fase» de cada semana (por ejemplo Fase 1) para agruparlas.</div>';
+  if(fs.length===1&&!fs[0].nombre)return '<div style="font-size:12px;color:var(--text-muted);margin-bottom:10px">Este plan no tiene fases. Escribe un nombre en «Fase» de cada semana (por ejemplo Fase 1) para agruparlas, o <a href="#" onclick="psFaseNueva();return false">añade una fase</a>.</div>';
   var actual=currentPrograma.weeks[psWeek]?psFaseDe(currentPrograma.weeks[psWeek]):'';
   return '<div class="ps-fases" style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px">'+fs.map(function(f,i){
     var on=f.nombre===actual&&psWeek>=f.ini&&psWeek<f.ini+f.n;
@@ -4167,8 +4204,13 @@ function psFaseHtml(){
       +'<div style="display:flex;justify-content:space-between;gap:10px;cursor:pointer" onclick="psGoWeek('+f.ini+')"><div><b style="font-size:14px">'+(i+1)+'. '+escapeHtml(f.nombre||'Sin fase')+'</b>'+(on?' <span style="color:var(--accent-ink)">●</span>':'')
       +'<div style="font-size:12px;color:var(--text-muted)">'+f.n+(f.n===1?' semana':' semanas')+' · '+f.dias+' días/semana · semanas '+(f.ini+1)+(f.n>1?'–'+(f.ini+f.n):'')+'</div></div>'
       +'<span style="font-size:12px;color:var(--accent-ink);align-self:center">Abrir ›</span></div>'
-      +'<input value="'+escAttr(d)+'" placeholder="Descripción de la fase…" oninput="psFaseDesc(\''+escAttr(f.nombre)+'\',this.value)" style="width:100%;margin-top:6px;padding:5px 8px;font-size:12px;background:transparent;border:none;border-top:1px solid var(--border);color:var(--text-dim);outline:none"></div>';
-  }).join('')+'</div>';
+      +'<input value="'+escAttr(d)+'" placeholder="Descripción de la fase…" oninput="psFaseDesc(\''+escAttr(f.nombre)+'\',this.value)" style="width:100%;margin-top:6px;padding:5px 8px;font-size:12px;background:transparent;border:none;border-top:1px solid var(--border);color:var(--text-dim);outline:none">'
+      +'<div class="ps-fase-acc" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px">'
+      +'<button class="btn btn-secondary btn-sm" onclick="psFaseRenombrar('+i+')">✎ Renombrar</button>'
+      +'<button class="btn btn-secondary btn-sm" onclick="psFaseAddSemana('+i+')">+ Semana</button>'
+      +'<button class="btn btn-secondary btn-sm" onclick="psFaseDuplicar('+i+')">⧉ Duplicar fase</button>'
+      +'<button class="btn btn-danger btn-sm" onclick="psFaseQuitar('+i+')">✕ Quitar fase</button></div></div>';
+  }).join('')+'<div><button class="btn btn-secondary btn-sm" onclick="psFaseNueva()">+ Nueva fase</button></div></div>';
 }
 var psVista='semana';
 var PS_COL=['#60a5fa','#ccff66','#fb923c','#f472b6','#a78bfa','#06b6d4','#4ade80'];
