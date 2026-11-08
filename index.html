@@ -612,6 +612,26 @@ input:focus,select:focus,textarea:focus{border-color:#8aa0d6 !important;box-shad
 .bib-nav .fchip{padding:9px 18px;border-radius:99px;}
 .bib-nav .fchip.active{background:var(--accent-ink,#14230a);color:var(--accent,#c4f135);font-weight:600;}
 .bib-nav .bib-gen:not(.active){background:#f1fbd0;color:#3d6a00;border:1px solid #c4f135;font-weight:600;}
+
+#inf-ov{position:fixed;inset:0;background:rgba(10,15,25,.55);z-index:9999;display:flex;align-items:flex-start;justify-content:center;padding:24px 12px;overflow:auto}
+.inf-box{background:var(--surface);border-radius:14px;max-width:860px;width:100%;padding:20px;box-shadow:0 20px 60px rgba(0,0,0,.4)}
+.inf-head{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;border-bottom:1px solid var(--border);padding-bottom:12px;margin-bottom:12px}
+.inf-at{font-size:12px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;font-weight:700}.inf-tt{font-size:19px;font-weight:800}.inf-fe{font-size:13px;color:var(--text-dim)}
+.inf-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin-bottom:12px}
+.inf-k{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:10px 12px;display:flex;flex-direction:column}.inf-k b{font-size:20px}.inf-k span{font-size:12px;color:var(--text-dim)}.inf-k i{font-size:11px;color:var(--text-muted);font-style:normal}
+.inf-com{background:#fff7e6;border:1px solid #fcd9a0;color:#7a4b00;border-radius:10px;padding:10px 12px;font-size:13px;margin-bottom:10px}
+.inf-pend{background:var(--surface2);border:1px dashed var(--border);border-radius:10px;padding:10px 12px;font-size:13px;margin-bottom:10px;color:var(--text-dim)}
+.inf-mat{font-size:12.5px;color:var(--text-dim);margin-bottom:10px}
+.inf-bl{margin-top:14px}.inf-blh{font-weight:800;font-size:13px;text-transform:uppercase;letter-spacing:.04em;border-left:4px solid #888;padding:4px 10px;background:var(--surface2);border-radius:6px}
+.inf-ex{border:1px solid var(--border);border-radius:10px;padding:10px;margin-top:8px}
+.inf-exh{display:flex;gap:10px;align-items:center}.inf-exh img,.inf-ph{width:44px;height:44px;border-radius:8px;object-fit:cover;flex:none;background:var(--surface2);display:flex;align-items:center;justify-content:center}
+.inf-exh a{text-decoration:none;color:var(--accent-ink)}
+.inf-pres{font-size:12px;color:var(--text-muted)}.inf-comp{font-size:12px;margin-top:2px}
+.inf-up{color:#15803d;font-weight:700}.inf-dn{color:#b91c1c;font-weight:700}.inf-eq{color:var(--text-muted)}
+.inf-note{font-size:12px;background:var(--surface2);border-radius:8px;padding:6px 9px;margin-top:6px}
+.inf-t{width:100%;border-collapse:collapse;font-size:12.5px;margin-top:8px}.inf-t th{font-size:11px;color:var(--text-muted);font-weight:600;text-align:center;padding:4px;border-bottom:1px solid var(--border)}.inf-t td{text-align:center;padding:4px;border-bottom:1px solid var(--border)}
+.inf-t tr.inf-falta td{color:var(--text-muted);background:#fef2f2}
+.act-dia{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);margin:10px 0 4px}
 </style>
 </head>
 <body>
@@ -698,7 +718,7 @@ function aplicarCodigoAcceso(){
     <div class="sb-group">Sistema</div>
     <div class="tab" onclick="switchTab('ajustes',this)"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg><span>Ajustes</span></div>
   </nav>
-  <div class="sb-foot"><div id="auth-chip" style="display:none;font-size:12px;color:#cbd5e1;margin-bottom:10px;line-height:1.4"></div><div style="font-size:10px;color:#64748b;margin-bottom:6px">versión 68</div><div class="status-badge" id="status">⏳ Conectando...</div></div>
+  <div class="sb-foot"><div id="auth-chip" style="display:none;font-size:12px;color:#cbd5e1;margin-bottom:10px;line-height:1.4"></div><div style="font-size:10px;color:#64748b;margin-bottom:6px">versión 69</div><div class="status-badge" id="status">⏳ Conectando...</div></div>
 </aside>
 <div class="sb-backdrop" onclick="closeSidebar()"></div>
 <div class="main">
@@ -724,6 +744,7 @@ function aplicarCodigoAcceso(){
     </div>
     <div id="panel-cards" class="stat-grid"></div>
     <div class="card panel-card" style="margin-bottom:18px"><h3>Hoy <a onclick="goTab('calendario')">Ver calendario ›</a></h3><div id="panel-hoy"></div></div>
+    <div class="card panel-card" style="margin-bottom:18px"><h3>Informe de actividad <a onclick="panelActividad(true)">↻ Actualizar</a></h3><div id="panel-actividad"></div></div>
     <div class="panel-cols">
       <div class="card panel-card">
         <h3>Próximas sesiones <a onclick="goTab('calendario')">Ver calendario ›</a></h3>
@@ -2982,6 +3003,127 @@ function iniciales(name){
 function avatarHtml(name,size){
   return '<div class="avatar" style="background:'+avatarColor(name)+(size?';width:'+size+'px;height:'+size+'px;font-size:'+Math.round(size*0.36)+'px':'')+'">'+escapeHtml(iniciales(name))+'</div>';
 }
+// ═══ INFORME DE SESIÓN (como el «workout report» de Bridge) ═══
+var INF={reg:{},cargando:{}};
+async function infRegistros(atleta,forzar){
+  if(!atleta)return [];
+  if(!forzar&&typeof paAtletaActual!=='undefined'&&paAtletaActual&&cxMismo(paAtletaActual,atleta)&&CX.reg&&CX.reg.length)return CX.reg;
+  if(!forzar&&INF.reg[atleta])return INF.reg[atleta];
+  try{var r=await api({action:'getHistorial',atleta:atleta});INF.reg[atleta]=(r&&r.ok)?(r.registros||[]):[];}catch(e){INF.reg[atleta]=INF.reg[atleta]||[];}
+  return INF.reg[atleta];
+}
+function infNum(v){var n=parseFloat(String(v==null?'':v).replace(',','.'));return isNaN(n)?null:n;}
+function infSetsHechos(er){return ((er&&er.sets)||[]).filter(function(st){return String(st.reps||'').trim()!==''||String(st.load||'').trim()!=='';});}
+function infPrev(regs,exId,fecha,regId){
+  var best=null;
+  (regs||[]).forEach(function(r){
+    if(!r.completada||r.id===regId||!r.fecha||r.fecha>=fecha||!r.datos||!r.datos.ejercicios)return;
+    r.datos.ejercicios.forEach(function(er){
+      if(!er||er.id!==exId)return;var st=infSetsHechos(er);if(!st.length)return;
+      if(!best||r.fecha>best.fecha){
+        var kg=Math.max.apply(null,st.map(function(x){return infNum(x.load)||0;}));
+        var reps=st.reduce(function(a,x){return a+(infNum(x.reps)||0);},0);
+        var vol=st.reduce(function(a,x){return a+(infNum(x.reps)||0)*(infNum(x.load)||0);},0);
+        best={fecha:r.fecha,kg:kg,reps:reps,vol:vol};
+      }
+    });
+  });
+  return best;
+}
+function infPct(a,b){if(!b)return '';var p=Math.round((a-b)/b*100);if(!p)return '<span class="inf-eq">= anterior</span>';return '<span class="'+(p>0?'inf-up':'inf-dn')+'">'+(p>0?'▲ +':'▼ ')+p+'%</span>';}
+function infFecha(iso){var d=new Date(iso+'T12:00:00');return d.toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'long',year:'numeric'});}
+function infBloquesDe(s){
+  var defs=getBloques(),map={},orden=[];
+  (s.ejercicios||[]).forEach(function(ex,idx){
+    var bid=tipoDeBloqueKey(ex.bloque||'fuerza'),key=bid+'::'+(ex.bloqueInstancia||'');
+    if(!map[key]){var def=defs.find(function(b){return b.id===bid;})||{name:bid,color:'#888'};map[key]={nombre:ex.bloqueNombre||def.name,color:def.color,ex:[]};orden.push(key);}
+    map[key].ex.push({ex:ex,idx:idx});
+  });
+  return orden.map(function(k){return map[k];});
+}
+async function informeSesion(sesId){
+  var s=(DB.sesiones||[]).find(function(x){return x.id===sesId;});
+  if(!s){toast('Sesión no encontrada','err');return;}
+  infAbrir('<div style="padding:30px;text-align:center;color:var(--text-muted)">⏳ Cargando informe…</div>');
+  var regs=await infRegistros(s.atleta);
+  var reg=regs.find(function(r){return r.sesion_id===s.id&&r.completada;});
+  if(!reg){regs=await infRegistros(s.atleta,true);reg=regs.find(function(r){return r.sesion_id===s.id&&r.completada;});}
+  var d=(reg&&reg.datos)||{},rexs=d.ejercicios||[];
+  var bl=cxBloques(s),durPlan=bl.reduce(function(a,b){return a+b.dur;},0);
+  var dur=infNum(d.duracion),rpe=infNum(d.rpe),ua=(rpe!=null)?Math.round((dur||durPlan)*rpe):null;
+  var mat={};(s.ejercicios||[]).forEach(function(ex){var e=(DB.ejercicios||{})[ex.id];((e&&e.material)||[]).forEach(function(m){if(m)mat[m]=1;});});
+  var setsPres=0,setsHech=0,tonelaje=0,ejHech=0;
+  var cuerpo=infBloquesDe(s).map(function(b){
+    return '<div class="inf-bl"><div class="inf-blh" style="border-left-color:'+b.color+'">'+escapeHtml(b.nombre)+'</div>'+b.ex.map(function(o){
+      var ex=o.ex,e=(DB.ejercicios||{})[ex.id]||{},er=rexs[o.idx]&&rexs[o.idx].id===ex.id?rexs[o.idx]:rexs.find(function(x){return x&&x.id===ex.id;});
+      var ser=parseInt(getParamVal(ex,'series')||ex.sets)||0,rp=getParamVal(ex,'reps')||ex.reps||'',kg=getParamVal(ex,'kg')||((ex.load&&ex.load!=='—')?ex.load:''),t=getParamVal(ex,'duracion'),rpeP=getParamVal(ex,'rpe'),ds=getParamVal(ex,'descanso')||'',nt=getParamVal(ex,'notas');
+      setsPres+=ser;
+      var pres=[ser?ser+' series':'',rp?rp+' reps':'',t?t+' s':'',kg?kg+' kg':'',rpeP?'RPE '+rpeP:'',ds?'desc. '+ds:''].filter(Boolean).join(' · ');
+      var st=infSetsHechos(er),filas='';
+      if(st.length){
+        setsHech+=Math.min(st.length,ser||st.length);ejHech++;
+        var n=Math.max(st.length,ser);
+        for(var i=0;i<n;i++){var x=(er.sets||[])[i]||{};var hecho=String(x.reps||'').trim()!==''||String(x.load||'').trim()!=='';tonelaje+=(infNum(x.reps)||0)*(infNum(x.load)||0);
+          filas+='<tr class="'+(hecho?'':'inf-falta')+'"><td>'+(i+1)+'</td><td>'+escapeHtml(rp||'—')+(t?' · '+escapeHtml(t)+' s':'')+'</td><td><b>'+escapeHtml(hecho?(x.reps||'—'):'—')+'</b></td><td>'+escapeHtml(kg||'—')+'</td><td><b>'+escapeHtml(hecho?(x.load||'—'):'—')+'</b></td></tr>';}
+      }
+      var prev=infPrev(regs,ex.id,s.fecha,reg&&reg.id),comp='';
+      if(st.length&&prev){var kgA=Math.max.apply(null,st.map(function(x){return infNum(x.load)||0;}));
+        comp=kgA&&prev.kg?'Máx. '+kgA+' kg vs '+prev.kg+' kg el '+prev.fecha.slice(8)+'/'+prev.fecha.slice(5,7)+' '+infPct(kgA,prev.kg):'Reps '+st.reduce(function(a,x){return a+(infNum(x.reps)||0);},0)+' vs '+prev.reps+' '+infPct(st.reduce(function(a,x){return a+(infNum(x.reps)||0);},0),prev.reps);}
+      var extra=[];if(er&&er.adaptado)extra.push('🔧 Adaptado'+(er.nota_adaptacion?': '+escapeHtml(er.nota_adaptacion):''));if(er&&er.alternativa)extra.push('🔁 Hizo otro ejercicio: '+escapeHtml(er.alternativa));
+      return '<div class="inf-ex"><div class="inf-exh">'+(e.imagen?'<img src="'+escAttr(e.imagen)+'" referrerpolicy="no-referrer">':'<span class="inf-ph">💪</span>')+'<div style="flex:1;min-width:0"><b>'+escapeHtml(e.nombre||ex.id)+'</b>'+(e.video?' <a href="'+escAttr(e.video)+'" target="_blank" title="Ver vídeo">▶</a>':'')+'<div class="inf-pres">Mandado: '+escapeHtml(pres||'—')+(nt?' · '+escapeHtml(nt):'')+'</div>'+(comp?'<div class="inf-comp">'+comp+'</div>':'')+'</div>'
+        +(reg?(st.length?'<span class="pill" style="background:#e8f3d2;color:#3d6a00">'+Math.min(st.length,ser||st.length)+'/'+(ser||st.length)+'</span>':'<span class="pill" style="background:#f1f5f9;color:#64748b">sin datos</span>'):'')+'</div>'
+        +(extra.length?'<div class="inf-note">'+extra.join('<br>')+'</div>':'')
+        +(filas?'<table class="inf-t"><tr><th>Serie</th><th>Reps mandadas</th><th>Reps hechas</th><th>Kg mandados</th><th>Kg hechos</th></tr>'+filas+'</table>':'')+'</div>';
+    }).join('')+'</div>';
+  }).join('');
+  var cumpl=setsPres?Math.round(setsHech/setsPres*100):null;
+  var kpi=function(l,v,sub){return '<div class="inf-k"><b>'+v+'</b><span>'+l+'</span>'+(sub?'<i>'+sub+'</i>':'')+'</div>';};
+  var h='<div class="inf-head"><div><div class="inf-at">'+escapeHtml(s.atleta||'')+'</div><div class="inf-tt">'+escapeHtml(s.nombre||'Sesión')+'</div><div class="inf-fe">'+escapeHtml(infFecha(s.fecha))+'</div></div>'
+    +'<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:flex-start"><button class="btn btn-secondary btn-sm" onclick="infPDF(\''+s.id+'\')">🖨 PDF</button><button class="btn btn-secondary btn-sm" onclick="infCerrar();editSesion(\''+s.id+'\')">✏️ Editar</button><button class="btn btn-secondary btn-sm" onclick="infCerrar()">✕</button></div></div>';
+  if(!reg)h+='<div class="inf-pend">⏳ El atleta todavía no ha completado esta sesión. Abajo tienes lo que tiene mandado.</div>';
+  else h+='<div class="inf-kpis">'+kpi('RPE',rpe!=null?rpe:'—')+kpi('Duración',(dur||durPlan)+"'",dur?'':'prevista')+kpi('Carga',ua!=null?ua+' UA':'—','min × RPE')+kpi('Series hechas',setsHech+'/'+setsPres,cumpl!=null?cumpl+'% cumplido':'')+kpi('Tonelaje',Math.round(tonelaje)+' kg','reps × kg')+'</div>'
+    +(d.notas?'<div class="inf-com">💬 <b>Comentario del atleta:</b> '+escapeHtml(d.notas)+'</div>':'');
+  if(Object.keys(mat).length)h+='<div class="inf-mat"><b>Material:</b> '+Object.keys(mat).map(escapeHtml).join(', ')+'</div>';
+  h+=cuerpo;
+  infAbrir(h);
+}
+function infAbrir(html){
+  var o=document.getElementById('inf-ov');
+  if(!o){o=document.createElement('div');o.id='inf-ov';o.onclick=function(ev){if(ev.target===o)infCerrar();};document.body.appendChild(o);}
+  o.innerHTML='<div class="inf-box">'+html+'</div>';
+}
+function infCerrar(){var o=document.getElementById('inf-ov');if(o)o.remove();}
+function infPDF(id){editingSesion={id:id};exportSesionPDF();}
+// ── Informe de actividad (portada) ──
+async function panelActividad(forzar){
+  var el=document.getElementById('panel-actividad');if(!el)return;
+  var hoy=fechaLocalISO(),desde=new Date();desde.setDate(desde.getDate()-13);var desdeS=fechaLocalISO(desde);
+  var ses=(DB.sesiones||[]).filter(function(s){return s.fecha>=desdeS&&s.fecha<=hoy;});
+  var atls=[];ses.forEach(function(s){if(s.atleta&&atls.indexOf(s.atleta)<0)atls.push(s.atleta);});
+  if(!atls.length){el.innerHTML='<div class="empty-note">Sin sesiones en las últimas 2 semanas.</div>';return;}
+  if(!el.innerHTML||forzar)el.innerHTML='<div class="empty-note">⏳ Cargando lo que han completado tus atletas…</div>';
+  var cola=atls.slice();
+  await Promise.all([0,1,2,3].map(async function(){while(cola.length){var a=cola.shift();await infRegistros(a,forzar);}}));
+  var filas=[];
+  ses.forEach(function(s){
+    var reg=(INF.reg[s.atleta]||[]).find(function(r){return r.sesion_id===s.id&&r.completada;});
+    if(!reg)return;var d=reg.datos||{},rpe=infNum(d.rpe),dur=infNum(d.duracion);
+    if(!dur){dur=cxBloques(s).reduce(function(a,b){return a+b.dur;},0);}
+    filas.push({s:s,rpe:rpe,dur:dur,est:!infNum(d.duracion),nota:d.notas||'',f:s.fecha});
+  });
+  if(!filas.length){el.innerHTML='<div class="empty-note">Nadie ha completado sesiones en las últimas 2 semanas.</div>';return;}
+  filas.sort(function(a,b){return b.f.localeCompare(a.f)||(a.s.atleta||'').localeCompare(b.s.atleta||'');});
+  var h='',prev=null;
+  filas.slice(0,30).forEach(function(x){
+    if(x.f!==prev){h+='<div class="act-dia">'+escapeHtml(infFecha(x.f))+'</div>';prev=x.f;}
+    h+='<div class="ses-row" onclick="informeSesion(\''+x.s.id+'\')">'+avatarHtml(x.s.atleta||'?')
+      +'<div class="ses-main"><div class="ses-name">'+escapeHtml(x.s.atleta||'')+'</div><div class="ses-sub">'+escapeHtml((x.s.nombre||'Sesión').replace(/^.*· S\d+ · /,''))+(x.nota?' · 💬':'')+'</div></div>'
+      +'<span style="font-size:12px;color:var(--text-muted);white-space:nowrap">'+Math.round(x.dur)+' min'+(x.est?'*':'')+'</span>'
+      +'<span class="pill" style="background:#fde7d3;color:#9a3412">RPE '+(x.rpe!=null?x.rpe:'—')+'</span><span style="font-size:15px" title="Ver informe">📋</span></div>';
+  });
+  el.innerHTML=h+'<div style="font-size:11px;color:var(--text-muted);margin-top:6px">* minutos previstos (el atleta no los apuntó)</div>';
+}
+
 function renderPanel(){
   var cardsWrap=document.getElementById('panel-cards');
   if(!cardsWrap) return;
@@ -3043,6 +3185,7 @@ function renderPanel(){
         +'<span class="pill" style="background:'+x.c+'">'+x.t+'</span></div>';
     }).join(''):'<div class="empty-note">Hoy no hay sesiones planificadas.</div>';
   }
+  panelActividad();
   // Atención: lesionados / en carga / readaptación, y activos sin nada en 7 días
   var atEl=document.getElementById('panel-atencion');
   if(atEl){
@@ -4436,7 +4579,7 @@ async function crearSesionesProgramaParaAtleta(atleta,fechaInicio){
       var ejercicios=[];
       Object.keys(tpl.bloques||{}).forEach(function(bId){
         (tpl.bloques[bId]||[]).forEach(function(ex){
-          ejercicios.push({id:ex.id,bloque:tipoDeBloqueKey(bId),bloqueInstancia:(bId.indexOf('::')>-1?bId.split('::')[1]:''),sets:getParamVal(ex,'series')||'3',reps:getParamVal(ex,'reps')||'10',load:getParamVal(ex,'kg')||'—',rest:getParamVal(ex,'descanso')||'90s',params:ex.params});
+          ejercicios.push({id:ex.id,bloque:tipoDeBloqueKey(bId),bloqueInstancia:(bId.indexOf('::')>-1?bId.split('::')[1]:''),bloqueNombre:((tpl.bloqueMeta||{})[bId]||{}).name||'',sets:getParamVal(ex,'series')||'3',reps:getParamVal(ex,'reps')||'10',load:getParamVal(ex,'kg')||'—',rest:getParamVal(ex,'descanso')||'90s',params:ex.params});
         });
       });
       var nombreSesion=currentPrograma.name+' · S'+(wi+1)+' · '+(tpl.nombre||'Sesión');
@@ -4653,7 +4796,7 @@ function cxDatosDia(iso){
   var nombre=paAtletaActual,out={iso:iso,ses:[],res:[],ext:[],par:[],fz:[],ev:(CX.ev||[]).filter(function(e){return e.fecha===iso;}),ex:(CX.ext||[]).filter(function(e){return e.fecha===iso;}),man:{},ua:0};
   DB.sesiones.filter(function(s){return cxMismo(s.atleta,nombre)&&s.fecha===iso;}).forEach(function(s){
     var bl=cxBloques(s),dur=bl.reduce(function(a,b){return a+b.dur;},0),plan=bl.reduce(function(a,b){return a+b.ua;},0),reg=cxRegDe(s.id),real=null;
-    if(reg&&reg.datos&&parseFloat(reg.datos.rpe))real=Math.round(dur*parseFloat(reg.datos.rpe));
+    if(reg&&reg.datos&&parseFloat(reg.datos.rpe))real=Math.round((parseFloat(reg.datos.duracion)||dur)*parseFloat(reg.datos.rpe));
     out.ses.push({s:s,bl:bl,dur:dur,plan:plan,real:real,hecha:!!reg,rpeReal:reg&&reg.datos?parseFloat(reg.datos.rpe)||null:null});
     out.ua+=(real!=null?real:plan);
   });
@@ -4707,7 +4850,7 @@ function cxDia(iso){
         +b.ex.map(function(ex){var e=(DB.ejercicios||{})[ex.id],nom=(e&&e.nombre)||ex.id,sr=(getParamVal(ex,'series')||ex.sets||'')+(getParamVal(ex,'reps')||ex.reps?'×'+(getParamVal(ex,'reps')||ex.reps):''),kg=getParamVal(ex,'kg')||ex.load,ds=getParamVal(ex,'descanso')||ex.rest;
           return '<div class="cx-px"><span>'+escapeHtml(nom)+'</span><span>'+[sr,(kg&&kg!=='—')?kg:'',ds].filter(Boolean).map(escapeHtml).join(' · ')+'</span></div>';}).join('')+'</div>';
     });
-    h+='<div style="margin-top:10px"><button class="btn btn-secondary btn-sm" onclick="cxCierra();editSesion(\''+x.s.id+'\')">✏️ Editar sesión</button></div></div>';
+    h+='<div style="margin-top:10px;display:flex;gap:6px;flex-wrap:wrap"><button class="btn btn-secondary btn-sm" onclick="cxCierra();editSesion(\''+x.s.id+'\')">✏️ Editar sesión</button><button class="btn '+(x.hecha?'btn-primary':'btn-secondary')+' btn-sm" onclick="informeSesion(\''+x.s.id+'\')">📋 '+(x.hecha?'Ver informe':'Informe (pendiente)')+'</button></div></div>';
   });
   d.fz.forEach(function(f){
     h+='<div class="cx-pb"><div class="cx-pbh"><span>🏋️ '+escapeHtml(f.sesion||'Fuerza')+'</span><span>'+escapeHtml(f.fatigaPre||f.fatigaPost?'Fatiga '+(f.fatigaPre||'—')+' → '+(f.fatigaPost||'—'):'')+'</span></div>'

@@ -688,9 +688,10 @@ function renderEntreno(){
     var body='';
     if(x.kind==='fuerza'){
       var bl={},orden=[];
-      (s.ejercicios||[]).forEach(function(ex){var b=ex.bloque||'otros';if(!bl[b]){bl[b]=[];orden.push(b);}bl[b].push(ex);});
+      var bNom={};
+      (s.ejercicios||[]).forEach(function(ex){var b=(ex.bloque||'otros')+(ex.bloqueInstancia?'::'+ex.bloqueInstancia:'');if(!bl[b]){bl[b]=[];orden.push(b);}bl[b].push(ex);if(ex.bloqueNombre&&!bNom[b])bNom[b]=ex.bloqueNombre;});
       body=orden.map(function(k){
-        var def=BLOQUES.find(function(b){return b.id===k;})||{name:k,color:'#a3a3a3'};
+        var tp=k.split('::')[0],d0=BLOQUES.find(function(b){return b.id===tp;})||{name:tp,color:'#a3a3a3'},def={name:bNom[k]||d0.name,color:d0.color};
         return '<div style="border-left:4px solid '+def.color+';padding:2px 0 2px 10px;margin:8px 0"><div style="font-size:12px;font-weight:800;color:'+def.color+';text-transform:uppercase;letter-spacing:.5px">'+escHtmlE(def.name)+'</div>'
           +bl[k].map(function(ex){
             var db=EJERCICIOS_DB[ex.id]||{nombre:ex.id};
@@ -976,10 +977,12 @@ function renderDetalleFuerza(s,activo){
   html+='<div class="det-title cond">'+(s.nombre||'Sesión de fuerza')+'</div>';
   html+='<div class="det-sub">'+fecha+'</div>';
   var bloques={};
-  (s.ejercicios||[]).forEach(function(ex){var b=ex.bloque||'otros';if(!bloques[b])bloques[b]=[];bloques[b].push(ex);});
+  var bNombres={};
+  (s.ejercicios||[]).forEach(function(ex){var b=(ex.bloque||'otros')+(ex.bloqueInstancia?'::'+ex.bloqueInstancia:'');if(!bloques[b])bloques[b]=[];bloques[b].push(ex);if(ex.bloqueNombre&&!bNombres[b])bNombres[b]=ex.bloqueNombre;});
   // Los bloques salen en el orden en que el entrenador los colocó en la plantilla/sesión
   var listaBloques=Object.keys(bloques).map(function(k){
-    return BLOQUES.find(function(b){return b.id===k;})||{id:k,name:k,color:'#a3a3a3'};
+    var tipo=k.split('::')[0],def=BLOQUES.find(function(b){return b.id===tipo;})||{id:tipo,name:tipo,color:'#a3a3a3'};
+    return {id:k,name:bNombres[k]||def.name,color:def.color};
   });
   listaBloques.forEach(function(bDef){
     var exs=bloques[bDef.id];if(!exs||!exs.length)return;
@@ -1517,7 +1520,7 @@ async function syncGarminAhora(){
 
 function abrirCompletar(){
   var isFuerza=currentDetalle.kind==='fuerza';
-  var extra=isFuerza?'':(
+  var extra=isFuerza?'<div class="g"><label class="lab">⏱️ ¿Cuántos minutos ha durado la sesión?</label><input type="number" min="1" max="300" step="1" id="cp-dur" class="inp" placeholder="Ej. 45"></div>':(
     '<div class="row2">'
     +'<div class="g"><label class="lab">Km reales</label><input type="number" step="0.01" id="cp-km" class="inp" placeholder="—"></div>'
     +'<div class="g"><label class="lab">Tiempo real (mm:ss)</label><input type="text" id="cp-tiempo" class="inp" placeholder="—"></div>'
@@ -1538,6 +1541,7 @@ async function guardarCompletar(){
   var rpe=document.getElementById('cp-rpe').value;
   var notas=document.getElementById('cp-notas').value.trim();
   var isFuerza=currentDetalle.kind==='fuerza';
+  var durEl=document.getElementById('cp-dur'),duracion=durEl?(parseInt(durEl.value,10)||''):'';
   var s=currentDetalle.data;
   try{
     if(isFuerza){
@@ -1563,9 +1567,9 @@ async function guardarCompletar(){
         if(esAlternativa){entry.alternativa=(altEl.querySelector('input').value||'').trim();}
         ejerciciosDatos[idx]=entry;
       });
-      var r=await apiPost({action:'guardarRegistro',atleta:ATLETA,fecha:s.fecha,sesion_id:s.id,datos:{ejercicios:ejerciciosDatos,rpe:rpe,notas:notas},completada:true});
+      var r=await apiPost({action:'guardarRegistro',atleta:ATLETA,fecha:s.fecha,sesion_id:s.id,datos:{ejercicios:ejerciciosDatos,rpe:rpe,notas:notas,duracion:duracion},completada:true});
       if(!r||!r.ok){toast('Error al guardar','err');return;}
-      REGISTROS.push({id:r.id,atleta:ATLETA,fecha:s.fecha,sesion_id:s.id,datos:{ejercicios:ejerciciosDatos,rpe:rpe,notas:notas},completada:true});
+      REGISTROS.push({id:r.id,atleta:ATLETA,fecha:s.fecha,sesion_id:s.id,datos:{ejercicios:ejerciciosDatos,rpe:rpe,notas:notas,duracion:duracion},completada:true});
     } else {
       var km=document.getElementById('cp-km').value;
       var tiempo=document.getElementById('cp-tiempo').value;
