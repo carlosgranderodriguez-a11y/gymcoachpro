@@ -632,6 +632,14 @@ input:focus,select:focus,textarea:focus{border-color:#8aa0d6 !important;box-shad
 .inf-t{width:100%;border-collapse:collapse;font-size:12.5px;margin-top:8px}.inf-t th{font-size:11px;color:var(--text-muted);font-weight:600;text-align:center;padding:4px;border-bottom:1px solid var(--border)}.inf-t td{text-align:center;padding:4px;border-bottom:1px solid var(--border)}
 .inf-t tr.inf-falta td{color:var(--text-muted);background:#fef2f2}
 .act-dia{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);margin:10px 0 4px}
+
+.bdj-row{display:flex;gap:10px;align-items:flex-start;padding:9px 4px;border-top:1px solid var(--border)}.bdj-row:first-child{border-top:none}
+.bdj-rev{opacity:.5}.bdj-dot{width:9px;height:9px;border-radius:50%;flex:none;margin-top:6px}
+.bdj-main{flex:1;min-width:0}.bdj-t{font-size:13.5px;font-weight:700}.bdj-a{font-weight:600;color:var(--text-dim)}.bdj-f{font-weight:500;font-size:11.5px;color:var(--text-muted)}
+.bdj-d{font-size:12.5px;color:var(--text-dim);margin-top:2px;overflow-wrap:anywhere}
+.bdj-acc{display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end;flex:none;max-width:45%}
+.bdj-n{display:inline-block;min-width:20px;padding:0 6px;border-radius:10px;background:#dc2626;color:#fff;font-size:11px;line-height:18px;text-align:center;vertical-align:middle}.bdj-n:empty{display:none}
+@media(max-width:700px){.bdj-row{flex-wrap:wrap}.bdj-acc{max-width:100%;justify-content:flex-start;margin-left:19px}}
 </style>
 </head>
 <body>
@@ -718,7 +726,7 @@ function aplicarCodigoAcceso(){
     <div class="sb-group">Sistema</div>
     <div class="tab" onclick="switchTab('ajustes',this)"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg><span>Ajustes</span></div>
   </nav>
-  <div class="sb-foot"><div id="auth-chip" style="display:none;font-size:12px;color:#cbd5e1;margin-bottom:10px;line-height:1.4"></div><div style="font-size:10px;color:#64748b;margin-bottom:6px">versión 69</div><div class="status-badge" id="status">⏳ Conectando...</div></div>
+  <div class="sb-foot"><div id="auth-chip" style="display:none;font-size:12px;color:#cbd5e1;margin-bottom:10px;line-height:1.4"></div><div style="font-size:10px;color:#64748b;margin-bottom:6px">versión 70</div><div class="status-badge" id="status">⏳ Conectando...</div></div>
 </aside>
 <div class="sb-backdrop" onclick="closeSidebar()"></div>
 <div class="main">
@@ -743,6 +751,7 @@ function aplicarCodigoAcceso(){
       </div>
     </div>
     <div id="panel-cards" class="stat-grid"></div>
+    <div class="card panel-card" style="margin-bottom:18px"><h3>📥 Bandeja de revisión <span id="bdj-n" class="bdj-n"></span> <a onclick="panelBandeja(true)">↻ Actualizar</a></h3><div id="panel-bandeja"></div></div>
     <div class="card panel-card" style="margin-bottom:18px"><h3>Hoy <a onclick="goTab('calendario')">Ver calendario ›</a></h3><div id="panel-hoy"></div></div>
     <div class="card panel-card" style="margin-bottom:18px"><h3>Informe de actividad <a onclick="panelActividad(true)">↻ Actualizar</a></h3><div id="panel-actividad"></div></div>
     <div class="panel-cols">
@@ -3124,6 +3133,79 @@ async function panelActividad(forzar){
   el.innerHTML=h+'<div style="font-size:11px;color:var(--text-muted);margin-top:6px">* minutos previstos (el atleta no los apuntó)</div>';
 }
 
+// ═══ BANDEJA DE REVISIÓN (lo que requiere tu atención, con acción) ═══
+var BDJ={items:[],well:null,verRev:false,cargada:false};
+var BDJ_DOLOR=/dolor|duel|molest|pinch|lesi|tir[oó]n|contractur|sobrecarg|inflam|mal(?:a|o)?\b|no pude|no he podido/i;
+function bdjRev(){var o=DB.config.bandeja_revisados;return (o&&typeof o==='object'&&!Array.isArray(o))?o:{};}
+async function bdjMarcar(id){
+  var o=JSON.parse(JSON.stringify(bdjRev())),lim=new Date();lim.setDate(lim.getDate()-45);var limS=fechaLocalISO(lim);
+  Object.keys(o).forEach(function(k){if(o[k]<limS)delete o[k];});
+  o[id]=fechaLocalISO();DB.config.bandeja_revisados=o;bdjPintar();
+  try{var r=await apiPost({action:'saveConfig',key:'bandeja_revisados',value:o});if(!r||!r.ok)toast('No se pudo guardar el revisado','err');}catch(e){toast('Sin conexión','err');}
+}
+async function bdjMarcarTodo(){var vis=BDJ.items.filter(function(x){return !bdjRev()[x.id];});if(!vis.length||!confirm('¿Marcar como revisados los '+vis.length+' avisos?'))return;var o=JSON.parse(JSON.stringify(bdjRev()));vis.forEach(function(x){o[x.id]=fechaLocalISO();});DB.config.bandeja_revisados=o;bdjPintar();await apiPost({action:'saveConfig',key:'bandeja_revisados',value:o});}
+function bdjActivos(){return (DB.atletasFull&&DB.atletasFull.length)?DB.atletasFull.filter(function(a){return a.activo!==false;}).map(function(a){return (a.nombre||'').trim();}):(DB.atletas||[]).map(function(n){return String(n).trim();});}
+async function panelBandeja(forzar){
+  var el=document.getElementById('panel-bandeja');if(!el)return;
+  if(!BDJ.cargada||forzar)el.innerHTML='<div class="empty-note">⏳ Revisando registros, wellness y programación…</div>';
+  var hoy=fechaLocalISO(),d=function(n){var x=new Date();x.setDate(x.getDate()+n);return fechaLocalISO(x);};
+  var hace7=d(-7),hace14=d(-14),en7=d(7),hace30=d(-30),hace3=d(-3);
+  var ses=(DB.sesiones||[]).filter(function(s){return s.fecha>=hace14&&s.fecha<=hoy;});
+  var atls=[];ses.forEach(function(s){if(s.atleta&&atls.indexOf(s.atleta)<0)atls.push(s.atleta);});
+  var cola=atls.slice();
+  var pW=(BDJ.well&&!forzar)?Promise.resolve(BDJ.well):api({action:'getWellness'}).then(function(r){BDJ.well=(r&&r.ok)?(r.items||[]):[];return BDJ.well;}).catch(function(){return [];});
+  await Promise.all([0,1,2,3].map(async function(){while(cola.length){await infRegistros(cola.shift(),forzar);}}).concat([pW]));
+  var it=[],atlNom=function(n){return String(n||'').trim();};
+  // 1) Sesiones registradas (últimos 7 días)
+  var sinReg={};
+  (DB.sesiones||[]).filter(function(s){return s.fecha>=hace7&&s.fecha<=hoy;}).forEach(function(s){
+    var reg=(INF.reg[s.atleta]||[]).find(function(r){return r.sesion_id===s.id&&r.completada;});
+    var nom=(s.nombre||'Sesión').replace(/^.*· S\d+ · /,'');
+    if(!reg){if(s.fecha<hoy){(sinReg[s.atleta]=sinReg[s.atleta]||[]).push(s);}return;}
+    var dt=reg.datos||{},rpe=infNum(dt.rpe),bl=cxBloques(s),rp=bl.length?bl.reduce(function(a,b){return a+b.rpe*b.dur;},0)/Math.max(1,bl.reduce(function(a,b){return a+b.dur;},0)):null;
+    var acc=[{t:'📋 Ver informe',f:"informeSesion('"+s.id+"')"}];
+    if(dt.notas){var dol=BDJ_DOLOR.test(dt.notas);it.push({id:'nota:'+reg.id,p:dol?1:3,ic:dol?'🩹':'💬',t:dol?'Molestia o dolor comentado':'Comentario del atleta',a:s.atleta,f:s.fecha,det:'«'+dt.notas+'» · '+nom,acc:acc});}
+    if(rpe!=null&&(rpe>=9||(rp&&rpe-rp>=2)))it.push({id:'rpe:'+reg.id,p:2,ic:'🔥',t:'RPE más alto de lo previsto',a:s.atleta,f:s.fecha,det:'RPE '+rpe+(rp?' (previsto ≈ '+Math.round(rp*10)/10+')':'')+' · '+nom,acc:acc});
+    var pres=0,hech=0,camb=[];(s.ejercicios||[]).forEach(function(ex,i){var ser=parseInt(getParamVal(ex,'series')||ex.sets)||0;pres+=ser;var er=(dt.ejercicios||[])[i];if(er&&er.id===ex.id){hech+=Math.min(infSetsHechos(er).length,ser||99);if(er.adaptado||er.alternativa)camb.push(((DB.ejercicios||{})[ex.id]||{}).nombre||ex.id);}});
+    if(pres&&hech/pres<0.7)it.push({id:'cumpl:'+reg.id,p:2,ic:'📉',t:'Sesión incompleta',a:s.atleta,f:s.fecha,det:'Hizo '+hech+' de '+pres+' series ('+Math.round(hech/pres*100)+'%) · '+nom,acc:acc});
+    if(camb.length)it.push({id:'camb:'+reg.id,p:3,ic:'🔧',t:'Adaptó o cambió ejercicios',a:s.atleta,f:s.fecha,det:camb.join(', ')+' · '+nom,acc:acc});
+  });
+  Object.keys(sinReg).forEach(function(a){var l=sinReg[a];var ult=l.map(function(s){return s.fecha;}).sort().pop();
+    it.push({id:'noreg:'+a+':'+ult,p:2,ic:'❌',t:l.length===1?'Sesión sin registrar':l.length+' sesiones sin registrar',a:a,f:ult,det:l.map(function(s){return s.fecha.slice(8)+'/'+s.fecha.slice(5,7)+' '+(s.nombre||'').replace(/^.*· S\d+ · /,'');}).join(' · '),acc:[{t:'👤 Ver perfil',f:"openAtletaPerfil('"+a.replace(/'/g,"\\'")+"')"}]});});
+  // 2) Wellness (últimos 3 días)
+  (BDJ.well||[]).filter(function(w){return w.fecha>=hace3&&w.fecha<=hoy;}).forEach(function(w){
+    var n=function(k){return parseFloat(w[k])||0;},m=[];
+    if(n('dolor')>=4)m.push('dolor '+n('dolor')+'/5');if(n('fatiga')>=4)m.push('fatiga '+n('fatiga')+'/5');if(n('estres')>=4)m.push('estrés '+n('estres')+'/5');
+    if(n('sueno')&&n('sueno')<=2)m.push('sueño '+n('sueno')+'/5');if(n('animo')&&n('animo')<=2)m.push('ánimo '+n('animo')+'/5');
+    var acc=[{t:'👤 Ver perfil',f:"openAtletaPerfil('"+String(w.atleta).replace(/'/g,"\\'")+"')"}];
+    if(m.length)it.push({id:'well:'+w.id,p:n('dolor')>=4?1:2,ic:'🫀',t:'Wellness en rojo',a:w.atleta,f:w.fecha,det:m.join(' · ')+(w.notas?' · «'+w.notas+'»':''),acc:acc});
+    else if(w.notas)it.push({id:'welln:'+w.id,p:BDJ_DOLOR.test(w.notas)?1:3,ic:'📝',t:'Nota en el wellness',a:w.atleta,f:w.fecha,det:'«'+w.notas+'»',acc:acc});
+  });
+  // 3) Programación que se acaba / atletas sin nada programado
+  bdjActivos().forEach(function(a){
+    var fs=(DB.sesiones||[]).filter(function(s){return atlNom(s.atleta)===a;}).map(function(s){return s.fecha;}).sort();
+    if(!fs.length)return;var ult=fs[fs.length-1],reciente=fs.some(function(f){return f>=hace30;});
+    var acc=[{t:'🗓 Programar',f:"openAtletaPerfil('"+a.replace(/'/g,"\\'")+"')"}];
+    if(ult>=hoy&&ult<=en7)it.push({id:'prog:'+a+':'+ult,p:2,ic:'📅',t:'Se le acaba la programación',a:a,f:ult,det:'Última sesión el '+infFecha(ult)+'. Prepara lo siguiente.',acc:acc});
+    else if(ult<hoy&&reciente)it.push({id:'sinprog:'+a+':'+ult,p:1,ic:'⚠️',t:'Sin programación',a:a,f:ult,det:'Entrenaba hasta el '+infFecha(ult)+' y no tiene nada a partir de hoy.',acc:acc});
+  });
+  it.sort(function(x,y){return x.p-y.p||String(y.f).localeCompare(String(x.f));});
+  BDJ.items=it;BDJ.cargada=true;bdjPintar();
+}
+function bdjVerRev(){BDJ.verRev=!BDJ.verRev;bdjPintar();}
+function bdjPintar(){
+  var el=document.getElementById('panel-bandeja');if(!el)return;
+  var rev=bdjRev(),pend=BDJ.items.filter(function(x){return !rev[x.id];}),hechos=BDJ.items.length-pend.length;
+  var lista=BDJ.verRev?BDJ.items:pend;
+  var cnt=document.getElementById('bdj-n');if(cnt)cnt.textContent=pend.length?pend.length:'';
+  var col={1:'#dc2626',2:'#f59e0b',3:'#94a3b8'};
+  var h=lista.length?lista.slice(0,40).map(function(x){var r=!!rev[x.id];
+    return '<div class="bdj-row'+(r?' bdj-rev':'')+'"><span class="bdj-dot" style="background:'+col[x.p]+'"></span><div class="bdj-main"><div class="bdj-t">'+x.ic+' '+escapeHtml(x.t)+' · <span class="bdj-a">'+escapeHtml(x.a||'')+'</span> <span class="bdj-f">'+escapeHtml(String(x.f||'').slice(8)+'/'+String(x.f||'').slice(5,7))+'</span></div><div class="bdj-d">'+escapeHtml(x.det||'')+'</div></div>'
+      +'<div class="bdj-acc">'+x.acc.map(function(a){return '<button class="btn btn-secondary btn-xs" onclick="'+a.f+'">'+a.t+'</button>';}).join('')+(r?'':'<button class="btn btn-primary btn-xs" onclick="bdjMarcar(\''+escAttr(x.id).replace(/'/g,"\\'")+'\')">✓ Revisado</button>')+'</div></div>';}).join('')
+    :'<div class="empty-note">✅ Nada pendiente de revisar. '+(hechos?hechos+' avisos ya revisados.':'')+'</div>';
+  el.innerHTML=h+'<div style="display:flex;gap:8px;justify-content:space-between;align-items:center;margin-top:8px;font-size:11.5px;color:var(--text-muted)"><span>Últimos 7 días · wellness de 3 días · programación de la próxima semana</span><span>'+(hechos?'<a href="#" onclick="bdjVerRev();return false">'+(BDJ.verRev?'Ocultar revisados':'Ver revisados ('+hechos+')')+'</a>':'')+(pend.length>1?' · <a href="#" onclick="bdjMarcarTodo();return false">Marcar todo revisado</a>':'')+'</span></div>';
+}
+
 function renderPanel(){
   var cardsWrap=document.getElementById('panel-cards');
   if(!cardsWrap) return;
@@ -3185,7 +3267,7 @@ function renderPanel(){
         +'<span class="pill" style="background:'+x.c+'">'+x.t+'</span></div>';
     }).join(''):'<div class="empty-note">Hoy no hay sesiones planificadas.</div>';
   }
-  panelActividad();
+  panelActividad();panelBandeja();
   // Atención: lesionados / en carga / readaptación, y activos sin nada en 7 días
   var atEl=document.getElementById('panel-atencion');
   if(atEl){
