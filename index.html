@@ -560,6 +560,14 @@ input:focus,select:focus,textarea:focus{border-color:#8aa0d6 !important;box-shad
 #page-programas .template-editor{padding:22px;border-radius:14px;}
 .ps-day{flex:0 0 255px !important;}
 .assign-box{margin-top:22px;padding:16px 18px;border:1px solid var(--border);border-radius:12px;background:var(--surface2);}
+.pa-asig-list{display:flex;flex-direction:column;gap:6px;}
+.pa-asig-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:8px 12px;background:var(--surface);border:1px solid var(--border);border-radius:9px;font-size:13px;}
+.pa-asig-row b{cursor:pointer;}
+.pa-asig-row b:hover{text-decoration:underline;}
+.pa-asig-meta{color:var(--text-muted);font-size:12px;}
+.pa-asig-badge{margin-left:auto;font-size:11.5px;font-weight:600;padding:3px 9px;border-radius:999px;white-space:nowrap;}
+.pa-asig-badge.auto{background:rgba(34,197,94,.14);color:#15803d;}
+.pa-asig-badge.no{background:var(--surface2);color:var(--text-muted);border:1px solid var(--border);}
 /* ── Programas: tablero semanal ── */
 .ps-drop{outline:2px dashed #9bbd3a;outline-offset:-2px;background:rgba(155,189,58,.12)!important;}
 .ps-grab{cursor:grab;}
@@ -949,6 +957,7 @@ function aplicarCodigoAcceso(){
           </div>
           <div id="pe-weeks-container"></div>
           <div class="assign-box">
+            <div id="pe-asignados" style="margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid var(--border);"></div>
             <div style="font-size:13px;font-weight:700;margin-bottom:10px;">Asignar al calendario</div>
             <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:8px;">
               <select id="pe-assign-atleta" onchange="onPeAssignAtletaChange()" style="padding:9px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;outline:none;"></select>
@@ -4295,6 +4304,7 @@ function showProgramaEditor(){
   document.getElementById('pe-content').style.display='block';
   document.getElementById('pe-name').value=currentPrograma.name;
   renderProgramaWeeks();
+  renderPeAsignados();
   var sel=document.getElementById('pe-assign-atleta');
   sel.innerHTML=DB.atletas.map(function(a){return '<option>'+a+'</option>';}).join('');
   var selEq=document.getElementById('pe-assign-equipo');
@@ -4303,6 +4313,74 @@ function showProgramaEditor(){
       return '<option value="'+eq.id+'">👥 '+escapeHtml(eq.nombre)+' ('+(eq.jugadores||[]).length+')</option>';
     }).join('');
   }
+}
+// ── Atletas que tienen asignado el plan abierto ──
+// Se calcula con las sesiones ya cargadas (nombre "<Plan> · S<n> · …") y el servidor
+// (getAsignacionesPrograma) dice a quién se le amplía solo al añadir semanas.
+function peNormNombre(s){return String(s==null?'':s).replace(/\s+/g,' ').trim().toLowerCase();}
+function peAsignadosLocal(prog){
+  var guardado=(DB.programas||[]).find(function(p){return p.id===prog.id;})||prog;
+  var total=(guardado.weeks||[]).length, pre=peNormNombre(guardado.name)+' · s', m={};
+  if(!guardado.name) return [];
+  (DB.sesiones||[]).forEach(function(s){
+    var n=peNormNombre(s.nombre);if(n.indexOf(pre)!==0)return;
+    var mm=n.slice(pre.length).match(/^(\d+)/);if(!mm||!s.fecha)return;
+    var sem=+mm[1],k=peNormNombre(s.atleta);
+    var a=m[k]||(m[k]={nombre:String(s.atleta).trim(),hastaSemana:0,ultimaSesion:'',inicio:'',semanasPlan:total});
+    if(sem>a.hastaSemana)a.hastaSemana=sem;
+    if(s.fecha>a.ultimaSesion){
+      a.ultimaSesion=s.fecha;
+      var d=new Date(s.fecha+'T12:00:00'),dow=(d.getDay()+6)%7;d.setDate(d.getDate()-dow-(sem-1)*7);
+      a.inicio=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+    }
+  });
+  return Object.keys(m).map(function(k){var a=m[k];a.automatico=total>0&&a.hastaSemana>=total;return a;})
+    .sort(function(x,y){return x.ultimaSesion<y.ultimaSesion?1:-1;});
+}
+function pePintarAsignados(lista){
+  var box=document.getElementById('pe-asignados');if(!box||!currentPrograma)return;
+  var fmt=function(f){return f?new Date(f+'T12:00:00').toLocaleDateString('es-ES',{day:'numeric',month:'short'}):'';};
+  var html='<div style="font-size:13px;font-weight:700;margin-bottom:8px;">👥 Atletas con este plan'+(lista.length?' ('+lista.length+')':'')+'</div>';
+  if(!lista.length){
+    html+='<div style="font-size:12.5px;color:var(--text-muted);">Todavía no está asignado a nadie. Asígnalo abajo y, a partir de ahí, las semanas que añadas les saldrán solas.</div>';
+  } else {
+    html+='<div class="pa-asig-list">'+lista.map(function(a){
+      var nq=String(a.nombre).replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+      var badge=a.automatico
+        ?'<span class="pa-asig-badge auto" title="Al añadir semanas y pulsar Guardar, se crean solas en su calendario">🔄 Se amplía solo</span>'
+          +'<button class="btn btn-secondary btn-sm" style="padding:3px 9px;font-size:11.5px" onclick="peSeguir(\''+escAttr(nq)+'\',false)">Desactivar</button>'
+        :'<span class="pa-asig-badge no" title="Las semanas nuevas del plan no se le añaden">Hasta S'+a.hastaSemana+' · no se amplía</span>'
+          +'<button class="btn btn-primary btn-sm" style="padding:3px 9px;font-size:11.5px" onclick="peSeguir(\''+escAttr(nq)+'\',true)">🔄 Activar</button>';
+      return '<div class="pa-asig-row"><b onclick="openAtletaPerfil(\''+escAttr(nq)+'\')">'+escapeHtml(a.nombre)+'</b>'
+        +'<span class="pa-asig-meta">desde el '+fmt(a.inicio)+' · S'+a.hastaSemana+' de '+(a.semanasPlan||'?')+'</span>'+badge+'</div>';
+    }).join('')+'</div>';
+    html+='<div style="font-size:11.5px;color:var(--text-muted);margin-top:8px;">Las semanas que añadas al plan se crean solas al pulsar <b>Guardar</b> en el calendario de los atletas marcados con 🔄 (sin tocar lo que ya tienen ni crear días pasados).</div>';
+  }
+  box.innerHTML=html;
+}
+async function peSeguir(nombre,activo){
+  if(!currentPrograma)return;
+  if(isDirtyPrograma){toast('Guarda primero los cambios del plan','err');return;}
+  var guardado=(DB.programas||[]).find(function(p){return p.id===currentPrograma.id;})||currentPrograma;
+  if(activo&&!confirm('A '+nombre+' se le crearán ya las semanas de «'+guardado.name+'» que le falten (solo de hoy en adelante), y a partir de ahora las que añadas. ¿Continuar?'))return;
+  if(!activo&&!confirm('Las semanas que añadas a «'+guardado.name+'» dejarán de crearse solas para '+nombre+'. Lo que ya tiene en el calendario no se toca. ¿Continuar?'))return;
+  try{
+    var r=await apiPost({action:'seguirPrograma',id:currentPrograma.id,atleta:nombre,activo:activo});
+    if(!r||!r.ok){if(!r||r.code!=='PERM')toast('⚠️ '+((r&&r.error)||'No se pudo')+(r&&/no reconocida/i.test(r.error||'')?' · falta actualizar el backend (Código.gs)':''),'err');return;}
+    var c=(r.sincronizadas&&r.sincronizadas.creadas)||0;
+    toast(activo?('🔄 Activado para '+nombre.split(' ')[0]+(c?' · '+c+(c===1?' sesión nueva':' sesiones nuevas')+' en su calendario':'')):('Desactivado para '+nombre.split(' ')[0]));
+    if(c){try{var rs=await api({action:'getAllSesiones'});if(rs&&rs.ok){DB.sesiones=rs.sesiones||DB.sesiones;if(typeof renderCalendar==='function')renderCalendar();}}catch(e){}}
+  }catch(e){toast('⚠️ Sin conexión con el servidor','err');return;}
+  renderPeAsignados();
+}
+async function renderPeAsignados(){
+  if(!currentPrograma)return;
+  var id=currentPrograma.id;
+  pePintarAsignados(peAsignadosLocal(currentPrograma));
+  try{
+    var r=await api({action:'getAsignacionesPrograma',id:id});
+    if(r&&r.ok&&Array.isArray(r.asignaciones)&&currentPrograma&&currentPrograma.id===id) pePintarAsignados(r.asignaciones);
+  }catch(e){/* backend sin desplegar: se queda la lista calculada en el navegador */}
 }
 function onPeAssignAtletaChange(){
   var selEq=document.getElementById('pe-assign-equipo');
@@ -4707,8 +4785,14 @@ async function savePrograma(){
   isDirtyPrograma=false;renderProgramaList();
   try{
     var r=await apiPost({action:'saveProgram',program:currentPrograma});
-    if(r&&r.ok)toast('✅ Guardado');
+    var sync=r&&r.ok&&r.sincronizadas;
+    if(sync&&sync.creadas>0){
+      toast('✅ Guardado · '+sync.creadas+(sync.creadas===1?' sesión nueva':' sesiones nuevas')+' en el calendario de '+(sync.atletas||[]).map(function(a){return a.atleta.split(' ')[0]+' ('+a.creadas+')';}).join(', '));
+      try{var rs=await api({action:'getAllSesiones'});if(rs&&rs.ok){DB.sesiones=rs.sesiones||DB.sesiones;if(typeof renderCalendar==='function')renderCalendar();}}catch(e){}
+    } else if(r&&r.ok)toast('✅ Guardado');
     else toast('⚠️ Guardado solo en este navegador: '+((r&&r.error)||'el servidor no lo aceptó')+'. Si el programa es muy grande hace falta actualizar el backend (Código.gs).','err');
+    if(sync&&sync.error)toast('⚠️ Plan guardado, pero no se pudieron crear las semanas nuevas: '+sync.error,'err');
+    renderPeAsignados();
   }catch(e){toast('⚠️ Guardado en este navegador. Sin conexión con el servidor.','err');}
 }
 function deletePrograma(){
@@ -4784,7 +4868,7 @@ async function assignPrograma(){
     var res=await crearSesionesProgramaParaAtleta(atletas[ai],fechaInicio);
     okTotal+=res.ok;failTotal+=res.fail;
   }
-  renderCalendar();renderAssignPanel();
+  renderCalendar();renderAssignPanel();renderPeAsignados();
   var msg=failTotal?('✅ '+okTotal+' creadas, ⚠️ '+failTotal+' fallaron'):('✅ '+okTotal+' sesiones creadas en el calendario'+(atletas.length>1?' ('+atletas.length+' atletas)':''));
   toast(msg,failTotal?'err':'ok');
   if(atletas.length>1) toast('Revisa el calendario por si el servidor ha duplicado alguna sesión en la tanda','ok');
