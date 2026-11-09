@@ -4286,7 +4286,7 @@ function renderProgramaList(){
   if(!DB.programas.length){list.innerHTML='<div class="template-empty">Sin programas.<br>Crea el primero.</div>';return;}
   list.innerHTML=DB.programas.map(function(p,i){
     var totalSesiones=(p.weeks||[]).reduce(function(acc,w){return acc+psDiasActivos(w).length;},0);
-    return '<div class="template-item'+(currentPrograma&&currentPrograma.id===p.id?' active':'')+'" onclick="selectPrograma('+i+')"><div class="template-item-name">'+(p.name||'(sin nombre)')+((AUTH.on&&AUTH.me&&authSoyAdmin()&&p.propietario&&p.propietario!==AUTH.me.email)?' <span style="font-weight:400;color:var(--text-muted);font-size:12px">· 👤 '+escapeHtml(authNombreDe(p.propietario))+'</span>':'')+'</div><div class="template-item-meta">'+(p.weeks||[]).length+((p.weeks||[]).length===1?' semana · ':' semanas · ')+totalSesiones+(totalSesiones===1?' sesión':' sesiones')+'</div></div>';
+    return '<div class="template-item'+(currentPrograma&&currentPrograma.id===p.id?' active':'')+'" onclick="selectPrograma('+i+')"><div class="template-item-name">'+(p.name||'(sin nombre)')+((AUTH.on&&AUTH.me&&authSoyAdmin()&&p.propietario&&p.propietario!==AUTH.me.email)?' <span style="font-weight:400;color:var(--text-muted);font-size:12px">· 👤 '+escapeHtml(authNombreDe(p.propietario))+'</span>':'')+'</div><div class="template-item-meta">'+(p.weeks||[]).length+((p.weeks||[]).length===1?' semana · ':' semanas · ')+totalSesiones+(totalSesiones===1?' sesión':' sesiones')+'</div>'+peAsignadosResumen(p)+'</div>';
   }).join('');
 }
 function newPrograma(){
@@ -4337,6 +4337,14 @@ function peAsignadosLocal(prog){
   return Object.keys(m).map(function(k){var a=m[k];a.automatico=total>0&&a.hastaSemana>=total;return a;})
     .sort(function(x,y){return x.ultimaSesion<y.ultimaSesion?1:-1;});
 }
+// Línea corta "👥 Tomás, Fran" para la lista de planes
+function peAsignadosResumen(p){
+  var l=peAsignadosLocal(p);
+  if(!l.length)return '<div class="template-item-meta" style="margin-top:3px;opacity:.75">👥 Sin asignar</div>';
+  var nombres=l.map(function(a){return escapeHtml(a.nombre.split(' ')[0]);});
+  var txt=nombres.slice(0,3).join(', ')+(nombres.length>3?' +'+(nombres.length-3):'');
+  return '<div class="template-item-meta" style="margin-top:3px;color:var(--accent-ink,inherit);font-weight:600" title="'+escAttr(l.map(function(a){return a.nombre;}).join(', '))+'">👥 '+txt+'</div>';
+}
 function pePintarAsignados(lista){
   var box=document.getElementById('pe-asignados');if(!box||!currentPrograma)return;
   var fmt=function(f){return f?new Date(f+'T12:00:00').toLocaleDateString('es-ES',{day:'numeric',month:'short'}):'';};
@@ -4375,6 +4383,7 @@ async function peSeguir(nombre,activo){
 }
 async function renderPeAsignados(){
   if(!currentPrograma)return;
+  renderProgramaList();
   var id=currentPrograma.id;
   pePintarAsignados(peAsignadosLocal(currentPrograma));
   try{
