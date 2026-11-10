@@ -860,6 +860,7 @@ function aplicarCodigoAcceso(){
         <div style="display:flex;gap:10px;align-items:center;">
           <input id="ex-search" type="text" placeholder="🔍 Buscar..." style="padding:9px 14px;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;outline:none;width:200px;" oninput="renderEjercicios()">
           <button class="btn btn-secondary" onclick="limpAbrir()">🧹 Limpiar sin vídeo/ilustración</button>
+          <button class="btn btn-secondary" onclick="canalAbrir()">📺 Importar del canal</button>
           <button class="btn btn-secondary" onclick="ytAbrir()">🔗 Enlazar vídeos YouTube</button>
           <button class="btn btn-primary" onclick="openEjercicio()">+ Nuevo ejercicio</button>
         </div>
@@ -3805,6 +3806,59 @@ async function handleImageSelect(input){
 }
 
 
+// ── Importar vídeos nuevos del canal de YouTube como ejercicios ──
+var canalNuevos=[];
+function canalAbrir(){
+  var o=document.getElementById('canal-ov');if(o)o.remove();
+  var canal='@ComoEntrenArte1';try{canal=localStorage.getItem('gc_canal_yt')||canal;}catch(e){}
+  o=document.createElement('div');o.id='canal-ov';o.style.cssText='position:fixed;inset:0;background:rgba(10,15,25,.55);z-index:9999;display:flex;align-items:flex-start;justify-content:center;padding:30px 16px;overflow:auto';
+  o.innerHTML='<div style="background:var(--surface);border-radius:14px;max-width:900px;width:100%;padding:22px;box-shadow:0 20px 60px rgba(0,0,0,.4)">'
+   +'<div style="display:flex;justify-content:space-between;align-items:center"><b style="font-size:18px">📺 Importar vídeos nuevos del canal</b><button class="btn btn-secondary btn-sm" onclick="document.getElementById(\'canal-ov\').remove()">✕</button></div>'
+   +'<p style="font-size:13px;color:var(--text-muted);margin:8px 0 12px">Busca en tu canal los vídeos que todavía no son ejercicios de la Biblioteca. Puedes corregir el nombre y la categoría antes de darlos de alta; se guardan con su fotograma como imagen y el vídeo enlazado. YouTube solo deja ver los <b>15 últimos vídeos</b> del canal.</p>'
+   +'<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><input id="canal-id" value="'+escAttr(canal)+'" style="flex:1;min-width:200px;padding:9px 12px;border:1px solid var(--border);border-radius:8px;background:var(--surface2);color:var(--text);font-size:13px" placeholder="@TuCanal o ID que empieza por UC">'
+   +'<button class="btn btn-primary btn-sm" id="canal-buscar" onclick="canalBuscar()">🔍 Buscar vídeos nuevos</button></div>'
+   +'<div id="canal-res" style="margin-top:14px"></div></div>';
+  document.body.appendChild(o);
+  canalBuscar();
+}
+async function canalBuscar(){
+  var canal=document.getElementById('canal-id').value.trim(),res=document.getElementById('canal-res'),btn=document.getElementById('canal-buscar');
+  try{localStorage.setItem('gc_canal_yt',canal);}catch(e){}
+  res.innerHTML='<div style="font-size:13px;color:var(--text-muted)">⏳ Consultando el canal…</div>';btn.disabled=true;
+  var r;try{r=await apiPost({action:'canalNovedades',canal:canal});}catch(e){r={ok:false,error:'Sin conexión con el servidor'};}
+  btn.disabled=false;
+  if(!r||!r.ok){res.innerHTML='<div style="font-size:13px;color:var(--red,#e11d48)">⚠️ '+escapeHtml((r&&r.error)||'No se pudo consultar el canal')+(r&&/no reconocida/i.test(r.error||'')?' · falta actualizar el backend (Código.gs)':'')+'</div>';return;}
+  canalNuevos=r.nuevos||[];
+  if(!canalNuevos.length){res.innerHTML='<div style="font-size:13px">✅ Están todos: los '+r.enFeed+' últimos vídeos del canal ya son ejercicios de la Biblioteca.</div>';return;}
+  var cats=(DB.config.categorias||['Fuerza']);
+  res.innerHTML='<div style="font-size:13px;margin-bottom:8px"><b>'+canalNuevos.length+'</b> '+(canalNuevos.length===1?'vídeo nuevo':'vídeos nuevos')+' de los '+r.enFeed+' últimos del canal:</div>'
+   +canalNuevos.map(function(v,i){
+     return '<div style="display:flex;gap:10px;align-items:center;padding:8px;border:1px solid var(--border);border-radius:10px;margin-bottom:6px;flex-wrap:wrap">'
+      +'<input type="checkbox" id="cn-ok-'+i+'" checked style="width:18px;height:18px">'
+      +'<a href="'+escAttr(v.url)+'" target="_blank" rel="noopener"><img src="'+escAttr(v.miniatura)+'" referrerpolicy="no-referrer" style="width:96px;height:54px;object-fit:cover;border-radius:6px;display:block"></a>'
+      +'<div style="flex:1;min-width:200px"><input id="cn-nom-'+i+'" value="'+escAttr(v.titulo)+'" style="width:100%;padding:7px 9px;border:1px solid var(--border);border-radius:7px;background:var(--surface2);color:var(--text);font-size:13px;font-weight:600">'
+      +'<div style="font-size:11px;color:var(--text-muted);margin-top:3px">'+(v.esShort?'Short':'Vídeo')+' · publicado el '+escapeHtml(v.publicado)+'</div></div>'
+      +'<select id="cn-cat-'+i+'" style="padding:7px;border:1px solid var(--border);border-radius:7px;background:var(--surface2);color:var(--text);font-size:12.5px">'+cats.map(function(c){return '<option'+(c==='Fuerza'?' selected':'')+'>'+escapeHtml(c)+'</option>';}).join('')+'</select>'
+      +'</div>';
+   }).join('')
+   +'<div style="display:flex;gap:10px;align-items:center;margin-top:12px"><button class="btn btn-primary btn-sm" id="canal-imp" onclick="canalImportar()">➕ Dar de alta los marcados</button><span id="canal-msg" style="font-size:12px;color:var(--text-muted)">Desmarca los que no sean un ejercicio (sesiones completas, avisos…).</span></div>';
+}
+async function canalImportar(){
+  var items=canalNuevos.map(function(v,i){
+    if(!document.getElementById('cn-ok-'+i).checked)return null;
+    return {videoId:v.videoId,url:v.url,nombre:document.getElementById('cn-nom-'+i).value.trim(),categoria:document.getElementById('cn-cat-'+i).value};
+  }).filter(function(x){return x&&x.nombre;});
+  if(!items.length){toast('Marca al menos un vídeo','err');return;}
+  var btn=document.getElementById('canal-imp'),msg=document.getElementById('canal-msg');
+  btn.disabled=true;msg.textContent='⏳ Dando de alta '+items.length+(items.length===1?' ejercicio':' ejercicios')+' (subiendo fotogramas a Drive)…';
+  var r;try{r=await apiPost({action:'canalImportar',items:items});}catch(e){r={ok:false,error:'Sin conexión con el servidor'};}
+  btn.disabled=false;
+  if(!r||!r.ok){msg.textContent='⚠️ '+((r&&r.error)||'No se pudo');return;}
+  try{var re=await api({action:'getEjercicios'});if(re&&re.ok){DB.ejercicios=re.ejercicios||DB.ejercicios;renderEjercicios();}}catch(e){}
+  toast('✅ '+r.creados.length+(r.creados.length===1?' ejercicio nuevo':' ejercicios nuevos')+' en la Biblioteca'+(r.saltados&&r.saltados.length?' · '+r.saltados.length+' ya estaban':''));
+  document.getElementById('canal-ov').remove();
+}
+
 // ── Enlazar vídeos de YouTube a ejercicios ──
 var ytFilas=[];
 function ytAbrir(){
@@ -4361,15 +4415,20 @@ function pePintarAsignados(lista){
   } else {
     html+='<div class="pa-asig-list">'+lista.map(function(a){
       var nq=String(a.nombre).replace(/\\/g,'\\\\').replace(/'/g,"\\'");
-      var badge=a.automatico
+      var bs='padding:3px 9px;font-size:11.5px',q=escAttr(nq);
+      var quitar='<button class="btn btn-danger btn-sm" style="'+bs+'" title="Borra sus sesiones de este plan desde hoy (lo ya hecho se conserva) y no le añade más semanas" onclick="peQuitar(\''+q+'\')">✕ Quitar del plan</button>';
+      var badge=a.retirado
+        ?'<span class="pa-asig-badge no" title="Se le quitaron las sesiones futuras; conserva lo ya entrenado">Fuera del plan desde el '+fmt(a.retirado)+'</span>'
+          +'<button class="btn btn-secondary btn-sm" style="'+bs+'" onclick="peSeguir(\''+q+'\',true)">↩ Volver a incluir</button>'
+        :a.automatico
         ?'<span class="pa-asig-badge auto" title="Al añadir semanas y pulsar Guardar, se crean solas en su calendario">🔄 Se amplía solo</span>'
-          +'<button class="btn btn-secondary btn-sm" style="padding:3px 9px;font-size:11.5px" onclick="peSeguir(\''+escAttr(nq)+'\',false)">Desactivar</button>'
+          +'<button class="btn btn-secondary btn-sm" style="'+bs+'" title="Mantiene lo que ya tiene, pero las semanas nuevas no se le añaden" onclick="peSeguir(\''+q+'\',false)">No ampliar</button>'+quitar
         :'<span class="pa-asig-badge no" title="Las semanas nuevas del plan no se le añaden">Hasta S'+a.hastaSemana+' · no se amplía</span>'
-          +'<button class="btn btn-primary btn-sm" style="padding:3px 9px;font-size:11.5px" onclick="peSeguir(\''+escAttr(nq)+'\',true)">🔄 Activar</button>';
+          +'<button class="btn btn-primary btn-sm" style="'+bs+'" onclick="peSeguir(\''+q+'\',true)">🔄 Activar</button>'+quitar;
       return '<div class="pa-asig-row"><b onclick="openAtletaPerfil(\''+escAttr(nq)+'\')">'+escapeHtml(a.nombre)+'</b>'
         +'<span class="pa-asig-meta">desde el '+fmt(a.inicio)+' · S'+a.hastaSemana+' de '+(a.semanasPlan||'?')+'</span>'+badge+'</div>';
     }).join('')+'</div>';
-    html+='<div style="font-size:11.5px;color:var(--text-muted);margin-top:8px;">Las semanas que añadas al plan se crean solas al pulsar <b>Guardar</b> en el calendario de los atletas marcados con 🔄 (sin tocar lo que ya tienen ni crear días pasados).</div>';
+    html+='<div style="font-size:11.5px;color:var(--text-muted);margin-top:8px;">Las semanas que añadas al plan se crean solas al pulsar <b>Guardar</b> en el calendario de los atletas marcados con 🔄 (sin tocar lo que ya tienen ni crear días pasados). <b>No ampliar</b> le deja lo que ya tiene; <b>Quitar del plan</b> le borra las sesiones de hoy en adelante y conserva lo ya entrenado.</div>';
   }
   box.innerHTML=html;
 }
@@ -4378,13 +4437,33 @@ async function peSeguir(nombre,activo){
   if(isDirtyPrograma){toast('Guarda primero los cambios del plan','err');return;}
   var guardado=(DB.programas||[]).find(function(p){return p.id===currentPrograma.id;})||currentPrograma;
   if(activo&&!confirm('A '+nombre+' se le crearán ya las semanas de «'+guardado.name+'» que le falten (solo de hoy en adelante), y a partir de ahora las que añadas. ¿Continuar?'))return;
-  if(!activo&&!confirm('Las semanas que añadas a «'+guardado.name+'» dejarán de crearse solas para '+nombre+'. Lo que ya tiene en el calendario no se toca. ¿Continuar?'))return;
+  if(!activo&&!confirm('Las semanas que añadas a «'+guardado.name+'» dejarán de crearse solas para '+nombre+'. Lo que ya tiene en el calendario no se toca. ¿Continuar?\n\n(Si quieres sacarle del plan y borrar sus sesiones futuras, usa «Quitar del plan».)'))return;
   try{
     var r=await apiPost({action:'seguirPrograma',id:currentPrograma.id,atleta:nombre,activo:activo});
     if(!r||!r.ok){if(!r||r.code!=='PERM')toast('⚠️ '+((r&&r.error)||'No se pudo')+(r&&/no reconocida/i.test(r.error||'')?' · falta actualizar el backend (Código.gs)':''),'err');return;}
     var c=(r.sincronizadas&&r.sincronizadas.creadas)||0;
     toast(activo?('🔄 Activado para '+nombre.split(' ')[0]+(c?' · '+c+(c===1?' sesión nueva':' sesiones nuevas')+' en su calendario':'')):('Desactivado para '+nombre.split(' ')[0]));
     if(c){try{var rs=await api({action:'getAllSesiones'});if(rs&&rs.ok){DB.sesiones=rs.sesiones||DB.sesiones;if(typeof renderCalendar==='function')renderCalendar();}}catch(e){}}
+  }catch(e){toast('⚠️ Sin conexión con el servidor','err');return;}
+  renderPeAsignados();
+}
+async function peQuitar(nombre){
+  if(!currentPrograma)return;
+  var guardado=(DB.programas||[]).find(function(p){return p.id===currentPrograma.id;})||currentPrograma;
+  var c;
+  try{c=await apiPost({action:'quitarDelPrograma',id:currentPrograma.id,atleta:nombre,soloContar:true});}
+  catch(e){toast('⚠️ Sin conexión con el servidor','err');return;}
+  if(!c||!c.ok){if(!c||c.code!=='PERM')toast('⚠️ '+((c&&c.error)||'No se pudo')+(c&&/no reconocida/i.test(c.error||'')?' · falta actualizar el backend (Código.gs)':''),'err');return;}
+  var msg='Sacar a '+nombre+' de «'+guardado.name+'»:\n\n'
+    +(c.aBorrar?'• Se borrarán de su calendario '+c.aBorrar+(c.aBorrar===1?' sesión':' sesiones')+' de este plan, de hoy en adelante.\n':'• No tiene sesiones pendientes de este plan.\n')
+    +(c.conservadas?'• Se conservan '+c.conservadas+(c.conservadas===1?' sesión anterior o ya registrada':' sesiones anteriores o ya registradas')+' (su historial).\n':'')
+    +'• No se le añadirán más semanas de este plan.\n\n¿Continuar?';
+  if(!confirm(msg))return;
+  try{
+    var r=await apiPost({action:'quitarDelPrograma',id:currentPrograma.id,atleta:nombre});
+    if(!r||!r.ok){toast('⚠️ '+((r&&r.error)||'No se pudo'),'err');return;}
+    toast('✅ '+nombre.split(' ')[0]+' fuera de «'+guardado.name+'»'+(r.borradas?' · '+r.borradas+(r.borradas===1?' sesión borrada':' sesiones borradas'):''));
+    try{var rs=await api({action:'getAllSesiones'});if(rs&&rs.ok){DB.sesiones=rs.sesiones||DB.sesiones;if(typeof renderCalendar==='function')renderCalendar();}}catch(e){}
   }catch(e){toast('⚠️ Sin conexión con el servidor','err');return;}
   renderPeAsignados();
 }
