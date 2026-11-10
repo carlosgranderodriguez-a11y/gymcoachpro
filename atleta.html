@@ -143,6 +143,17 @@ input[type=range]{width:100%;}
 .ex-card .ph{width:56px;height:56px;border-radius:8px;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;}
 .ex-card .ex-name{font-weight:700;font-size:13px;margin-bottom:3px;}
 .ex-card .ex-meta{font-size:11px;color:var(--text-dim);}
+.ex-explica{margin-top:7px;font-size:12px;line-height:1.45;color:var(--text);white-space:pre-wrap;background:var(--surface2);border-left:3px solid var(--blue);border-radius:6px;padding:7px 9px;}
+.ex-explica.nota{border-left-color:var(--accent);}
+.ex-explica b{font-size:10px;letter-spacing:.5px;text-transform:uppercase;color:var(--text-dim);display:block;margin-bottom:2px;font-weight:700;}
+.ex-explica.corta{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;cursor:pointer;}
+.ex-card:has(.ex-explica){align-items:flex-start;}
+.ex-name-tap{cursor:pointer;}
+.ex-name-tap:active{opacity:.6;}
+.ex-has-info{font-size:12px;color:var(--accent-ink);}
+.ex-detalle-pauta{font-size:12px;color:var(--text-dim);margin:-6px 0 10px;}
+.ex-tap-hint{font-size:11px;color:var(--text-muted);margin:-2px 0 10px;}
+.ex-detalle-desc{font-size:13.5px;line-height:1.5;white-space:pre-wrap;color:var(--text);margin:-2px 0 10px;}
 .step-row{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:10px 12px;margin-bottom:8px;}
 .step-row .st-h{font-size:11px;font-weight:800;color:var(--accent);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;}
 .step-row .st-m{font-size:12px;color:var(--text-dim);}
@@ -558,7 +569,7 @@ var currentDetalle=null;  // {kind:'fuerza'|'resistencia', data}
    enlace, se muestra un botón para abrirlo en una pestaña nueva.       */
 function toEmbedUrl(url){
   if(!url) return null;
-  var yt=url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|v\/))([^&?\/\s]{11})/);
+  var yt=url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|v\/|shorts\/|live\/))([^&?\/\s]{11})/);
   if(yt) return 'https://www.youtube.com/embed/'+yt[1];
   var vi=url.match(/vimeo\.com\/(\d+)/);
   if(vi) return 'https://player.vimeo.com/video/'+vi[1];
@@ -566,22 +577,37 @@ function toEmbedUrl(url){
   if(dr) return 'https://drive.google.com/file/d/'+dr[1]+'/preview';
   return null;
 }
-function verEjercicioDetalle(id){
+var SES_DETALLE_EX=[]; // ejercicios de la sesión abierta (para la nota del entrenador en el detalle)
+function exNotaSesion(ex){var n='';((ex&&ex.params)||[]).forEach(function(p){if(p&&p.id==='notas'&&p.val)n=String(p.val).trim();});return n;}
+function verEjercicioDetalle(id,idx){
   var db=EJERCICIOS_DB[id];
   if(!db) return;
-  var imgHtml=db.imagen
-    ? '<img class="ex-detalle-img" src="'+db.imagen+'" referrerpolicy="no-referrer">'
-    : '<div class="ex-detalle-ph">💪</div>';
-  var videoHtml='';
-  if(db.video){
-    var embed=toEmbedUrl(db.video);
-    videoHtml=embed
-      ? '<div style="width:100%;aspect-ratio:16/9;border-radius:10px;margin-top:12px;background:#000;"><iframe src="'+embed+'" allowfullscreen style="width:100%;height:100%;border:none;border-radius:10px;"></iframe></div>'
-      : '<div style="margin-top:12px;"><a class="ex-detalle-video-link" href="'+db.video+'" target="_blank" rel="noopener">▶ Abrir vídeo</a></div>';
-  }
-  document.getElementById('ex-detalle-content').innerHTML=
-    imgHtml+'<div class="ex-detalle-body"><div class="ex-detalle-nombre">'+(db.nombre||id)+'</div>'+videoHtml+'</div>';
+  var ex=(idx!=null&&SES_DETALLE_EX[idx]&&SES_DETALLE_EX[idx].id===id)?SES_DETALLE_EX[idx]:null;
+  var embed=db.video?toEmbedUrl(db.video):null;
+  var top=embed
+    ? '<div style="width:100%;aspect-ratio:16/9;background:#000;border-radius:16px 16px 0 0;overflow:hidden;"><iframe src="'+embed+'" allowfullscreen allow="autoplay; encrypted-media; picture-in-picture" style="width:100%;height:100%;border:none;"></iframe></div>'
+    : (db.imagen?'<img class="ex-detalle-img" src="'+db.imagen+'" referrerpolicy="no-referrer">':'<div class="ex-detalle-ph">💪</div>');
+  var desc=String(db.descripcion||'').trim(), nota=exNotaSesion(ex);
+  var body='<div class="ex-detalle-nombre">'+escHtmlE(db.nombre||id)+'</div>';
+  if(ex)body+='<div class="ex-detalle-pauta">'+escHtmlE((ex.sets||'—')+' × '+(ex.reps||'—')+(ex.load&&ex.load!=='—'?' · '+ex.load+(/kg/i.test(ex.load)?'':' kg'):'')+' · Descanso '+(ex.rest||'—'))+'</div>';
+  if(desc)body+='<div class="ex-explica"><b>📖 Cómo se hace</b>'+escHtmlE(desc)+'</div>';
+  if(nota&&nota!==desc)body+='<div class="ex-explica nota"><b>📝 Nota del entrenador</b>'+escHtmlE(nota)+'</div>';
+  if(!desc&&!nota)body+='<div style="font-size:12.5px;color:var(--text-muted)">Tu entrenador todavía no ha escrito la explicación de este ejercicio.</div>';
+  if(db.video&&!embed)body+='<div style="margin-top:12px;"><a class="ex-detalle-video-link" href="'+db.video+'" target="_blank" rel="noopener">▶ Abrir vídeo</a></div>';
+  if(embed&&db.imagen)body+='<img src="'+db.imagen+'" referrerpolicy="no-referrer" style="display:block;width:100%;border-radius:10px;margin-top:12px;">';
+  document.getElementById('ex-detalle-content').innerHTML=top+'<div class="ex-detalle-body">'+body+'</div>';
   document.getElementById('ex-detalle-modal').classList.add('open');
+}
+// Explicación del ejercicio (ficha de la Biblioteca) + nota del entrenador para esta sesión
+function exExplicacionHtml(ex,db){
+  var nota=exNotaSesion(ex);
+  return nota?'<div class="ex-explica nota" style="font-size:11.5px;padding:5px 8px;margin-top:5px">📝 '+escHtmlE(nota)+'</div>':'';
+}
+// Nombre del ejercicio tocable (abre vídeo + explicación) con 💬 si hay explicación o nota, como en Bridge
+function exNombreHtml(ex,db,idx){
+  var idS=String(ex.id).replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+  var tiene=String((db&&db.descripcion)||'').trim()||exNotaSesion(ex);
+  return '<span class="ex-name-tap" onclick="event.stopPropagation();verEjercicioDetalle(\''+idS+'\','+idx+')">'+escHtmlE(db.nombre||ex.id)+(tiene?' <span class="ex-has-info" title="Tiene explicación">💬</span>':'')+(db.video?' <span class="ex-has-info" title="Tiene vídeo">▶</span>':'')+'</span>';
 }
 function cerrarDetalleEjercicio(){
   document.getElementById('ex-detalle-modal').classList.remove('open');
@@ -1021,6 +1047,8 @@ function renderDetalleFuerza(s,activo){
   if(done)html+='<div class="done-badge">✅ Sesión completada</div>';
   html+='<div class="det-title cond">'+(s.nombre||'Sesión de fuerza')+'</div>';
   html+='<div class="det-sub">'+fecha+'</div>';
+  html+='<div class="ex-tap-hint">👆 Toca un ejercicio para ver el vídeo y cómo se hace</div>';
+  SES_DETALLE_EX=s.ejercicios||[];
   var bloques={};
   var bNombres={};
   (s.ejercicios||[]).forEach(function(ex){var b=(ex.bloque||'otros')+(ex.bloqueInstancia?'::'+ex.bloqueInstancia:'');if(!bloques[b])bloques[b]=[];bloques[b].push(ex);if(ex.bloqueNombre&&!bNombres[b])bNombres[b]=ex.bloqueNombre;});
@@ -1035,7 +1063,7 @@ function renderDetalleFuerza(s,activo){
     exs.forEach(function(ex){
       var db=EJERCICIOS_DB[ex.id]||{nombre:ex.id};
       var exIdSafe=String(ex.id).replace(/\\/g,'\\\\').replace(/'/g,"\\'");
-      var exClickAttr='style="cursor:pointer" onclick="verEjercicioDetalle(\''+exIdSafe+'\')"';
+      var exClickAttr='style="cursor:pointer" onclick="verEjercicioDetalle(\''+exIdSafe+'\','+s.ejercicios.indexOf(ex)+')"';
       var img=db.imagen?'<img src="'+db.imagen+'" referrerpolicy="no-referrer" '+exClickAttr+'>':'<div class="ph" '+exClickAttr+'>💪</div>';
       var globalIdx=s.ejercicios.indexOf(ex);
       if(activo&&!done){
@@ -1052,7 +1080,7 @@ function renderDetalleFuerza(s,activo){
             +'<input type="number" class="inp set-kg" value="'+plannedKg+'" placeholder="kg" style="flex:1;padding:7px;font-size:12px;">'
           +'</div>';
         }
-        var videoLink=db.video?' · <a class="ex-vid-link" href="javascript:void(0)" onclick="event.stopPropagation();verEjercicioDetalle(\''+exIdSafe+'\')">▶ Vídeo</a>':'';
+        var videoLink='';
         var applyAllBtn=setsCount>1?'<div class="ex-applyall" onclick="aplicarATodasLasSeries('+globalIdx+')">📋 Aplicar 1ª serie a todas</div>':'';
         var optRow='<div class="ex-opt-row">'
           +'<div class="ex-opt-chip" id="adapt-chip-'+globalIdx+'" onclick="toggleAdaptacion('+globalIdx+')">🔧 Adaptado</div>'
@@ -1061,13 +1089,13 @@ function renderDetalleFuerza(s,activo){
         +'<div class="ex-opt-extra" id="adapt-extra-'+globalIdx+'"><textarea class="ex-adapt-nota" rows="2" placeholder="¿Cómo lo has adaptado? (ej. menor rango, con apoyo...)"></textarea></div>'
         +'<div class="ex-opt-extra" id="alt-extra-'+globalIdx+'"><input type="text" class="ex-alt-input" placeholder="¿Qué ejercicio has hecho en su lugar?"></div>';
         html+='<div class="ex-card" style="align-items:flex-start;" id="exsets-'+globalIdx+'" data-exid="'+ex.id+'" data-exnombre="'+db.nombre.replace(/"/g,'&quot;')+'">'+img
-          +'<div style="flex:1;"><div class="ex-name">'+db.nombre+videoLink+'</div><div class="ex-meta">Objetivo: '+plannedReps+' '+repsLabel+(plannedKg?' · '+plannedKg+'kg':'')+' · Descanso '+(ex.rest||'—')+'</div>'
-          +rows+applyAllBtn+optRow+'</div></div>';
+          +'<div style="flex:1;"><div class="ex-name">'+exNombreHtml(ex,db,globalIdx)+videoLink+'</div><div class="ex-meta">Objetivo: '+plannedReps+' '+repsLabel+(plannedKg?' · '+plannedKg+'kg':'')+' · Descanso '+(ex.rest||'—')+'</div>'
+          +exExplicacionHtml(ex,db)+rows+applyAllBtn+optRow+'</div></div>';
       } else {
         var esUnilateral2=String(db.unilateral||'').toLowerCase().indexOf('s')===0;
-        html+='<div class="ex-card">'+img+'<div><div class="ex-name">'+db.nombre+'</div><div class="ex-meta">'
+        html+='<div class="ex-card">'+img+'<div style="flex:1;min-width:0"><div class="ex-name">'+exNombreHtml(ex,db,globalIdx)+'</div><div class="ex-meta">'
           +(ex.sets||'—')+'×'+(ex.reps||'—')+(esUnilateral2?'/lado':'')+(ex.load&&ex.load!=='—'?' · '+ex.load:'')+' · Descanso '+(ex.rest||'—')
-        +'</div></div></div>';
+        +'</div>'+exExplicacionHtml(ex,db)+'</div></div>';
       }
     });
   });

@@ -609,6 +609,13 @@ input:focus,select:focus,textarea:focus{border-color:#8aa0d6 !important;box-shad
 .ps-ex-big img{width:100%;max-height:130px;object-fit:cover;border-radius:8px;cursor:zoom-in;display:block;}
 .ps-noimg{height:80px;border-radius:8px;background:var(--surface);display:flex;align-items:center;justify-content:center;font-size:26px;}
 .ps-ex-meta{font-size:11px;color:var(--text-muted);margin:6px 0;}
+.ps-desc{margin:10px 0 4px;}
+.ps-desc label{display:block;font-size:11.5px;font-weight:700;margin-bottom:4px;}
+.ps-desc label span{font-weight:400;color:var(--text-muted);}
+.ps-desc textarea{width:100%;box-sizing:border-box;min-height:62px;padding:8px 10px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text);font:inherit;font-size:12.5px;line-height:1.4;resize:vertical;outline:none;}
+.ps-desc textarea:focus{border-color:var(--accent);}
+.ps-desc-st{display:block;font-size:11px;color:var(--text-muted);margin-top:3px;min-height:14px;}
+.ps-ex-hasdesc{font-size:11px;margin-left:4px;opacity:.8;}
 .ps-ex-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;}
 .ps-board{background:#e7ebf3;border:1px solid var(--border);border-radius:12px;padding:12px;}
 .ps-day{background:#fff !important;box-shadow:var(--shadow);}
@@ -4438,6 +4445,35 @@ function psTextColor(hex){
 function psIsOpen(wi,dk,bid){var k=wi+'|'+dk+'|'+bid;return psExpandAll?psOpen[k]!==false:!!psOpen[k];}
 function psToggle(wi,dk,bid){var k=wi+'|'+dk+'|'+bid;psOpen[k]=!psIsOpen(wi,dk,bid);renderProgramaBoard();}
 function psToggleAll(){psExpandAll=!psExpandAll;psOpen={};renderProgramaBoard();}
+// ── «Cómo se hace»: explicación del ejercicio para el atleta (campo descripción de la ficha) ──
+var psDescTimers={};
+function psDescHtml(id){
+  var db=DB.ejercicios[id];if(!db)return '';
+  var k=String(id).replace(/[^a-zA-Z0-9_-]/g,'_');
+  return '<div class="ps-desc"><label>📖 Cómo se hace <span>· el atleta lo ve al tocar el ejercicio, con el vídeo · se guarda en la ficha y sirve para todos los planes</span></label>'
+    +'<textarea data-exid="'+escAttr(id)+'" placeholder="Ej.: espalda neutra, empuja desde el talón y exhala al subir…" oninput="psDescInput(this)" onblur="psDescGuardar(this.dataset.exid)">'+escapeHtml(db.descripcion||'')+'</textarea>'
+    +'<span class="ps-desc-st" id="psdesc-st-'+k+'"></span></div>';
+}
+function psDescEstado(id,txt){var e=document.getElementById('psdesc-st-'+String(id).replace(/[^a-zA-Z0-9_-]/g,'_'));if(e)e.textContent=txt;}
+function psDescInput(ta){
+  var id=ta.dataset.exid,db=DB.ejercicios[id];if(!db)return;
+  db.descripcion=ta.value;db._descPendiente=true;
+  document.querySelectorAll('.ps-desc textarea').forEach(function(o){if(o!==ta&&o.dataset.exid===id)o.value=ta.value;});
+  psDescEstado(id,'Escribiendo…');
+  clearTimeout(psDescTimers[id]);psDescTimers[id]=setTimeout(function(){psDescGuardar(id);},1500);
+}
+async function psDescGuardar(id){
+  clearTimeout(psDescTimers[id]);
+  var db=DB.ejercicios[id];if(!db||!db._descPendiente)return;
+  db._descPendiente=false;
+  var data=Object.assign({},db,{id:id,descripcion:String(db.descripcion||'').trim()});delete data._descPendiente;
+  psDescEstado(id,'Guardando…');
+  try{
+    var r=await apiPost(Object.assign({action:'updateEjercicio'},data));
+    if(r&&r.ok){psDescEstado(id,'✓ Guardado en la ficha del ejercicio');try{if(typeof renderEjercicios==='function')renderEjercicios();}catch(e){}}
+    else{db._descPendiente=true;psDescEstado(id,'⚠️ No se pudo guardar: '+((r&&r.error)||'error'));}
+  }catch(e){db._descPendiente=true;psDescEstado(id,'⚠️ Sin conexión, no se ha guardado');}
+}
 function psToggleEx(wi,dk,bid,ei){var k=wi+'|'+dk+'|'+bid+'|'+ei;psExOpen[k]=!psExOpen[k];renderProgramaBoard();}
 function psSwapEx(wi,dk,bid,ei){psCtx={wi:wi,dk:dk,ei:ei};openEjPicker('programa-swap',bid);}
 function psGoWeek(n){psWeek=n;renderProgramaBoard();}
@@ -4474,7 +4510,7 @@ function psBlockHtml(wi,dk,ses,bid){
       if(de)resumen.push('desc. '+de);
       h+='<div class="ps-ex'+(exOpen?' open':'')+'"><div class="ps-ex-top" onclick="psToggleEx('+base+')">'
         +'<div class="ps-thumb">'+thumb+'</div>'
-        +'<div class="ps-ex-main"><div class="ps-ex-name">'+escapeHtml(db.nombre)+'</div><div class="ps-ex-sum">'+escapeHtml(resumen.join(' · '))+'</div></div>'
+        +'<div class="ps-ex-main"><div class="ps-ex-name">'+escapeHtml(db.nombre)+(db.descripcion?'<span class="ps-ex-hasdesc" title="Tiene explicación para el atleta">📖</span>':'')+'</div><div class="ps-ex-sum">'+escapeHtml(resumen.join(' · '))+'</div></div>'
         +'<button class="ps-mini" title="Subir" onclick="event.stopPropagation();psMoveEx('+base+',-1)">▲</button>'
         +'<button class="ps-mini" title="Bajar" onclick="event.stopPropagation();psMoveEx('+base+',1)">▼</button>'
         +'<span class="ps-caret">'+(exOpen?'▾':'▸')+'</span></div>';
@@ -4484,6 +4520,7 @@ function psBlockHtml(wi,dk,ses,bid){
           +'<div class="ps-ex-meta">'+escapeHtml((db.categoria||'')+(db.musculos?' · '+db.musculos:''))+'</div>'
           +'<div class="ex-params">'+(ex.params||[]).map(function(p,pi){return psChip(wi,dk,bid,ei,pi,p);}).join('')
           +'<button class="param-add-btn" onclick="psShowParamPicker(event,'+base+')">+ param</button></div>'
+          +psDescHtml(ex.id)
           +'<div class="ps-ex-actions">'
           +'<button class="btn btn-secondary btn-xs" onclick="psSwapEx('+base+')">🔄 Intercambiar</button>'
           +'<button class="btn btn-secondary btn-xs" onclick="showDetail(\''+escAttr(ex.id)+'\')">👁 Ver ficha / editar</button>'
