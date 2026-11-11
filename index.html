@@ -662,6 +662,15 @@ input:focus,select:focus,textarea:focus{border-color:#8aa0d6 !important;box-shad
 .param-ps{border:1px solid var(--border);background:var(--surface2);border-radius:5px;font-size:11px;line-height:1;padding:3px 5px;cursor:pointer;color:var(--text-dim);margin-left:2px}
 .param-ps:hover{background:var(--accent);color:#14230a}
 .serie-pop{position:absolute;z-index:10050;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px;box-shadow:0 10px 30px rgba(0,0,0,.25);max-width:340px}
+
+.stb{margin:8px 0 6px;overflow-x:auto}.stb table{border-collapse:collapse;width:100%;font-size:12.5px;background:var(--surface)}
+.stb th{font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.02em;padding:5px 2px;text-align:center;background:var(--surface2);border-bottom:1px solid var(--border);white-space:nowrap}
+.stb td{border-bottom:1px solid var(--border);padding:2px 3px;text-align:center}
+.stb td input{width:100%;min-width:30px;max-width:90px;border:1px solid transparent;background:transparent;text-align:center;padding:5px 2px;font-size:13px;font-weight:600;color:var(--text);border-radius:5px}
+.stb td input:hover{border-color:var(--border)}.stb td input:focus{border-color:var(--accent);background:var(--surface);outline:none}
+.stb .stb-n{width:30px;color:var(--text-muted);font-weight:600}
+.stb-x{cursor:pointer;opacity:0;margin-left:2px;font-size:9px}.stb th:hover .stb-x{opacity:.6}.stb-x:hover{opacity:1;color:#dc2626}
+.stb-acc{display:flex;gap:6px;align-items:center;margin-top:5px}
 </style>
 </head>
 <body>
@@ -748,7 +757,7 @@ function aplicarCodigoAcceso(){
     <div class="sb-group">Sistema</div>
     <div class="tab" onclick="switchTab('ajustes',this)"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg><span>Ajustes</span></div>
   </nav>
-  <div class="sb-foot"><div id="auth-chip" style="display:none;font-size:12px;color:#cbd5e1;margin-bottom:10px;line-height:1.4"></div><div style="font-size:10px;color:#64748b;margin-bottom:6px">versión 76</div><div class="status-badge" id="status">⏳ Conectando...</div></div>
+  <div class="sb-foot"><div id="auth-chip" style="display:none;font-size:12px;color:#cbd5e1;margin-bottom:10px;line-height:1.4"></div><div style="font-size:10px;color:#64748b;margin-bottom:6px">versión 77</div><div class="status-badge" id="status">⏳ Conectando...</div></div>
 </aside>
 <div class="sb-backdrop" onclick="closeSidebar()"></div>
 <div class="main">
@@ -4311,8 +4320,9 @@ function renderBloqueExs(bloqueId){
     row.ondragend=function(){row.classList.remove('dragging');document.querySelectorAll('.ex-row').forEach(function(r){r.classList.remove('drag-over');});};
     row.ondragover=function(e){if(dragBloqueSrc)return;e.preventDefault();row.classList.add('drag-over');};
     row.ondrop=function(e){if(dragBloqueSrc)return;e.preventDefault();e.stopPropagation();row.classList.remove('drag-over');dropEx(bloqueId,idx);};
-    var paramsHtml=ex.params.map(function(p,pi){return buildParamChip(p,bloqueId,idx,pi);}).join('');
-    row.innerHTML='<div class="ex-drag-handle">⠿</div><div class="ex-row-info"><div class="ex-row-name">'+db.nombre+'</div><div class="ex-params">'+paramsHtml+'<button class="param-add-btn" onclick="showParamPicker(event,\''+bloqueId+'\','+idx+')">+ param</button></div></div><button class="btn btn-danger btn-xs" onclick="removeEx(\''+bloqueId+'\','+idx+')">✕</button>';
+    var paramsHtml=stbChips(ex,function(p,pi){return buildParamChip(p,bloqueId,idx,pi);});
+    var stbT=stbHtml(ex,{get:(function(b,i){return function(){return (currentTemplate.bloques[b]||[])[i];};})(bloqueId,idx),dirty:markDirty,render:(function(b){return function(){renderBloqueExs(b);};})(bloqueId)});
+    row.innerHTML='<div class="ex-drag-handle">⠿</div><div class="ex-row-info"><div class="ex-row-name">'+db.nombre+'</div>'+stbT+'<div class="ex-params">'+paramsHtml+'<button class="param-add-btn" onclick="showParamPicker(event,\''+bloqueId+'\','+idx+')">+ param</button></div></div><button class="btn btn-danger btn-xs" onclick="removeEx(\''+bloqueId+'\','+idx+')">✕</button>';
     list.appendChild(row);
   });
 }
@@ -4343,6 +4353,41 @@ function serieEditar(ev,btn){
   var f=pop.querySelector('.serie-in');if(f)f.focus();
   setTimeout(function(){document.addEventListener('click',function c(){var pp=document.getElementById('serie-pop');if(pp)pp.remove();document.removeEventListener('click',c);});},0);
 }
+// ═══ TABLA DE SERIES (estilo Bridge): una fila por serie, columnas = parámetros por serie ═══
+var SET_PARAMS=['reps','kg','pct_rm','rpe','rir','duracion','distancia','descanso'];
+var STB={ref:[]};
+function stbEsSerie(pid){return SET_PARAMS.indexOf(pid)>=0;}
+function stbN(ex){var s=parseInt(getParamVal(ex,'series'),10);if(s>0)return Math.min(s,20);var m=1;(ex.params||[]).forEach(function(p){if(stbEsSerie(p.id))m=Math.max(m,String(p.val||'').split('/').length);});return m;}
+function stbJoin(arr){var a=arr.map(function(x){return String(x==null?'':x).trim();});var last='';a=a.map(function(x){if(x==='')return last;last=x;return x;});if(a.every(function(x){return x===a[0];}))return a[0]||'';while(a.length>1&&a[a.length-1]===a[a.length-2])a.pop();return a.join('/');}
+// ctx = {get:function()→ex, dirty:function(), render:function()}
+function stbHtml(ex,ctx){
+  var k=STB.ref.length;STB.ref.push(ctx);
+  var n=stbN(ex),cols=(ex.params||[]).map(function(p,pi){return {p:p,pi:pi};}).filter(function(o){return stbEsSerie(o.p.id);});
+  cols.sort(function(a,b){return SET_PARAMS.indexOf(a.p.id)-SET_PARAMS.indexOf(b.p.id);});
+  var cat=getParamsCatalog();
+  var h='<div class="stb" onclick="event.stopPropagation()"><table><tr><th class="stb-n">Serie</th>'+cols.map(function(o){var c=cat.find(function(x){return x.id===o.p.id;})||{label:o.p.id};
+    var corto={reps:'Reps',kg:'Kg',pct_rm:'%',rpe:'RPE',rir:'RIR',duracion:'Tiempo',distancia:'Dist.',descanso:'Desc.'}[o.p.id]||c.label;
+    return '<th title="'+escAttr(c.label+(c.unidad?' ('+c.unidad+')':''))+'">'+escapeHtml(corto)+'<span class="stb-x" title="Quitar columna" onclick="stbDelCol('+k+',\''+o.p.id+'\')">✕</span></th>';}).join('')+'</tr>';
+  for(var i=0;i<n;i++){
+    h+='<tr><td class="stb-n">'+(i+1)+'</td>'+cols.map(function(o){return '<td><input value="'+escAttr(valSerie(o.p.val,i))+'" oninput="stbSet('+k+',\''+o.p.id+'\','+i+',this.value)" onclick="this.select()"></td>';}).join('')+'</tr>';
+  }
+  h+='</table><div class="stb-acc"><button type="button" class="btn btn-secondary btn-xs" onclick="stbSeries('+k+',1)">+ serie</button>'+(n>1?'<button type="button" class="btn btn-secondary btn-xs" onclick="stbSeries('+k+',-1)">− serie</button>':'')+(cols.length?'':'<span style="font-size:11px;color:var(--text-muted)">Añade reps, kg, RPE… con «+ param»</span>')+'</div></div>';
+  return h;
+}
+function stbParam(ex,pid,crear){ex.params=ex.params||[];var p=ex.params.find(function(q){return q.id===pid;});if(!p&&crear){p={id:pid,val:''};ex.params.push(p);}return p;}
+function stbSet(k,pid,i,v){
+  var c=STB.ref[k];if(!c)return;var ex=c.get();if(!ex)return;var p=stbParam(ex,pid,true),n=stbN(ex);
+  var arr=[];for(var j=0;j<n;j++)arr.push(valSerie(p.val,j));arr[i]=v;
+  p.val=stbJoin(arr);c.dirty();
+}
+function stbSeries(k,d){
+  var c=STB.ref[k];if(!c)return;var ex=c.get();if(!ex)return;var n=stbN(ex),nn=Math.max(1,Math.min(20,n+d));
+  (ex.params||[]).forEach(function(p){if(!stbEsSerie(p.id))return;var arr=[];for(var j=0;j<nn;j++)arr.push(valSerie(p.val,j));p.val=stbJoin(arr);});
+  stbParam(ex,'series',true).val=String(nn);ex.sets=String(nn);c.dirty();c.render();
+}
+function stbDelCol(k,pid){var c=STB.ref[k];if(!c)return;var ex=c.get();if(!ex||!ex.params)return;ex.params=ex.params.filter(function(p){return p.id!==pid;});c.dirty();c.render();}
+function stbChips(ex,chipFn){return (ex.params||[]).map(function(p,pi){return (stbEsSerie(p.id)||p.id==='series')?'':chipFn(p,pi);}).join('');}
+
 function buildParamChip(p,bloqueId,exIdx,paramIdx){var cat=getParamsCatalog().find(function(c){return c.id===p.id;})||{label:p.id,type:'text'};var input='';if(cat.type==='select'){var opts=(cat.options||[]).map(function(o){return '<option'+(p.val===o?' selected':'')+'>'+o+'</option>';}).join('');input='<select onchange="updateParam(\''+bloqueId+'\','+exIdx+','+paramIdx+',this.value)">'+opts+'</select>';}else{input='<input type="'+((p.id==='kg'||p.id==='reps')?'text':cat.type)+'" value="'+escAttr(p.val||'')+'" oninput="updateParam(\''+bloqueId+'\','+exIdx+','+paramIdx+',this.value)">'+psBtnSerie(p.id);}var lbl=cat.label+(cat.unidad?' ('+cat.unidad+')':'');return '<div class="param-chip"><label>'+lbl+'</label>'+input+'<button type="button" class="param-chip-remove" title="Quitar parámetro" onclick="removeParam(\''+bloqueId+'\','+exIdx+','+paramIdx+')">✕</button></div>';}
 function updateParam(b,ei,pi,v){if(currentTemplate.bloques[b]&&currentTemplate.bloques[b][ei]&&currentTemplate.bloques[b][ei].params[pi])currentTemplate.bloques[b][ei].params[pi].val=v;markDirty();}
 function removeParam(b,ei,pi){if(!currentTemplate.bloques[b]||!currentTemplate.bloques[b][ei])return;currentTemplate.bloques[b][ei].params.splice(pi,1);markDirty();renderBloqueExs(b);}
@@ -4628,7 +4673,8 @@ function psBlockHtml(wi,dk,ses,bid){
         h+='<div class="ps-ex-detail">'
           +'<div class="ps-ex-big">'+(db.imagen?'<img src="'+escAttr(db.imagen)+'" referrerpolicy="no-referrer" onclick="showDetail(\''+escAttr(ex.id)+'\')" title="Ver ficha completa">':'<div class="ps-noimg">💪</div>')+'</div>'
           +'<div class="ps-ex-meta">'+escapeHtml((db.categoria||'')+(db.musculos?' · '+db.musculos:''))+'</div>'
-          +'<div class="ex-params">'+(ex.params||[]).map(function(p,pi){return psChip(wi,dk,bid,ei,pi,p);}).join('')
+          +stbHtml(ex,{get:(function(a,b,c,d){return function(){var m=psMat(a,b);return (m.bloques[c]||[])[d];};})(wi,dk,bid,ei),dirty:markDirtyPrograma,render:renderProgramaBoard})
+          +'<div class="ex-params">'+stbChips(ex,function(p,pi){return psChip(wi,dk,bid,ei,pi,p);})
           +'<button class="param-add-btn" onclick="psShowParamPicker(event,'+base+')">+ param</button></div>'
           +psDescHtml(ex.id)
           +'<div class="ps-ex-actions">'
@@ -6184,9 +6230,10 @@ function renderSesionBloqueExs(bloqueId){
     row.ondragend=function(){row.classList.remove('dragging');document.querySelectorAll('.ex-row').forEach(function(r){r.classList.remove('drag-over');});};
     row.ondragover=function(e){e.preventDefault();row.classList.add('drag-over');};
     row.ondrop=function(e){e.preventDefault();row.classList.remove('drag-over');dropExSesion(bloqueId,idx);};
-    var paramsHtml=ex.params.map(function(p,pi){return buildSesionParamChip(p,bloqueId,idx,pi);}).join('');
+    var paramsHtml=stbChips(ex,function(p,pi){return buildSesionParamChip(p,bloqueId,idx,pi);});
+    var stbS=stbHtml(ex,{get:(function(b,i){return function(){return (editingSesion.bloques[b]||[])[i];};})(bloqueId,idx),dirty:function(){try{renderSesionMuscleSummary();}catch(e){}},render:(function(b){return function(){renderSesionBloqueExs(b);};})(bloqueId)});
     var thumbHtml=db.imagen?'<img src="'+db.imagen+'" referrerpolicy="no-referrer" style="width:40px;height:40px;object-fit:cover;border-radius:7px;flex-shrink:0;">':'<div style="width:40px;height:40px;background:var(--surface2);border-radius:7px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:15px;">💪</div>';
-    row.innerHTML='<div class="ex-drag-handle">⠿</div>'+thumbHtml+'<div class="ex-row-info"><div class="ex-row-name">'+db.nombre+'</div><div class="ex-params">'+paramsHtml+'<button class="param-add-btn" onclick="showSesionParamPicker(event,\''+bloqueId+'\','+idx+')">+ param</button></div></div><button class="btn btn-danger btn-xs" onclick="removeExFromSesion(\''+bloqueId+'\','+idx+')">✕</button>';
+    row.innerHTML='<div class="ex-drag-handle">⠿</div>'+thumbHtml+'<div class="ex-row-info"><div class="ex-row-name">'+db.nombre+'</div>'+stbS+'<div class="ex-params">'+paramsHtml+'<button class="param-add-btn" onclick="showSesionParamPicker(event,\''+bloqueId+'\','+idx+')">+ param</button></div></div><button class="btn btn-danger btn-xs" onclick="removeExFromSesion(\''+bloqueId+'\','+idx+')">✕</button>';
     list.appendChild(row);
   });
   renderSesionMuscleSummary();
