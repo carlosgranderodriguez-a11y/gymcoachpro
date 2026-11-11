@@ -1074,10 +1074,11 @@ function renderDetalleFuerza(s,activo){
         var repsLabel=esUnilateral?'reps/lado':'reps';
         var rows='';
         for(var si=0;si<setsCount;si++){
+          var rS=valSerie(plannedReps,si),kS=valSerie(plannedKg,si),rN=numPuro(rS),kN=numPuro(kS);
           rows+='<div style="display:flex;gap:6px;margin-top:5px;align-items:center;">'
             +'<span style="font-size:10px;color:var(--text-muted);width:16px;">'+(si+1)+'</span>'
-            +'<input type="number" class="inp set-reps" value="'+plannedReps+'" placeholder="'+repsLabel+'" style="flex:1;padding:7px;font-size:12px;">'
-            +'<input type="number" class="inp set-kg" value="'+plannedKg+'" placeholder="kg" style="flex:1;padding:7px;font-size:12px;">'
+            +'<input type="number" class="inp set-reps" value="'+rN+'" placeholder="'+(rN===''&&rS?rS:repsLabel)+'" style="flex:1;padding:7px;font-size:12px;">'
+            +'<input type="number" step="0.5" class="inp set-kg" value="'+kN+'" placeholder="'+(kN===''&&kS?kS+' kg':'kg')+'" style="flex:1;padding:7px;font-size:12px;">'
           +'</div>';
         }
         var videoLink='';
@@ -1591,6 +1592,10 @@ async function syncGarminAhora(){
 }
 
 
+
+// Valores distintos por serie: "40/45/50" → serie 1 = 40, serie 2 = 45, serie 3 = 50 (si faltan, se repite el último)
+function valSerie(v,i){var a=String(v==null?'':v).split('/').map(function(x){return x.trim();}).filter(function(x){return x!=='';});if(!a.length)return '';return a[Math.min(i,a.length-1)];}
+function numPuro(v){var t=String(v||'').replace(',','.').trim();return /^\d+(\.\d+)?$/.test(t)?t:'';}
 function abrirCompletar(){
   var isFuerza=currentDetalle.kind==='fuerza';
   var extra=isFuerza?'<div class="g"><label class="lab">⏱️ ¿Cuántos minutos ha durado la sesión?</label><input type="number" min="1" max="300" step="1" id="cp-dur" class="inp" placeholder="Ej. 45"></div>':(
