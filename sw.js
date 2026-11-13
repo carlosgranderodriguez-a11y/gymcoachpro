@@ -1,7 +1,7 @@
 // GymCoach Pro — Service Worker
 // Cachea el "app shell" (HTML/CSS/JS/iconos) para que la app abra al instante
 // aunque haya poca cobertura, y deja pasar las llamadas a la API siempre a red.
-const CACHE_VERSION = 'gcp-v78';
+const CACHE_VERSION = 'gcp-v79';
 const APP_SHELL = [
   './atleta.html',
   './index.html',
@@ -12,12 +12,21 @@ const APP_SHELL = [
   './icons/icon-512.png',
   './icons/apple-touch-icon.png'
 ];
+// Librerías externas que usa el panel: se guardan para que la app funcione sin conexión
+const CDN_LIBS = [
+  'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js',
+  'https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.0/jspdf.plugin.autotable.min.js',
+  'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js'
+];
 
 self.addEventListener('install', function(e){
   self.skipWaiting();
   e.waitUntil(
     caches.open(CACHE_VERSION).then(function(cache){
-      return cache.addAll(APP_SHELL).catch(function(){ /* si falla algún recurso, no bloquea la instalación */ });
+      var libs = Promise.all(CDN_LIBS.map(function(u){
+        return fetch(new Request(u,{mode:'no-cors'})).then(function(r){ return cache.put(u, r); }).catch(function(){});
+      }));
+      return Promise.all([cache.addAll(APP_SHELL).catch(function(){ /* si falla algún recurso, no bloquea la instalación */ }), libs]);
     })
   );
 });
@@ -34,7 +43,7 @@ self.addEventListener('fetch', function(e){
   var url = e.request.url;
 
   // Nunca cachear llamadas a Google Apps Script / API: siempre red, datos frescos.
-  if(url.indexOf('script.google.com') > -1 || url.indexOf('googleapis.com') > -1){
+  if(url.indexOf('script.google.com') > -1 || (url.indexOf('googleapis.com') > -1 && url.indexOf('fonts.googleapis.com') === -1)){
     e.respondWith(fetch(e.request).catch(function(){
       return new Response(JSON.stringify({ok:false,offline:true}),{headers:{'Content-Type':'application/json'}});
     }));
@@ -43,12 +52,13 @@ self.addEventListener('fetch', function(e){
 
   if(e.request.method !== 'GET') return;
 
-  // HTML, JS y JSON: red primero (siempre la versión nueva); caché solo si no hay conexión
-  if(e.request.mode==='navigate' || /\.(html|js|json)($|\?)/.test(url)){
+  // HTML, JS y JSON propios: red primero (siempre la versión nueva); caché solo si no hay conexión
+  var mismoOrigen = url.indexOf(self.location.origin) === 0;
+  if(e.request.mode==='navigate' || (mismoOrigen && /\.(html|js|json)($|\?)/.test(url))){
     e.respondWith(fetch(e.request).then(function(r){
       if(r && r.ok){var c=r.clone();caches.open(CACHE_VERSION).then(function(k){k.put(e.request,c);});}
       return r;
-    }).catch(function(){return caches.match(e.request).then(function(m){return m||caches.match('./index.html');});}));
+    }).catch(function(){return caches.match(e.request,{ignoreSearch:true}).then(function(m){return m||caches.match('./index.html');});}));
     return;
   }
 
@@ -56,7 +66,7 @@ self.addEventListener('fetch', function(e){
   e.respondWith(
     caches.match(e.request).then(function(cached){
       var fetchPromise = fetch(e.request).then(function(networkResponse){
-        if(networkResponse && networkResponse.ok){
+        if(networkResponse && (networkResponse.ok || networkResponse.type === 'opaque')){
           var copy = networkResponse.clone();
           caches.open(CACHE_VERSION).then(function(cache){ cache.put(e.request, copy); });
         }

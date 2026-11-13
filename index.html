@@ -1876,7 +1876,7 @@ function authNombreDe(email){if(AUTH.me&&email===AUTH.me.email)return 'Yo';var c
 async function authInit(){
   if(!AUTH.on)return true;
   // Sondeo sin token: si el servidor aún no exige inicio de sesión (o no está actualizado), se entra como siempre
-  var pre=null;try{pre=await(await fetch(API+'?action=whoami')).json();}catch(e){}
+  var pre=null;try{if(navigator.onLine)pre=await(await offFetch(API+'?action=whoami',{},15000)).json();}catch(e){}
   if(!pre||(pre.ok&&pre.libre)||(pre.ok===false&&pre.code!=='AUTH')){AUTH.on=false;if(pre&&pre.ok&&pre.libre){AUTH.libre=true;var sl=document.getElementById('ajustes-entrenadores');if(sl)sl.style.display='';var av=document.getElementById('ent-aviso');if(av)av.style.display='';}return true;}
   var guard=null;try{guard=localStorage.getItem('gc_idtoken');}catch(e){}
   if(guard&&jwtDatos(guard).exp*1000-60000>Date.now())AUTH.token=guard;
@@ -1904,18 +1904,147 @@ async function authCambiarClave(){
   if(r&&r.ok)toast('✅ Contraseña cambiada');else toast('Error: '+(r&&r.error),'err');
 }
 
+// ── MODO SIN CONEXIÓN ──
+// Lecturas: cada respuesta de la API se guarda en IndexedDB; sin red se sirve la última copia.
+// Escrituras: sin red se guardan en una cola (también en IndexedDB) y se envían en orden al volver la conexión.
+// Altas (add*) sin red reciben un id provisional (tmp_…) que se sustituye por el real al sincronizar.
+var OFF={q:[],syncing:false,desdeCache:false,online:true,authPendiente:false,ready:null};
+var OFF_NO_COLA=/^(upload|cambiarClave|saveEntrenador|deleteEntrenador|getEstado|canal|generarTemporada|whoami)/;
+var gcIDB=(function(){
+  var dbp=null;
+  function open(){
+    if(dbp)return dbp;
+    dbp=new Promise(function(res,rej){try{var r=indexedDB.open('gc_offline',1);r.onupgradeneeded=function(){r.result.createObjectStore('kv');};r.onsuccess=function(){res(r.result);};r.onerror=function(){rej(r.error);};}catch(e){rej(e);}});
+    return dbp;
+  }
+  function tx(mode,fn){return open().then(function(db){return new Promise(function(res,rej){var t=db.transaction('kv',mode),req=fn(t.objectStore('kv'));t.oncomplete=function(){res(req&&req.result);};t.onerror=function(){rej(t.error);};});});}
+  return {
+    get:function(k){return tx('readonly',function(s){return s.get(k);}).catch(function(){return undefined;});},
+    set:function(k,v){return tx('readwrite',function(s){return s.put(v,k);}).catch(function(){});}
+  };
+})();
+function offKey(p){var o={};Object.keys(p).sort().forEach(function(k){if(k!=='idToken')o[k]=p[k];});return 'r:'+JSON.stringify(o);}
+function offSinToken(b){var o=Object.assign({},b);delete o.idToken;return o;}
+function offFetch(url,opts,ms){
+  var ctl=(typeof AbortController!=='undefined')?new AbortController():null,tm=null;
+  if(ctl){opts=Object.assign({},opts||{},{signal:ctl.signal});tm=setTimeout(function(){ctl.abort();},ms);}
+  return fetch(url,opts).finally(function(){if(tm)clearTimeout(tm);});
+}
+async function offGuardarCola(){await gcIDB.set('queue',OFF.q);}
+OFF.ready=(async function(){try{var q=await gcIDB.get('queue');if(Array.isArray(q))OFF.q=q;}catch(e){}})();
+
+function offEstado(online){if(OFF.online!==online){OFF.online=online;offPintar();}}
+function offPintar(){
+  var el=document.getElementById('off-chip');
+  if(!el){
+    if(!document.body)return;
+    el=document.createElement('div');el.id='off-chip';
+    el.style.cssText='position:fixed;left:14px;bottom:14px;z-index:9998;padding:8px 12px;border-radius:999px;font:600 12.5px/1.2 Inter,system-ui,sans-serif;box-shadow:0 6px 20px rgba(0,0,0,.18);cursor:pointer;display:none;align-items:center;gap:6px';
+    el.onclick=function(){if(navigator.onLine&&OFF.q.length&&!OFF.syncing)offSync();else if(OFF.q.length)toast(OFF.q.length+' cambio'+(OFF.q.length===1?'':'s')+' guardado'+(OFF.q.length===1?'':'s')+' en este Mac. Se subirán solos al volver la conexión.');};
+    document.body.appendChild(el);
+  }
+  var n=OFF.q.length,off=!OFF.online||!navigator.onLine;
+  if(!off&&!n){el.style.display='none';return;}
+  el.style.display='flex';
+  if(OFF.syncing){el.style.background='#1d4ed8';el.style.color='#fff';el.textContent='⏳ Sincronizando… quedan '+n;}
+  else if(off){el.style.background='#111827';el.style.color='#fff';el.textContent='📴 Sin conexión'+(n?' · '+n+' pendiente'+(n===1?'':'s'):' · trabajando en local');}
+  else{el.style.background='#f59e0b';el.style.color='#111';el.textContent='☁️ '+n+' pendiente'+(n===1?'':'s')+' · pulsa para subir';}
+}
+
+function offEncolar(b){
+  var a=b.action||'';
+  if(OFF_NO_COLA.test(a))return {ok:false,offline:true,error:'Sin conexión: esta acción necesita internet'};
+  var item={id:'q'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),t:Date.now(),b:offSinToken(b)};
+  var res={ok:true,queued:true,offline:true};
+  if(/^add/.test(a)){item.tmp='tmp_'+Date.now().toString(36)+Math.random().toString(36).slice(2,7);res.id=item.tmp;}
+  OFF.q.push(item);offEstado(false);offGuardarCola();offPintar();
+  setTimeout(offSnapshot,400);
+  return res;
+}
+function offReemplazarTmp(tmp,real){
+  OFF.q.forEach(function(it){it.b=JSON.parse(JSON.stringify(it.b).split(tmp).join(real));});
+  Object.keys(DB).forEach(function(k){var v=DB[k];if(Array.isArray(v))v.forEach(function(o){if(o&&o.id===tmp)o.id=real;});});
+}
+async function offTokenParaEnvio(){
+  if(AUTH.on)return await authToken();
+  var t='';try{t=localStorage.getItem('gc_idtoken')||'';}catch(e){}
+  return (t&&jwtDatos(t).exp*1000-60000>Date.now())?t:'';
+}
+async function offSync(){
+  await OFF.ready;
+  if(OFF.syncing||!OFF.q.length||!navigator.onLine)return;
+  OFF.syncing=true;OFF.authPendiente=false;offPintar();
+  var hechos=0,fallos=[];
+  try{
+    while(OFF.q.length){
+      var it=OFF.q[0],b=Object.assign({},it.b),r=null;
+      try{var tok=await offTokenParaEnvio();if(tok)b.idToken=tok;}catch(e){}
+      try{r=await(await offFetch(API,{method:'POST',body:JSON.stringify(b)},45000)).json();}catch(e){offEstado(false);break;}
+      if(r&&r.offline){offEstado(false);break;}
+      if(r&&r.code==='AUTH'){OFF.authPendiente=true;break;}
+      offEstado(true);
+      OFF.q.shift();
+      if(r&&r.ok){hechos++;if(it.tmp&&r.id!=null&&r.id!=='')offReemplazarTmp(it.tmp,String(r.id));}
+      else fallos.push({t:it.t,b:it.b,error:(r&&r.error)||'respuesta no válida'});
+      await offGuardarCola();offPintar();
+      // pausa entre envíos: Apps Script duplica ejecuciones si recibe muchas seguidas
+      await new Promise(function(z){setTimeout(z,400);});
+    }
+  }finally{OFF.syncing=false;offPintar();}
+  if(fallos.length){var prev=(await gcIDB.get('fallidos'))||[];await gcIDB.set('fallidos',prev.concat(fallos));}
+  if(hechos){toast('☁️ '+hechos+' cambio'+(hechos===1?'':'s')+' sincronizado'+(hechos===1?'':'s')+' con el servidor');offSnapshot();}
+  if(fallos.length)setTimeout(function(){toast('⚠️ '+fallos.length+' cambio(s) no se pudieron guardar ('+fallos.map(function(f){return f.b.action;}).join(', ')+'). Quedan apartados en este Mac.','err');},hechos?3000:0);
+  if(OFF.authPendiente)toast('Para subir los cambios pendientes, vuelve a iniciar sesión (recarga la página)','err');
+}
+// Copia completa de los datos en memoria: al abrir sin conexión se recupera con los cambios hechos en local
+var OFF_CAMPOS=['atletas','atletasFull','equipos','ejercicios','sesiones','templates','programas','resistencia','planExterno','config'];
+function offSnapshot(){try{var s={t:Date.now()};OFF_CAMPOS.forEach(function(k){s[k]=DB[k];});gcIDB.set('snapshot',JSON.parse(JSON.stringify(s)));}catch(e){}}
+async function offRestaurarSnapshot(){
+  if(!OFF.desdeCache)return false;
+  var s=await gcIDB.get('snapshot');if(!s)return false;
+  OFF_CAMPOS.forEach(function(k){if(s[k]!==undefined)DB[k]=s[k];});
+  return true;
+}
+window.addEventListener('online',function(){offEstado(true);setTimeout(offSync,1500);});
+window.addEventListener('offline',function(){offEstado(false);});
+window.addEventListener('pagehide',offSnapshot);
+document.addEventListener('visibilitychange',function(){if(document.visibilityState==='hidden')offSnapshot();});
+setInterval(function(){if(OFF.q.length&&navigator.onLine&&!OFF.syncing)offSync();if(!navigator.onLine||!OFF.online)offSnapshot();},60000);
+
 // ── API ──
 async function api(p){
-  if(AUTH.on)p=Object.assign({},p,{idToken:await authToken()});
-  var qs=function(q){return Object.keys(q).map(function(k){return k+'='+encodeURIComponent(q[k]);}).join('&');};
-  var r=await(await fetch(API+'?'+qs(p))).json();
-  if(AUTH.on&&r&&r.code==='AUTH'&&AUTH.me){p=Object.assign({},p,{idToken:await authToken(true)});r=await(await fetch(API+'?'+qs(p))).json();}
-  return r;
+  await OFF.ready;
+  if(OFF.q.length&&navigator.onLine&&!OFF.syncing)await offSync();
+  var key=offKey(p);
+  try{
+    if(!navigator.onLine)throw new Error('offline');
+    if(AUTH.on)p=Object.assign({},p,{idToken:await authToken()});
+    var qs=function(q){return Object.keys(q).map(function(k){return k+'='+encodeURIComponent(q[k]);}).join('&');};
+    var r=await(await offFetch(API+'?'+qs(p),{},30000)).json();
+    if(AUTH.on&&r&&r.code==='AUTH'&&AUTH.me){p=Object.assign({},p,{idToken:await authToken(true)});r=await(await offFetch(API+'?'+qs(p),{},30000)).json();}
+    if(r&&r.offline)throw new Error('offline');
+    offEstado(true);
+    if(r&&r.ok)gcIDB.set(key,{t:Date.now(),r:r});
+    return r;
+  }catch(e){
+    offEstado(false);
+    var c=await gcIDB.get(key);
+    if(c&&c.r){OFF.desdeCache=true;return Object.assign({},c.r,{_cache:c.t});}
+    return {ok:false,offline:true,error:'Sin conexión y sin copia guardada en este dispositivo'};
+  }
 }
 async function apiPost(b){
-  if(AUTH.on)b=Object.assign({},b,{idToken:await authToken()});
-  var r=await(await fetch(API,{method:'POST',body:JSON.stringify(b)})).json();
-  if(AUTH.on&&r&&r.code==='AUTH'&&AUTH.me){b=Object.assign({},b,{idToken:await authToken(true)});r=await(await fetch(API,{method:'POST',body:JSON.stringify(b)})).json();}
+  await OFF.ready;
+  if(!navigator.onLine)return offEncolar(b);
+  if(OFF.q.length){await offSync();if(OFF.q.length)return offEncolar(b);} // respetar el orden de los cambios
+  var r;
+  try{
+    if(AUTH.on)b=Object.assign({},b,{idToken:await authToken()});
+    r=await(await offFetch(API,{method:'POST',body:JSON.stringify(b)},45000)).json();
+    if(AUTH.on&&r&&r.code==='AUTH'&&AUTH.me){b=Object.assign({},b,{idToken:await authToken(true)});r=await(await offFetch(API,{method:'POST',body:JSON.stringify(b)},45000)).json();}
+  }catch(e){return offEncolar(b);}
+  if(r&&r.offline)return offEncolar(b);
+  offEstado(true);
   if(r&&r.code==='PERM'&&typeof toast==='function')toast(r.error||'Sin permiso','err');
   return r;
 }
@@ -2045,9 +2174,11 @@ window.onload=async function(){
     if(rR&&rR.ok) DB.resistencia=rR.items||[];
     if(rPE&&rPE.ok) DB.planExterno=rPE.items||[];
     await aplicarProgramasDelServidor(rP);
+    var restaurado=await offRestaurarSnapshot();
     // si rP no viene ok (backend todavía sin desplegar la actualización),
     // DB.programas se queda con lo cargado de localStorage más arriba.
-    setStatus('✅ Conectado','var(--green)');
+    if(OFF.desdeCache)setStatus('📴 Sin conexión · trabajando en local','#f59e0b');
+    else{setStatus('✅ Conectado','var(--green)');offSnapshot();}
   }catch(e){setStatus('❌ Sin conexión','var(--red)');}
   finally{
     // Decide si hay que pedir el código de acceso, tanto si la carga fue bien
@@ -2056,6 +2187,7 @@ window.onload=async function(){
     aplicarCodigoAcceso();
   }
   renderAtletas();renderEjercicios();renderTemplateList();renderProgramaList();renderCalendar();renderAjustes();renderResistencia();renderEquipos();renderPanel();
+  offPintar();if(OFF.q.length&&navigator.onLine)setTimeout(offSync,1000);
   document.addEventListener('click',function(e){if(!e.target.closest('.param-picker')&&!e.target.closest('.param-add-btn'))document.getElementById('param-picker').style.display='none';});
 };
 
