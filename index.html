@@ -776,7 +776,7 @@ function aplicarCodigoAcceso(){
     <div class="sb-group">Sistema</div>
     <div class="tab" onclick="switchTab('ajustes',this)"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg><span>Ajustes</span></div>
   </nav>
-  <div class="sb-foot"><div id="auth-chip" style="display:none;font-size:12px;color:#cbd5e1;margin-bottom:10px;line-height:1.4"></div><div style="font-size:10px;color:#64748b;margin-bottom:6px">versión 78</div><div class="status-badge" id="status">⏳ Conectando...</div></div>
+  <div class="sb-foot"><div id="auth-chip" style="display:none;font-size:12px;color:#cbd5e1;margin-bottom:10px;line-height:1.4"></div><div style="font-size:10px;color:#64748b;margin-bottom:6px">versión 80</div><div class="status-badge" id="status">⏳ Conectando...</div></div>
 </aside>
 <div class="sb-backdrop" onclick="closeSidebar()"></div>
 <div class="main">
@@ -1796,7 +1796,17 @@ function fechaLocalISO(d){ d=d||new Date(); return d.getFullYear()+'-'+String(d.
 var calYear, calMonth, selectedDate=null;
 var currentTemplate=null, isDirty=false, dragSrc=null;
 function tipoDeBloqueKey(key){return key.indexOf('::')>-1?key.split('::')[0]:key;}
-function getParamsCatalog(){return (DB.config.parametros_ejercicio&&DB.config.parametros_ejercicio.length)?DB.config.parametros_ejercicio:DEFAULT_PARAMS_CATALOG;}
+function getParamsCatalog(){var base=(DB.config.parametros_ejercicio&&DB.config.parametros_ejercicio.length)?DB.config.parametros_ejercicio:DEFAULT_PARAMS_CATALOG;var faltan=PARAMS_CARDIO.filter(function(p){return !base.some(function(b){return b.id===p.id;});});return faltan.length?base.concat(faltan):base;}
+// ── CARDIO / RESISTENCIA: tiempo + distancia → ritmo automático ──
+var PARAMS_CARDIO=[{id:'tiempo',label:'Tiempo',unidad:'min · mm:ss · s',type:'text'},{id:'distancia',label:'Distancia',unidad:'m · km',type:'text'},{id:'ritmo',label:'Ritmo',unidad:'min/km',type:'text'}];
+var CARDIO_PRESETS={'carrera-continua':{series:'1',tiempo:'30',distancia:'',rpe:'6',descanso:''},'sprints':{series:'6',tiempo:'',distancia:'30',rpe:'9',descanso:'2min'}};
+function esCardio(id){var e=(DB.ejercicios||{})[id]||{};return /cardio|resistencia/i.test(e.categoria||'');}
+function parseTiempoSeg(v){v=String(v||'').trim().toLowerCase().replace(',','.');if(!v)return 0;if(/^\d+(\.\d+)?\s*s(eg)?$/.test(v))return parseFloat(v);if(/^\d+(\.\d+)?\s*(min|')?$/.test(v))return parseFloat(v)*60;var q=v.split(':').map(Number);if(q.some(isNaN))return 0;if(q.length===2)return q[0]*60+q[1];if(q.length===3)return q[0]*3600+q[1]*60+q[2];return 0;}
+function parseDistM(v){v=String(v||'').trim().toLowerCase().replace(',','.');var n=parseFloat(v);if(!v||isNaN(n))return 0;return /km/.test(v)?n*1000:n;}
+function fmtRitmoKm(sk){if(!(sk>0)||!isFinite(sk))return '';var m=Math.floor(sk/60),x=Math.round(sk-m*60);if(x===60){m++;x=0;}return m+':'+String(x).padStart(2,'0');}
+function calcRitmo(t,d){var ts=parseTiempoSeg(t),dm=parseDistM(d);return (ts>0&&dm>0)?fmtRitmoKm(ts/(dm/1000)):'';}
+function cardioRitmo(ex,k){var pt=stbParam(ex,'tiempo',false),pd=stbParam(ex,'distancia',false);if(!pt||!pd)return;var n=stbN(ex),arr=[];for(var j=0;j<n;j++)arr.push(calcRitmo(valSerie(pt.val,j),valSerie(pd.val,j)));if(!arr.some(Boolean))return;var pr=stbParam(ex,'ritmo',true);pr.val=stbJoin(arr);if(k!=null)for(var j2=0;j2<n;j2++){var el=document.querySelector('[data-stb="'+k+'|ritmo|'+j2+'"]');if(el)el.value=valSerie(pr.val,j2);}}
+function exDefaultParams(id,conKg){if(esCardio(id)){var pr=CARDIO_PRESETS[id]||{series:'1',tiempo:'',distancia:'',rpe:'',descanso:''};return [{id:'series',val:pr.series},{id:'tiempo',val:pr.tiempo},{id:'distancia',val:pr.distancia},{id:'ritmo',val:calcRitmo(pr.tiempo,pr.distancia)},{id:'rpe',val:pr.rpe},{id:'descanso',val:pr.descanso}];}var q=[{id:'series',val:'3'},{id:'reps',val:'10'}];if(conKg)q.push({id:'kg',val:''});q.push({id:'descanso',val:'90s'});return q;}
 var editingEjId=null, currentImageUrl='', detailEjId=null;
 var selectedContr=[], selectedMat=[], selectedGrupos=[];
 var filterContr=null, filterMat=null, filterCat=null, filterGrupo=null;
@@ -2879,7 +2889,7 @@ function bgRender(){
     +'<select onchange="bgAddEx(this)" style="margin-top:12px;padding:9px 12px;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);max-width:100%">'+exOpts+'</select>';
 }
 function bgParam(i,id,v){var ex=BG.cur.ex[i];var p=(ex.params||[]).find(function(x){return x.id===id;});if(p)p.val=v;else{ex.params=ex.params||[];ex.params.push({id:id,val:v});}BG.dirty=true;}
-function bgAddEx(sel){if(!sel.value)return;BG.cur.ex.push({id:sel.value,params:[{id:'series',val:'3'},{id:'reps',val:'10'},{id:'descanso',val:'90s'}]});BG.dirty=true;bgRender();}
+function bgAddEx(sel){if(!sel.value)return;BG.cur.ex.push({id:sel.value,params:exDefaultParams(sel.value,false)});BG.dirty=true;bgRender();}
 function bgQuitaEx(i){BG.cur.ex.splice(i,1);BG.dirty=true;bgRender();}
 async function bgGuardar(){
   if(!BG.cur.nombre.trim()){toast('Ponle nombre al bloque','err');return;}
@@ -4494,6 +4504,11 @@ var ejPickerFilterCat=null, ejPickerFilterGrupo=null;
 function openEjPicker(context,bloqueId){
   ejPickerTarget={context:context,bloqueId:bloqueId};
   ejPickerFilterCat=null;ejPickerFilterGrupo=null;
+  // Bloque de resistencia: abrir el selector filtrado por ejercicios de carrera/cardio
+  if(bloqueId&&tipoDeBloqueKey(String(bloqueId))==='resistencia'){
+    var _ejs=Object.values(DB.ejercicios||{});
+    ['Resistencia','Cardio'].some(function(c){if(_ejs.some(function(e){return e.categoria===c;})){ejPickerFilterCat=c;return true;}return false;});
+  }
   document.getElementById('ejpick-search').value='';
   renderEjPickerFilters();
   renderEjPickerList();
@@ -4529,7 +4544,7 @@ function pickEjercicio(id){
   var bloqueId=ejPickerTarget.bloqueId;
   if(ejPickerTarget.context==='template'){
     if(!currentTemplate.bloques[bloqueId])currentTemplate.bloques[bloqueId]=[];
-    currentTemplate.bloques[bloqueId].push({id:id,params:[{id:'series',val:'3'},{id:'reps',val:'10'},{id:'descanso',val:'90s'}]});
+    currentTemplate.bloques[bloqueId].push({id:id,params:exDefaultParams(id,false)});
     markDirty();renderBloqueExs(bloqueId);
   } else if(ejPickerTarget.context==='programa-swap'){
     var pw=psMat(psCtx.wi,psCtx.dk),tgt=(pw.bloques[bloqueId]||[])[psCtx.ei];
@@ -4537,12 +4552,12 @@ function pickEjercicio(id){
   } else if(ejPickerTarget.context==='programa'){
     var ps=psMat(psCtx.wi,psCtx.dk);
     if(!ps.bloques[bloqueId])ps.bloques[bloqueId]=[];
-    ps.bloques[bloqueId].push({id:id,params:[{id:'series',val:'3'},{id:'reps',val:'10'},{id:'kg',val:''},{id:'descanso',val:'90s'}]});
+    ps.bloques[bloqueId].push({id:id,params:exDefaultParams(id,true)});
     psOpen[psCtx.wi+'|'+psCtx.dk+'|'+bloqueId]=true;
     markDirtyPrograma();renderProgramaBoard();renderProgramaList();
   } else {
     if(!editingSesion.bloques[bloqueId])editingSesion.bloques[bloqueId]=[];
-    editingSesion.bloques[bloqueId].push({id:id,params:[{id:'series',val:'3'},{id:'reps',val:'10'},{id:'kg',val:''},{id:'descanso',val:'90s'}]});
+    editingSesion.bloques[bloqueId].push({id:id,params:exDefaultParams(id,true)});
     renderSesionBloqueExs(bloqueId);
   }
   closeModal('ejpicker');
@@ -4639,7 +4654,7 @@ function removeBloqueFromTemplate(bloqueId){
   markDirty();
   renderBloques();
 }
-function addExToBloque(bloqueId,sel){var id=sel.value;if(!id)return;if(!currentTemplate.bloques[bloqueId])currentTemplate.bloques[bloqueId]=[];currentTemplate.bloques[bloqueId].push({id:id,params:[{id:'series',val:'3'},{id:'reps',val:'10'},{id:'descanso',val:'90s'}]});markDirty();sel.value='';renderBloqueExs(bloqueId);}
+function addExToBloque(bloqueId,sel){var id=sel.value;if(!id)return;if(!currentTemplate.bloques[bloqueId])currentTemplate.bloques[bloqueId]=[];currentTemplate.bloques[bloqueId].push({id:id,params:exDefaultParams(id,false)});markDirty();sel.value='';renderBloqueExs(bloqueId);}
 function renderBloqueExs(bloqueId){
   var list=document.getElementById('blist-'+bloqueId);if(!list)return;
   var exs=currentTemplate.bloques[bloqueId]||[];list.innerHTML='';
@@ -4684,7 +4699,7 @@ function serieEditar(ev,btn){
   setTimeout(function(){document.addEventListener('click',function c(){var pp=document.getElementById('serie-pop');if(pp)pp.remove();document.removeEventListener('click',c);});},0);
 }
 // ═══ TABLA DE SERIES (estilo Bridge): una fila por serie, columnas = parámetros por serie ═══
-var SET_PARAMS=['reps','kg','pct_rm','rpe','rir','duracion','distancia','descanso'];
+var SET_PARAMS=['reps','kg','pct_rm','rpe','rir','tiempo','duracion','distancia','ritmo','descanso'];
 var STB={ref:[]};
 function stbEsSerie(pid){return SET_PARAMS.indexOf(pid)>=0;}
 function stbN(ex){var s=parseInt(getParamVal(ex,'series'),10);if(s>0)return Math.min(s,20);var m=1;(ex.params||[]).forEach(function(p){if(stbEsSerie(p.id))m=Math.max(m,String(p.val||'').split('/').length);});return m;}
@@ -4696,10 +4711,10 @@ function stbHtml(ex,ctx){
   cols.sort(function(a,b){return SET_PARAMS.indexOf(a.p.id)-SET_PARAMS.indexOf(b.p.id);});
   var cat=getParamsCatalog();
   var h='<div class="stb" onclick="event.stopPropagation()"><table><tr><th class="stb-n">Serie</th>'+cols.map(function(o){var c=cat.find(function(x){return x.id===o.p.id;})||{label:o.p.id};
-    var corto={reps:'Reps',kg:'Kg',pct_rm:'%',rpe:'RPE',rir:'RIR',duracion:'Tiempo',distancia:'Dist.',descanso:'Desc.'}[o.p.id]||c.label;
+    var corto={reps:'Reps',kg:'Kg',pct_rm:'%',rpe:'RPE',rir:'RIR',tiempo:'Tiempo',duracion:'Seg.',distancia:'Dist.',ritmo:'Ritmo /km',descanso:'Desc.'}[o.p.id]||c.label;
     return '<th title="'+escAttr(c.label+(c.unidad?' ('+c.unidad+')':''))+'">'+escapeHtml(corto)+'<span class="stb-x" title="Quitar columna" onclick="stbDelCol('+k+',\''+o.p.id+'\')">✕</span></th>';}).join('')+'</tr>';
   for(var i=0;i<n;i++){
-    h+='<tr><td class="stb-n">'+(i+1)+'</td>'+cols.map(function(o){return '<td><input value="'+escAttr(valSerie(o.p.val,i))+'" oninput="stbSet('+k+',\''+o.p.id+'\','+i+',this.value)" onclick="this.select()"></td>';}).join('')+'</tr>';
+    h+='<tr><td class="stb-n">'+(i+1)+'</td>'+cols.map(function(o){return '<td><input data-stb="'+k+'|'+o.p.id+'|'+i+'" value="'+escAttr(valSerie(o.p.val,i))+'" oninput="stbSet('+k+',\''+o.p.id+'\','+i+',this.value)" onclick="this.select()"></td>';}).join('')+'</tr>';
   }
   h+='</table><div class="stb-acc"><button type="button" class="btn btn-secondary btn-xs" onclick="stbSeries('+k+',1)">+ serie</button>'+(n>1?'<button type="button" class="btn btn-secondary btn-xs" onclick="stbSeries('+k+',-1)">− serie</button>':'')+(cols.length?'':'<span style="font-size:11px;color:var(--text-muted)">Añade reps, kg, RPE… con «+ param»</span>')+'</div></div>';
   return h;
@@ -4708,7 +4723,9 @@ function stbParam(ex,pid,crear){ex.params=ex.params||[];var p=ex.params.find(fun
 function stbSet(k,pid,i,v){
   var c=STB.ref[k];if(!c)return;var ex=c.get();if(!ex)return;var p=stbParam(ex,pid,true),n=stbN(ex);
   var arr=[];for(var j=0;j<n;j++)arr.push(valSerie(p.val,j));arr[i]=v;
-  p.val=stbJoin(arr);c.dirty();
+  p.val=stbJoin(arr);
+  if(pid==='tiempo'||pid==='distancia')cardioRitmo(ex,k);
+  c.dirty();
 }
 function stbSeries(k,d){
   var c=STB.ref[k];if(!c)return;var ex=c.get();if(!ex)return;var n=stbN(ex),nn=Math.max(1,Math.min(20,n+d));
@@ -4991,7 +5008,11 @@ function psBlockHtml(wi,dk,ses,bid){
       var thumb=db.imagen?'<img src="'+escAttr(db.imagen)+'" referrerpolicy="no-referrer" loading="lazy">':'<span>💪</span>';
       var resumen=[];
       var se=getParamVal(ex,'series'),re=getParamVal(ex,'reps'),kg=getParamVal(ex,'kg'),de=getParamVal(ex,'descanso');
-      if(se||re)resumen.push((se||'–')+' × '+(re||'–'));
+      var ti=getParamVal(ex,'tiempo'),di=getParamVal(ex,'distancia'),ri=getParamVal(ex,'ritmo');
+      if(re||(se&&!ti&&!di))resumen.push((se||'–')+' × '+(re||'–'));else if(se&&se!=='1')resumen.push(se+' ×');
+      if(di)resumen.push(di+(/[a-z]/i.test(di)?'':' m'));
+      if(ti)resumen.push(ti+(/[:a-z']/i.test(ti)?'':' min'));
+      if(ri)resumen.push(ri+'/km');
       if(kg)resumen.push(kg+' kg');
       if(de)resumen.push('desc. '+de);
       h+='<div class="ps-ex'+(exOpen?' open':'')+'"><div class="ps-ex-top" onclick="psToggleEx('+base+')">'
@@ -6599,7 +6620,7 @@ function updateSesionParam(b,ei,pi,v){if(editingSesion.bloques[b]&&editingSesion
 function removeSesionParam(b,ei,pi){if(!editingSesion.bloques[b]||!editingSesion.bloques[b][ei])return;editingSesion.bloques[b][ei].params.splice(pi,1);renderSesionBloqueExs(b);}
 function showSesionParamPicker(e,bloqueId,exIdx){e.stopPropagation();var picker=document.getElementById('param-picker');var existing=(editingSesion.bloques[bloqueId][exIdx].params||[]).map(function(p){return p.id;});var available=getParamsCatalog().filter(function(p){return !existing.includes(p.id);});if(!available.length){toast('Todos los parámetros añadidos');return;}picker.innerHTML=available.map(function(p){return '<div class="param-picker-item" onclick="addSesionParam(\''+bloqueId+'\','+exIdx+',\''+p.id+'\')">'+p.label+(p.unidad?' <span style="color:var(--text-muted);">('+p.unidad+')</span>':'')+'</div>';}).join('');positionPicker(picker,e.target.getBoundingClientRect());}
 function addSesionParam(b,ei,pid){var cat=getParamsCatalog().find(function(c){return c.id===pid;});var val=cat&&cat.type==='select'&&cat.options?cat.options[0]:'';editingSesion.bloques[b][ei].params.push({id:pid,val:val});document.getElementById('param-picker').style.display='none';renderSesionBloqueExs(b);}
-function addExToSesionBloque(bloqueId,sel){var id=sel.value;if(!id)return;if(!editingSesion.bloques[bloqueId])editingSesion.bloques[bloqueId]=[];editingSesion.bloques[bloqueId].push({id:id,params:[{id:'series',val:'3'},{id:'reps',val:'10'},{id:'kg',val:''},{id:'descanso',val:'90s'}]});sel.value='';renderSesionBloques();}
+function addExToSesionBloque(bloqueId,sel){var id=sel.value;if(!id)return;if(!editingSesion.bloques[bloqueId])editingSesion.bloques[bloqueId]=[];editingSesion.bloques[bloqueId].push({id:id,params:exDefaultParams(id,true)});sel.value='';renderSesionBloques();}
 function moveBloqueSesion(bloqueId,dir){
   var ids=Object.keys(editingSesion.bloques),i=ids.indexOf(bloqueId),j=i+dir;
   if(i<0||j<0||j>=ids.length)return;
