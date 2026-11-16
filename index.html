@@ -666,7 +666,7 @@ input:focus,select:focus,textarea:focus{border-color:#8aa0d6 !important;box-shad
 .stb{margin:8px 0 6px;overflow-x:auto}.stb table{border-collapse:collapse;width:100%;font-size:12.5px;background:var(--surface)}
 .stb th{font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.02em;padding:5px 2px;text-align:center;background:var(--surface2);border-bottom:1px solid var(--border);white-space:nowrap}
 .stb td{border-bottom:1px solid var(--border);padding:2px 3px;text-align:center}
-.stb td input{width:100%;min-width:30px;max-width:90px;border:1px solid transparent;background:transparent;text-align:center;padding:5px 2px;font-size:13px;font-weight:600;color:var(--text);border-radius:5px}
+.stb td input{width:auto;min-width:34px;max-width:none;border:1px solid transparent;background:transparent;text-align:center;padding:5px 2px;font-size:13px;font-weight:600;color:var(--text);border-radius:5px}
 .stb td input:hover{border-color:var(--border)}.stb td input:focus{border-color:var(--accent);background:var(--surface);outline:none}
 .stb .stb-n{width:30px;color:var(--text-muted);font-weight:600}
 .stb-x{cursor:pointer;opacity:0;margin-left:2px;font-size:9px}.stb th:hover .stb-x{opacity:.6}.stb-x:hover{opacity:1;color:#dc2626}
@@ -776,7 +776,7 @@ function aplicarCodigoAcceso(){
     <div class="sb-group">Sistema</div>
     <div class="tab" onclick="switchTab('ajustes',this)"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg><span>Ajustes</span></div>
   </nav>
-  <div class="sb-foot"><div id="auth-chip" style="display:none;font-size:12px;color:#cbd5e1;margin-bottom:10px;line-height:1.4"></div><div style="font-size:10px;color:#64748b;margin-bottom:6px">versión 80</div><div class="status-badge" id="status">⏳ Conectando...</div></div>
+  <div class="sb-foot"><div id="auth-chip" style="display:none;font-size:12px;color:#cbd5e1;margin-bottom:10px;line-height:1.4"></div><div style="font-size:10px;color:#64748b;margin-bottom:6px">versión 81</div><div class="status-badge" id="status">⏳ Conectando...</div></div>
 </aside>
 <div class="sb-backdrop" onclick="closeSidebar()"></div>
 <div class="main">
@@ -1805,7 +1805,7 @@ function parseTiempoSeg(v){v=String(v||'').trim().toLowerCase().replace(',','.')
 function parseDistM(v){v=String(v||'').trim().toLowerCase().replace(',','.');var n=parseFloat(v);if(!v||isNaN(n))return 0;return /km/.test(v)?n*1000:n;}
 function fmtRitmoKm(sk){if(!(sk>0)||!isFinite(sk))return '';var m=Math.floor(sk/60),x=Math.round(sk-m*60);if(x===60){m++;x=0;}return m+':'+String(x).padStart(2,'0');}
 function calcRitmo(t,d){var ts=parseTiempoSeg(t),dm=parseDistM(d);return (ts>0&&dm>0)?fmtRitmoKm(ts/(dm/1000)):'';}
-function cardioRitmo(ex,k){var pt=stbParam(ex,'tiempo',false),pd=stbParam(ex,'distancia',false);if(!pt||!pd)return;var n=stbN(ex),arr=[];for(var j=0;j<n;j++)arr.push(calcRitmo(valSerie(pt.val,j),valSerie(pd.val,j)));if(!arr.some(Boolean))return;var pr=stbParam(ex,'ritmo',true);pr.val=stbJoin(arr);if(k!=null)for(var j2=0;j2<n;j2++){var el=document.querySelector('[data-stb="'+k+'|ritmo|'+j2+'"]');if(el)el.value=valSerie(pr.val,j2);}}
+function cardioRitmo(ex,k){var pt=stbParam(ex,'tiempo',false),pd=stbParam(ex,'distancia',false);if(!pt||!pd)return;var n=stbN(ex),arr=[];for(var j=0;j<n;j++)arr.push(calcRitmo(valSerie(pt.val,j),valSerie(pd.val,j)));if(!arr.some(Boolean))return;var pr=stbParam(ex,'ritmo',true);pr.val=stbJoin(arr);if(k!=null)for(var j2=0;j2<n;j2++){var el=document.querySelector('[data-stb="'+k+'|ritmo|'+j2+'"]');if(el){el.value=valSerie(pr.val,j2);el.style.width=Math.max(3,el.value.length+1)+'ch';}}}
 function exDefaultParams(id,conKg){if(esCardio(id)){var pr=CARDIO_PRESETS[id]||{series:'1',tiempo:'',distancia:'',rpe:'',descanso:''};return [{id:'series',val:pr.series},{id:'tiempo',val:pr.tiempo},{id:'distancia',val:pr.distancia},{id:'ritmo',val:calcRitmo(pr.tiempo,pr.distancia)},{id:'rpe',val:pr.rpe},{id:'descanso',val:pr.descanso}];}var q=[{id:'series',val:'3'},{id:'reps',val:'10'}];if(conKg)q.push({id:'kg',val:''});q.push({id:'descanso',val:'90s'});return q;}
 var editingEjId=null, currentImageUrl='', detailEjId=null;
 var selectedContr=[], selectedMat=[], selectedGrupos=[];
@@ -4699,7 +4699,7 @@ function serieEditar(ev,btn){
   setTimeout(function(){document.addEventListener('click',function c(){var pp=document.getElementById('serie-pop');if(pp)pp.remove();document.removeEventListener('click',c);});},0);
 }
 // ═══ TABLA DE SERIES (estilo Bridge): una fila por serie, columnas = parámetros por serie ═══
-var SET_PARAMS=['reps','kg','pct_rm','rpe','rir','tiempo','duracion','distancia','ritmo','descanso'];
+var SET_PARAMS=['reps','kg','pct_rm','tiempo','duracion','distancia','ritmo','rpe','rir','descanso'];
 var STB={ref:[]};
 function stbEsSerie(pid){return SET_PARAMS.indexOf(pid)>=0;}
 function stbN(ex){var s=parseInt(getParamVal(ex,'series'),10);if(s>0)return Math.min(s,20);var m=1;(ex.params||[]).forEach(function(p){if(stbEsSerie(p.id))m=Math.max(m,String(p.val||'').split('/').length);});return m;}
@@ -4711,10 +4711,10 @@ function stbHtml(ex,ctx){
   cols.sort(function(a,b){return SET_PARAMS.indexOf(a.p.id)-SET_PARAMS.indexOf(b.p.id);});
   var cat=getParamsCatalog();
   var h='<div class="stb" onclick="event.stopPropagation()"><table><tr><th class="stb-n">Serie</th>'+cols.map(function(o){var c=cat.find(function(x){return x.id===o.p.id;})||{label:o.p.id};
-    var corto={reps:'Reps',kg:'Kg',pct_rm:'%',rpe:'RPE',rir:'RIR',tiempo:'Tiempo',duracion:'Seg.',distancia:'Dist.',ritmo:'Ritmo /km',descanso:'Desc.'}[o.p.id]||c.label;
+    var corto={reps:'Reps',kg:'Kg',pct_rm:'%',rpe:'RPE',rir:'RIR',tiempo:'Tiempo',duracion:'Seg.',distancia:'Dist.',ritmo:'Ritmo',descanso:'Desc.'}[o.p.id]||c.label;
     return '<th title="'+escAttr(c.label+(c.unidad?' ('+c.unidad+')':''))+'">'+escapeHtml(corto)+'<span class="stb-x" title="Quitar columna" onclick="stbDelCol('+k+',\''+o.p.id+'\')">✕</span></th>';}).join('')+'</tr>';
   for(var i=0;i<n;i++){
-    h+='<tr><td class="stb-n">'+(i+1)+'</td>'+cols.map(function(o){return '<td><input data-stb="'+k+'|'+o.p.id+'|'+i+'" value="'+escAttr(valSerie(o.p.val,i))+'" oninput="stbSet('+k+',\''+o.p.id+'\','+i+',this.value)" onclick="this.select()"></td>';}).join('')+'</tr>';
+    h+='<tr><td class="stb-n">'+(i+1)+'</td>'+cols.map(function(o){return '<td><input data-stb="'+k+'|'+o.p.id+'|'+i+'" style="width:'+Math.max(3,String(valSerie(o.p.val,i)).length+1)+'ch" value="'+escAttr(valSerie(o.p.val,i))+'" oninput="this.style.width=Math.max(3,this.value.length+1)+\'ch\';stbSet('+k+',\''+o.p.id+'\','+i+',this.value)" onclick="this.select()"></td>';}).join('')+'</tr>';
   }
   h+='</table><div class="stb-acc"><button type="button" class="btn btn-secondary btn-xs" onclick="stbSeries('+k+',1)">+ serie</button>'+(n>1?'<button type="button" class="btn btn-secondary btn-xs" onclick="stbSeries('+k+',-1)">− serie</button>':'')+(cols.length?'':'<span style="font-size:11px;color:var(--text-muted)">Añade reps, kg, RPE… con «+ param»</span>')+'</div></div>';
   return h;
