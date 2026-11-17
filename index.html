@@ -776,7 +776,7 @@ function aplicarCodigoAcceso(){
     <div class="sb-group">Sistema</div>
     <div class="tab" onclick="switchTab('ajustes',this)"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg><span>Ajustes</span></div>
   </nav>
-  <div class="sb-foot"><div id="auth-chip" style="display:none;font-size:12px;color:#cbd5e1;margin-bottom:10px;line-height:1.4"></div><div style="font-size:10px;color:#64748b;margin-bottom:6px">versión 81</div><div class="status-badge" id="status">⏳ Conectando...</div></div>
+  <div class="sb-foot"><div id="auth-chip" style="display:none;font-size:12px;color:#cbd5e1;margin-bottom:10px;line-height:1.4"></div><div style="font-size:10px;color:#64748b;margin-bottom:6px">versión 82</div><div class="status-badge" id="status">⏳ Conectando...</div></div>
 </aside>
 <div class="sb-backdrop" onclick="closeSidebar()"></div>
 <div class="main">
@@ -1799,7 +1799,7 @@ function tipoDeBloqueKey(key){return key.indexOf('::')>-1?key.split('::')[0]:key
 function getParamsCatalog(){var base=(DB.config.parametros_ejercicio&&DB.config.parametros_ejercicio.length)?DB.config.parametros_ejercicio:DEFAULT_PARAMS_CATALOG;var faltan=PARAMS_CARDIO.filter(function(p){return !base.some(function(b){return b.id===p.id;});});return faltan.length?base.concat(faltan):base;}
 // ── CARDIO / RESISTENCIA: tiempo + distancia → ritmo automático ──
 var PARAMS_CARDIO=[{id:'tiempo',label:'Tiempo',unidad:'min · mm:ss · s',type:'text'},{id:'distancia',label:'Distancia',unidad:'m · km',type:'text'},{id:'ritmo',label:'Ritmo',unidad:'min/km',type:'text'}];
-var CARDIO_PRESETS={'carrera-continua':{series:'1',tiempo:'30',distancia:'',rpe:'6',descanso:''},'sprints':{series:'6',tiempo:'',distancia:'30',rpe:'9',descanso:'2min'}};
+var CARDIO_PRESETS={'carrera-continua':{series:'1',tiempo:'30',distancia:'',rpe:'6',descanso:''},'sprints':{series:'6',tiempo:'',distancia:'30',rpe:'9',descanso:'2min'},'bicicleta-spinning':{series:'1',tiempo:'30',distancia:'',rpe:'6',descanso:''}};
 function esCardio(id){var e=(DB.ejercicios||{})[id]||{};return /cardio|resistencia/i.test(e.categoria||'');}
 function parseTiempoSeg(v){v=String(v||'').trim().toLowerCase().replace(',','.');if(!v)return 0;if(/^\d+(\.\d+)?\s*s(eg)?$/.test(v))return parseFloat(v);if(/^\d+(\.\d+)?\s*(min|')?$/.test(v))return parseFloat(v)*60;var q=v.split(':').map(Number);if(q.some(isNaN))return 0;if(q.length===2)return q[0]*60+q[1];if(q.length===3)return q[0]*3600+q[1]*60+q[2];return 0;}
 function parseDistM(v){v=String(v||'').trim().toLowerCase().replace(',','.');var n=parseFloat(v);if(!v||isNaN(n))return 0;return /km/.test(v)?n*1000:n;}
@@ -4876,6 +4876,7 @@ async function peQuitar(nombre){
   var c;
   try{c=await apiPost({action:'quitarDelPrograma',id:currentPrograma.id,atleta:nombre,soloContar:true});}
   catch(e){toast('⚠️ Sin conexión con el servidor','err');return;}
+  if(c&&!c.ok&&/no reconocida/i.test(c.error||'')){return peQuitarLocal(nombre,guardado);}
   if(!c||!c.ok){if(!c||c.code!=='PERM')toast('⚠️ '+((c&&c.error)||'No se pudo')+(c&&/no reconocida/i.test(c.error||'')?' · falta actualizar el backend (Código.gs)':''),'err');return;}
   var msg='Sacar a '+nombre+' de «'+guardado.name+'»:\n\n'
     +(c.aBorrar?'• Se borrarán de su calendario '+c.aBorrar+(c.aBorrar===1?' sesión':' sesiones')+' de este plan, de hoy en adelante.\n':'• No tiene sesiones pendientes de este plan.\n')
@@ -4888,6 +4889,33 @@ async function peQuitar(nombre){
     toast('✅ '+nombre.split(' ')[0]+' fuera de «'+guardado.name+'»'+(r.borradas?' · '+r.borradas+(r.borradas===1?' sesión borrada':' sesiones borradas'):''));
     try{var rs=await api({action:'getAllSesiones'});if(rs&&rs.ok){DB.sesiones=rs.sesiones||DB.sesiones;if(typeof renderCalendar==='function')renderCalendar();}}catch(e){}
   }catch(e){toast('⚠️ Sin conexión con el servidor','err');return;}
+  renderPeAsignados();
+}
+// Sacar a un atleta del plan sin la acción del servidor: borra sus sesiones de este plan
+// de hoy en adelante que no haya registrado y deja de ampliarle el plan.
+async function peQuitarLocal(nombre,guardado){
+  var hoy=fechaLocalISO(new Date()),pref=(guardado.name||'')+' · S';
+  var norm=function(x){return String(x||'').replace(/\s+/g,' ').trim().toLowerCase();};
+  try{var rs0=await api({action:'getAllSesiones'});if(rs0&&rs0.ok)DB.sesiones=rs0.sesiones||DB.sesiones;}catch(e){}
+  var hechas={};
+  try{var h=await api({action:'getHistorial',atleta:nombre});((h&&h.registros)||[]).forEach(function(x){if(x.sesion_id)hechas[x.sesion_id]=1;});}catch(e){}
+  var mias=(DB.sesiones||[]).filter(function(s){return norm(s.atleta)===norm(nombre)&&String(s.nombre||'').indexOf(pref)===0;});
+  var borrar=mias.filter(function(s){return String(s.fecha||'')>=hoy&&!hechas[s.id];});
+  var cons=mias.length-borrar.length;
+  var msg='Sacar a '+nombre+' de «'+guardado.name+'»:\n\n'
+    +(borrar.length?'• Se borrarán de su calendario '+borrar.length+(borrar.length===1?' sesión':' sesiones')+' de este plan, de hoy en adelante.\n':'• No tiene sesiones pendientes de este plan.\n')
+    +(cons?'• Se conservan '+cons+(cons===1?' sesión anterior o ya registrada':' sesiones anteriores o ya registradas')+' (su historial).\n':'')
+    +'• No se le añadirán más semanas de este plan.\n\n¿Continuar?';
+  if(!confirm(msg))return;
+  if(cons){try{await apiPost({action:'seguirPrograma',id:guardado.id,atleta:nombre,activo:false});}catch(e){}}
+  var ok=0;
+  for(var i=0;i<borrar.length;i++){
+    toast('Quitando sesiones… '+(i+1)+'/'+borrar.length);
+    try{var r=await apiPost({action:'deleteSesion',id:borrar[i].id});if(r&&r.ok){ok++;var bid=borrar[i].id;DB.sesiones=DB.sesiones.filter(function(s){return s.id!==bid;});}}catch(e){}
+    if(i<borrar.length-1)await new Promise(function(r){setTimeout(r,700);});
+  }
+  toast('✅ '+nombre.split(' ')[0]+' fuera de «'+guardado.name+'»'+(ok?' · '+ok+(ok===1?' sesión borrada':' sesiones borradas'):'')+(ok<borrar.length?' · '+(borrar.length-ok)+' no se pudieron borrar':''));
+  try{if(typeof renderCalendar==='function')renderCalendar();}catch(e){}
   renderPeAsignados();
 }
 async function renderPeAsignados(){
@@ -4927,6 +4955,24 @@ function psSesion(wi,dk){
   if(w.sesiones&&w.sesiones[dk])return w.sesiones[dk];
   var t=psTpl((w.dias||{})[dk]);
   return t?{nombre:t.name,tplId:t.id,bloques:t.bloques||{},bloqueMeta:t.bloqueMeta||{},_tpl:true}:null;
+}
+// ── Copiar / pegar un bloque entre días y semanas del plan ──
+var PS_BLQ_CLIP=null;
+function psCopyBloque(wi,dk,bid){
+  var s=psSesion(wi,dk);if(!s||!s.bloques[bid])return;
+  var m=resolveBloqueMeta(bid,s);
+  PS_BLQ_CLIP={tipo:tipoDeBloqueKey(bid),meta:{name:m.name||'',color:m.color||''},exs:JSON.parse(JSON.stringify(s.bloques[bid]))};
+  toast('⧉ Bloque «'+(m.name||'')+'» copiado · pulsa «📋 Pegar bloque» en el día que quieras (también en otra semana)');
+  renderProgramaBoard();
+}
+function psPasteBloque(wi,dk){
+  if(!PS_BLQ_CLIP)return;
+  var s=psMat(wi,dk);s.bloques=s.bloques||{};s.bloqueMeta=s.bloqueMeta||{};
+  var key=PS_BLQ_CLIP.tipo+'::'+Date.now().toString(36);
+  s.bloques[key]=JSON.parse(JSON.stringify(PS_BLQ_CLIP.exs));
+  s.bloqueMeta[key]=JSON.parse(JSON.stringify(PS_BLQ_CLIP.meta));
+  markDirtyPrograma();renderProgramaBoard();
+  toast('📋 Bloque pegado · recuerda Guardar el plan');
 }
 function psMat(wi,dk){
   var w=currentPrograma.weeks[wi];
@@ -5000,7 +5046,8 @@ function psBlockHtml(wi,dk,ses,bid){
     +'<span>'+(open?'▾':'▸')+'</span><span class="ps-bn">'+escapeHtml(meta.name)+'</span><span class="ps-bc">'+exs.length+(exs.length===1?' ejercicio':' ejercicios')+'</span></div>';
   if(open){
     h+='<div class="ps-block-body"><input class="ps-bname" value="'+escAttr(meta.name)+'" placeholder="Nombre del bloque" oninput="psRenBloque('+wi+','+dk+",'"+bid+"',this.value)\">"
-      +'<button class="btn btn-secondary btn-xs ps-blsave" title="Guardar este bloque en la biblioteca para reutilizarlo" onclick="psBlGuardar('+wi+','+dk+",'"+bid+"')\">💾 Guardar en biblioteca</button>";
+      +'<button class="btn btn-secondary btn-xs ps-blsave" title="Guardar este bloque en la biblioteca para reutilizarlo" onclick="psBlGuardar('+wi+','+dk+",'"+bid+"')\">💾 Guardar en biblioteca</button>"
+      +' <button class="btn btn-secondary btn-xs ps-blsave" title="Copiar este bloque para pegarlo en otro día o semana" onclick="psCopyBloque('+wi+','+dk+",'"+bid+"')\">⧉ Copiar bloque</button>";
     exs.forEach(function(ex,ei){
       var db=DB.ejercicios[ex.id]||{nombre:ex.id};
       var base=wi+','+dk+",'"+bid+"',"+ei;
@@ -5060,12 +5107,12 @@ function psDayHtml(wi,di){
     if(custom&&ses.tplId&&psTpl(ses.tplId))h+='<div style="margin-top:6px"><button class="ps-mini" onclick="psRestore('+wi+','+dk+')">↺ Volver a la plantilla original</button></div>';
   }
   h+='</div>';
-  if(!ses){h+='<div class="ps-rest">Descanso</div>';}
+  if(!ses){h+='<div class="ps-rest">Descanso'+(PS_BLQ_CLIP?'<div style="margin-top:8px"><button class="btn btn-secondary btn-xs" onclick="psPasteBloque('+wi+','+dk+')">📋 Pegar bloque «'+escapeHtml(PS_BLQ_CLIP.meta.name||'')+'»</button></div>':'')+'</div>';}
   else{
     var ids=Object.keys(ses.bloques);
     if(!ids.length)h+='<div class="ps-rest">Sin bloques todavía</div>';
     ids.forEach(function(bid){h+=psBlockHtml(wi,dk,ses,bid);});
-    h+='<div class="ps-foot"><button class="btn btn-secondary btn-xs" onclick="psAddBloque('+wi+','+dk+')">+ Añadir bloque</button> <button class="btn btn-secondary btn-xs" title="Elegir un bloque de la biblioteca" onclick="psBlInsertar('+wi+','+dk+')">🧱 Insertar bloque</button> <button class="btn btn-secondary btn-xs" title="Guarda esta sesión en la pestaña Programas, fuera del plan" onclick="psGuardarComoPrograma('+wi+','+dk+')">💾 Guardar como programa</button></div>';
+    h+='<div class="ps-foot"><button class="btn btn-secondary btn-xs" onclick="psAddBloque('+wi+','+dk+')">+ Añadir bloque</button> <button class="btn btn-secondary btn-xs" title="Elegir un bloque de la biblioteca" onclick="psBlInsertar('+wi+','+dk+')">🧱 Insertar bloque</button> <button class="btn btn-secondary btn-xs" title="Guarda esta sesión en la pestaña Programas, fuera del plan" onclick="psGuardarComoPrograma('+wi+','+dk+')">💾 Guardar como programa</button>'+(PS_BLQ_CLIP?' <button class="btn btn-primary btn-xs" title="Pegar aquí el bloque copiado" onclick="psPasteBloque('+wi+','+dk+')">📋 Pegar bloque «'+escapeHtml(PS_BLQ_CLIP.meta.name||'')+'»</button>':'')+'</div>';
   }
   return h+'</div>';
 }
