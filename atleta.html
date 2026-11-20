@@ -1602,7 +1602,7 @@ async function syncGarminAhora(){
 // Valores distintos por serie: "40/45/50" → serie 1 = 40, serie 2 = 45, serie 3 = 50 (si faltan, se repite el último)
 // ── Cardio / resistencia: tiempo + distancia → ritmo ──
 function gpv(ex,id){var p=((ex&&ex.params)||[]).find(function(q){return q.id===id;});return p?String(p.val==null?'':p.val):'';}
-function esCardioEx(ex){return !!(ex&&(gpv(ex,'tiempo')||gpv(ex,'distancia')||gpv(ex,'ritmo')));}
+function esCardioEx(ex){return !!(ex&&((ex.params||[]).some(function(q){return q&&(q.id==='tiempo'||q.id==='distancia'||q.id==='ritmo');})));}
 function parseTiempoSeg(v){v=String(v||'').trim().toLowerCase().replace(',','.');if(!v)return 0;if(/^\d+(\.\d+)?\s*s(eg)?$/.test(v))return parseFloat(v);if(/^\d+(\.\d+)?\s*(min|')?$/.test(v))return parseFloat(v)*60;var q=v.split(':').map(Number);if(q.some(isNaN))return 0;if(q.length===2)return q[0]*60+q[1];if(q.length===3)return q[0]*3600+q[1]*60+q[2];return 0;}
 function parseDistM(v){v=String(v||'').trim().toLowerCase().replace(',','.');var n=parseFloat(v);if(!v||isNaN(n))return 0;return /km/.test(v)?n*1000:n;}
 function calcRitmo(t,d){var ts=parseTiempoSeg(t),dm=parseDistM(d);if(!(ts>0&&dm>0))return '';var sk=ts/(dm/1000),m=Math.floor(sk/60),x=Math.round(sk-m*60);if(x===60){m++;x=0;}return m+':'+String(x).padStart(2,'0');}
