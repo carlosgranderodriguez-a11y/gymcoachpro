@@ -4056,12 +4056,30 @@ async function saveAtleta(){
     r=await apiPost({action:'addAtleta',nombre:n,email:em,pin:p,notas:nt,deporte:dep,estado:est});
   }
   if(r.ok){
+    if(editingAtletaOriginal&&n!==editingAtletaOriginal.trim()){
+      if(typeof r.renombrados==='number')toast('✏️ Nombre cambiado en '+r.renombrados+' registros (calendario, historial, wellness, equipos…)');
+      else await renombrarAtletaLocal(editingAtletaOriginal,n);
+      try{var rs=await api({action:'getAllSesiones'});if(rs&&rs.ok)DB.sesiones=rs.sesiones||DB.sesiones;}catch(e){}
+    }
     await refreshAtletas();
     closeModal('atleta');
     toast(editingAtletaOriginal?'✅ Atleta actualizado':'✅ Atleta añadido');
   } else toast('Error: '+r.error,'err');
 }
 
+// Si el servidor aún no renombra solo (Código.gs antiguo), se cambia el nombre desde aquí en sesiones, resistencia y equipos
+async function renombrarAtletaLocal(viejo,nuevo){
+  var v=String(viejo).trim(),n=0;
+  var ses=(DB.sesiones||[]).filter(function(s){return String(s.atleta||'').trim()===v;});
+  var res=(DB.resistencia||[]).filter(function(x){return String(x.atleta||'').trim()===v;});
+  var eqs=(DB.equipos||[]).filter(function(e){return (e.jugadores||[]).some(function(j){return String(j).trim()===v;});});
+  var tot=ses.length+res.length+eqs.length;if(!tot)return 0;
+  for(var i=0;i<ses.length;i++){var s=ses[i];toast('Pasando su calendario al nuevo nombre… '+(i+1)+'/'+tot);try{var r=await apiPost({action:'updateSesion',id:s.id,atleta:nuevo,fecha:s.fecha,nombre:s.nombre,ejercicios:s.ejercicios});if(r&&r.ok){s.atleta=nuevo;n++;}}catch(e){}}
+  for(var k=0;k<res.length;k++){try{var r2=await apiPost(Object.assign({},res[k],{action:'updateResistencia',atleta:nuevo}));if(r2&&r2.ok){res[k].atleta=nuevo;n++;}}catch(e){}}
+  for(var q=0;q<eqs.length;q++){var e=eqs[q];var jug=(e.jugadores||[]).map(function(j){return String(j).trim()===v?nuevo:j;});try{var r3=await apiPost({action:'updateEquipo',id:e.id,nombre:e.nombre,categoria:e.categoria,jugadores:jug,notas:e.notas});if(r3&&r3.ok){e.jugadores=jug;n++;}}catch(x){}}
+  toast('✏️ Nombre cambiado en '+n+' de '+tot+' elementos (calendario, resistencia y equipos)',n<tot?'err':'ok');
+  return n;
+}
 async function deleteAtletaConfirm(){
   if(!editingAtletaOriginal) return;
   if(!confirm('¿Eliminar a "'+editingAtletaOriginal+'"? Esto no borra sus sesiones ya guardadas, pero no podrá volver a entrar con este email/PIN.')) return;
