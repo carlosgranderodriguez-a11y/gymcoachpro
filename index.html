@@ -600,6 +600,8 @@ input:focus,select:focus,textarea:focus{border-color:#8aa0d6 !important;box-shad
 .ps-mini{background:transparent;border:1px solid var(--border);color:var(--text-dim);border-radius:5px;padding:1px 6px;font-size:11px;cursor:pointer;}
 .ps-mini:hover{color:var(--text);}
 .ps-ex-top{cursor:pointer;}
+.ps-block-head{cursor:grab;}
+.ps-bmv{margin-left:4px;cursor:pointer;padding:0 4px;border-radius:4px;background:rgba(0,0,0,.12);font-size:10px;line-height:16px;}
 .ps-exgrip{cursor:grab;color:var(--text-muted);font-size:13px;padding:0 2px;user-select:none;}
 .ps-btipo{display:flex;align-items:center;gap:6px;margin-bottom:6px;font-size:11.5px;color:var(--text-muted);}
 .ps-btipo select{flex:1;padding:4px 6px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text);font-size:12px;}
@@ -5060,8 +5062,9 @@ function psBlockHtml(wi,dk,ses,bid){
   var exs=ses.bloques[bid]||[];
   var open=psIsOpen(wi,dk,bid);
   var tc=psTextColor(meta.color);
-  var h='<div class="ps-block" ondragover="psExDragOver(event)" ondragleave="psDragLeave(event)" ondrop="psExDrop(event,'+wi+','+dk+',\''+bid+'\',-1)"><div class="ps-block-head" style="background:'+meta.color+';color:'+tc+'" onclick="psToggle('+wi+','+dk+',\''+bid+'\')">'
+  var h='<div class="ps-block" ondragover="psExDragOver(event)" ondragleave="psDragLeave(event)" ondrop="psExDrop(event,'+wi+','+dk+',\''+bid+'\',-1)"><div class="ps-block-head" draggable="true" ondragstart="psBlDragStart(event,'+wi+','+dk+',\''+bid+'\')" ondragend="psDragEnd(event)" title="Arrastra el bloque para moverlo de orden o a otro día · Alt/Ctrl al soltar para copiarlo" style="background:'+meta.color+';color:'+tc+'" onclick="psToggle('+wi+','+dk+',\''+bid+'\')">'
     +'<span>'+(open?'▾':'▸')+'</span><span class="ps-bn">'+escapeHtml(meta.name)+'</span><span class="ps-bc">'+exs.length+(exs.length===1?' ejercicio':' ejercicios')+'</span>'
+    +'<span class="ps-bmv" title="Subir bloque" onclick="event.stopPropagation();psMoveBloque('+wi+','+dk+',\''+bid+'\',-1)">▲</span><span class="ps-bmv" title="Bajar bloque" onclick="event.stopPropagation();psMoveBloque('+wi+','+dk+',\''+bid+'\',1)">▼</span>'
     +'<span title="Copiar bloque" style="margin-left:6px;cursor:pointer;padding:0 4px;border-radius:4px;background:rgba(0,0,0,.12)" onclick="event.stopPropagation();psCopyBloque('+wi+','+dk+",'"+bid+"')\">"+'⧉</span></div>';
   if(open){
     var tipoAct=tipoDeBloqueKey(bid);
@@ -5280,7 +5283,7 @@ function renderProgramaBoard(){
     +'<button class="btn btn-secondary btn-sm" onclick="addSemana()">+ Semana</button>'
     +'<button class="btn btn-secondary btn-sm" onclick="duplicarSemana('+psWeek+')">⧉ Duplicar semana</button>'
     +'<button class="btn btn-danger btn-sm" onclick="removeSemana('+psWeek+')">✕ Quitar semana</button></div>'
-    +'<div style="font-size:11px;color:var(--text-muted);margin:-4px 0 10px">💡 Arrastra un día por su cabecera a otro para moverlo o intercambiarlo · mantén Alt (Ctrl) al soltar para copiarlo · o usa «Copiar» y «Pegar» (vale también para otra semana).</div>'
+    +'<div style="font-size:11px;color:var(--text-muted);margin:-4px 0 10px">💡 Arrastra un día por su cabecera para moverlo o intercambiarlo, un bloque por su barra de color para cambiarlo de orden o de día (o ▲▼), y un ejercicio por su asa ⠿ · mantén Alt (Ctrl) al soltar para copiar.</div>'
     +'<div class="ps-board">';
   for(var di=0;di<7;di++)h+=psDayHtml(psWeek,di);
   h+='</div>';
@@ -5367,10 +5370,11 @@ function psPasteDay(wi,dk){
   psDaySet(wi,dk,PS_CLIP);markDirtyPrograma();renderProgramaBoard();renderProgramaList();toast('Día pegado');
 }
 function psDragStart(e,wi,dk){PS_DRAG={wi:wi,dk:dk};try{e.dataTransfer.effectAllowed='copyMove';e.dataTransfer.setData('text/plain','dia');}catch(x){}e.currentTarget.style.opacity='.5';}
-function psDragEnd(e){PS_DRAG=null;PS_EXDRAG=null;e.currentTarget.style.opacity='';document.querySelectorAll('.ps-drop').forEach(function(x){x.classList.remove('ps-drop');});}
-function psDragOver(e){if(PS_EXDRAG){psExDragOver(e);return;}if(!PS_DRAG)return;e.preventDefault();e.dataTransfer.dropEffect=(e.altKey||e.ctrlKey||e.metaKey)?'copy':'move';e.currentTarget.classList.add('ps-drop');}
+function psDragEnd(e){PS_DRAG=null;PS_EXDRAG=null;PS_BLDRAG=null;e.currentTarget.style.opacity='';document.querySelectorAll('.ps-drop').forEach(function(x){x.classList.remove('ps-drop');});}
+function psDragOver(e){if(PS_EXDRAG||PS_BLDRAG){psExDragOver(e);return;}if(!PS_DRAG)return;e.preventDefault();e.dataTransfer.dropEffect=(e.altKey||e.ctrlKey||e.metaKey)?'copy':'move';e.currentTarget.classList.add('ps-drop');}
 function psDragLeave(e){e.currentTarget.classList.remove('ps-drop');}
 function psDrop(e,wi,dk){
+  if(PS_BLDRAG){psBlDrop(e,wi,dk,null);return;}
   if(PS_EXDRAG){psExDrop(e,wi,dk,null,-1);return;}
   if(!PS_DRAG)return;e.preventDefault();e.currentTarget.classList.remove('ps-drop');
   var src=PS_DRAG;PS_DRAG=null;
@@ -5392,13 +5396,14 @@ function psExDragStart(e,wi,dk,bid,ei){
   e.currentTarget.style.opacity='.5';
 }
 function psExDragOver(e){
-  if(!PS_EXDRAG)return;e.preventDefault();e.stopPropagation();
+  if(!PS_EXDRAG&&!PS_BLDRAG)return;e.preventDefault();e.stopPropagation();
   e.dataTransfer.dropEffect=(e.altKey||e.ctrlKey||e.metaKey)?'copy':'move';
   document.querySelectorAll('.ps-drop').forEach(function(x){if(x!==e.currentTarget)x.classList.remove('ps-drop');});
   e.currentTarget.classList.add('ps-drop');
 }
 // Suelta sobre: un ejercicio (se coloca antes de él), un bloque (al final) o un día (al final de un bloque del mismo tipo, o en uno nuevo)
 function psExDrop(e,wi,dk,bid,ei){
+  if(PS_BLDRAG){psBlDrop(e,wi,dk,bid);return;}
   if(!PS_EXDRAG)return;e.preventDefault();e.stopPropagation();
   document.querySelectorAll('.ps-drop').forEach(function(x){x.classList.remove('ps-drop');});
   var src=PS_EXDRAG;PS_EXDRAG=null;
@@ -5421,6 +5426,45 @@ function psExDrop(e,wi,dk,bid,ei){
   markDirtyPrograma();renderProgramaBoard();renderProgramaList();
   var nom=((DB.ejercicios[item.id]||{}).nombre)||item.id;
   toast((copiar?'⧉ Copiado':'↔ Movido')+' «'+nom+'»'+((src.wi!==wi||src.dk!==dk)?' a S'+(wi+1)+' · '+DIAS_SEMANA[dk-1]:'')+' · recuerda Guardar');
+}
+// ── Mover bloques: ▲▼ dentro del día, o arrastrar a otra posición / otro día ──
+var PS_BLDRAG=null;
+function psBlDragStart(e,wi,dk,bid){
+  e.stopPropagation();PS_DRAG=null;PS_EXDRAG=null;PS_BLDRAG={wi:wi,dk:dk,bid:bid};
+  try{e.dataTransfer.effectAllowed='copyMove';e.dataTransfer.setData('text/plain','bloque');}catch(x){}
+  e.currentTarget.style.opacity='.5';
+}
+function psReordenar(obj,keys){var o={};keys.forEach(function(k){if(k in obj)o[k]=obj[k];});return o;}
+function psMoveBloque(wi,dk,bid,dir){
+  var s=psMat(wi,dk),ks=Object.keys(s.bloques),i=ks.indexOf(bid),j=i+dir;
+  if(i<0||j<0||j>=ks.length)return;
+  ks.splice(i,1);ks.splice(j,0,bid);
+  s.bloques=psReordenar(s.bloques,ks);
+  markDirtyPrograma();renderProgramaBoard();
+}
+// Suelta un bloque: sobre otro bloque (se coloca antes de él) o sobre un día (al final)
+function psBlDrop(e,wi,dk,antesDe){
+  e.preventDefault();e.stopPropagation();
+  document.querySelectorAll('.ps-drop').forEach(function(x){x.classList.remove('ps-drop');});
+  var src=PS_BLDRAG;PS_BLDRAG=null;if(!src)return;
+  var copiar=e.altKey||e.ctrlKey||e.metaKey;
+  if(src.wi===wi&&src.dk===dk&&!copiar&&(antesDe===src.bid))return;
+  var sm=psMat(src.wi,src.dk),exs=sm.bloques[src.bid];if(!exs)return;
+  var meta=JSON.parse(JSON.stringify(resolveBloqueMeta(src.bid,sm)));
+  var tm=psMat(wi,dk);tm.bloques=tm.bloques||{};tm.bloqueMeta=tm.bloqueMeta||{};
+  var mismoDia=(src.wi===wi&&src.dk===dk);
+  var key=src.bid;
+  if(copiar||!mismoDia){if(tm.bloques[key]||copiar)key=tipoDeBloqueKey(src.bid)+'::'+Date.now().toString(36);}
+  var datos=copiar?JSON.parse(JSON.stringify(exs)):exs;
+  if(!copiar){delete sm.bloques[src.bid];if(sm.bloqueMeta)delete sm.bloqueMeta[src.bid];}
+  var ks=Object.keys(tm.bloques).filter(function(k){return k!==key;});
+  var pos=(antesDe&&ks.indexOf(antesDe)>-1)?ks.indexOf(antesDe):ks.length;
+  ks.splice(pos,0,key);
+  tm.bloques[key]=datos;tm.bloqueMeta[key]=meta;
+  tm.bloques=psReordenar(tm.bloques,ks);
+  psOpen[wi+'|'+dk+'|'+key]=psIsOpen(src.wi,src.dk,src.bid);
+  markDirtyPrograma();renderProgramaBoard();renderProgramaList();
+  toast((copiar?'⧉ Bloque copiado':'↕ Bloque movido')+' «'+(meta.name||'')+'»'+(!mismoDia?' a S'+(wi+1)+' · '+DIAS_SEMANA[dk-1]:'')+' · recuerda Guardar');
 }
 // ── Cambiar el tipo de un bloque sin borrarlo (mantiene ejercicios y posición) ──
 function psCambiarTipoBloque(wi,dk,bid,nuevo){
