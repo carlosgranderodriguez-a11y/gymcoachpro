@@ -3551,9 +3551,11 @@ function panelProgramas(){
   var nz=function(x){return String(x||'').replace(/\s+/g,' ').trim().toLowerCase();};
   var todas=(DB.sesiones||[]).map(function(s){return {a:nz(s.atleta),f:s.fecha};}).concat((DB.resistencia||[]).filter(function(r){return r.tipo==='sesion';}).map(function(r){return {a:nz(r.atleta),f:r.fecha};}));
   var activos=((DB.atletasFull&&DB.atletasFull.length)?DB.atletasFull.filter(function(a){return a.activo!==false;}).map(function(a){return a.nombre;}):(DB.atletas||[])).filter(Boolean);
-  var filas=[];
+  var filas=[],enEquipo={};
+  (DB.equipos||[]).forEach(function(eq){(eq.jugadores||[]).forEach(function(j){enEquipo[nz(j)]=1;});});
   activos.forEach(function(n){
-    var k=nz(n),mias=todas.filter(function(x){return x.a===k;});
+    var k=nz(n);if(enEquipo[k])return; // los de equipos (SAMA, Gato…) se resumen por equipo
+    var mias=todas.filter(function(x){return x.a===k;});
     var planes=[];try{planes=paPlanesDe(n);}catch(e){}
     var reciente=mias.some(function(x){return x.f>=hace42;})||planes.some(function(p){return p.activo;});
     if(!reciente)return; // solo atletas que estás entrenando ahora (sesiones en las últimas 6 semanas o plan en curso)
@@ -3563,12 +3565,18 @@ function panelProgramas(){
     var fin=act&&act.actual>=act.total;
     filas.push({n:n,c0:c0,c1:c1,pr0:pr0,plan:act,fin:fin});
   });
+  // Equipos: una fila por equipo (con cuántos jugadores tienen sesiones esta semana y la próxima)
+  var eqs=(DB.equipos||[]).map(function(eq){
+    var js=(eq.jugadores||[]).map(nz).filter(Boolean);
+    var con=function(r){return js.filter(function(j){return todas.some(function(x){return x.a===j&&x.f>=r[0]&&x.f<=r[1];});}).length;};
+    return {eq:eq,n:js.length,c0:con(W0),c1:con(W1)};
+  }).filter(function(x){return x.n;});
   var sinProx=filas.filter(function(x){return !x.c1;}),sinEsta=filas.filter(function(x){return !x.c0;}),acaban=filas.filter(function(x){return x.c1&&x.fin;});
   var q=function(n){return escAttr(String(n).replace(/\\/g,'\\\\').replace(/'/g,"\\'"));};
   var fila=function(x,txt,col){return '<div class="ath-row" onclick="openAtletaPerfil(\''+q(x.n)+'\')"><span style="width:8px;height:8px;border-radius:50%;background:'+col+';flex:none"></span><div class="nm">'+escapeHtml(x.n)+' <span style="color:var(--text-muted);font-weight:400;font-size:12px">· '+txt+'</span></div></div>';};
   var planTxt=function(x){return x.plan?(escapeHtml(x.plan.nombre)+' · S'+x.plan.actual+'/'+x.plan.total):'sin plan';};
   var h='<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;font-size:12.5px">'
-    +'<span class="pill" style="background:#e8f3d2;color:#3d6a00">'+filas.length+' en seguimiento</span>'
+    +'<span class="pill" style="background:#e8f3d2;color:#3d6a00">'+filas.length+' atletas'+(eqs.length?' + '+eqs.length+(eqs.length===1?' equipo':' equipos'):'')+'</span>'
     +'<span class="pill" style="background:'+(sinEsta.length?'#fde7d3;color:#9a3412':'#e8f3d2;color:#3d6a00')+'">Esta semana ('+panelFmtRango(W0)+'): '+(filas.length-sinEsta.length)+' con sesiones</span>'
     +'<span class="pill" style="background:'+(sinProx.length?'#fee2e2;color:#b91c1c':'#e8f3d2;color:#3d6a00')+'">Próxima ('+panelFmtRango(W1)+'): '+(filas.length-sinProx.length)+' con sesiones</span></div>';
   if(sinProx.length){h+='<div class="pa-ct" style="margin:6px 0 2px;font-size:11px;color:#b91c1c;letter-spacing:.06em">SIN SEMANA PREVISTA · PRÓXIMA SEMANA</div>'+sinProx.map(function(x){return fila(x,planTxt(x)+(x.c0?' · esta semana '+x.c0+' ses.':''),'#dc2626');}).join('');}
@@ -3576,7 +3584,14 @@ function panelProgramas(){
   if(soloEsta.length){h+='<div class="pa-ct" style="margin:12px 0 2px;font-size:11px;color:#9a3412;letter-spacing:.06em">SIN SESIONES ESTA SEMANA</div>'+soloEsta.map(function(x){return fila(x,planTxt(x),'#f59e0b');}).join('');}
   if(acaban.length){h+='<div class="pa-ct" style="margin:12px 0 2px;font-size:11px;color:var(--text-muted);letter-spacing:.06em">EL PLAN SE ACABA</div>'+acaban.map(function(x){return fila(x,planTxt(x)+' · última semana','#94a3b8');}).join('');}
   if(!sinProx.length&&!soloEsta.length&&!acaban.length)h+='<div class="empty-note">✅ Todos los atletas en seguimiento tienen entrenamiento previsto esta semana y la próxima.</div>';
-  h+='<div style="font-size:11px;color:var(--text-muted);margin-top:10px">Atletas activos con sesiones en las últimas 6 semanas o con un plan en curso.</div>';
+  if(eqs.length){
+    h+='<div class="pa-ct" style="margin:14px 0 2px;font-size:11px;color:var(--text-muted);letter-spacing:.06em">EQUIPOS</div>'+eqs.map(function(x){
+      var col=!x.c1?'#dc2626':(x.c1<x.n?'#f59e0b':'#65a30d');
+      var txt=(!x.c1?'sin semana prevista':'próxima semana '+x.c1+'/'+x.n+' jugadores')+' · esta semana '+x.c0+'/'+x.n;
+      return '<div class="ath-row" onclick="goTab(\'atletas\')"><span style="width:8px;height:8px;border-radius:50%;background:'+col+';flex:none"></span><div class="nm">👥 '+escapeHtml(x.eq.nombre||'Equipo')+' <span style="color:var(--text-muted);font-weight:400;font-size:12px">· '+txt+'</span></div></div>';
+    }).join('');
+  }
+  h+='<div style="font-size:11px;color:var(--text-muted);margin-top:10px">Atletas individuales activos con sesiones en las últimas 6 semanas o con un plan en curso. Los jugadores de un equipo se cuentan dentro de su equipo.</div>';
   el.innerHTML=h;
 }
 // ── Panel: comentarios de los atletas (sesiones, ejercicios adaptados y wellness · últimos 14 días) ──
