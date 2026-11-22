@@ -600,6 +600,9 @@ input:focus,select:focus,textarea:focus{border-color:#8aa0d6 !important;box-shad
 .ps-mini{background:transparent;border:1px solid var(--border);color:var(--text-dim);border-radius:5px;padding:1px 6px;font-size:11px;cursor:pointer;}
 .ps-mini:hover{color:var(--text);}
 .ps-ex-top{cursor:pointer;}
+.ps-exgrip{cursor:grab;color:var(--text-muted);font-size:13px;padding:0 2px;user-select:none;}
+.ps-btipo{display:flex;align-items:center;gap:6px;margin-bottom:6px;font-size:11.5px;color:var(--text-muted);}
+.ps-btipo select{flex:1;padding:4px 6px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text);font-size:12px;}
 .ps-thumb{width:34px;height:34px;flex:0 0 34px;border-radius:6px;overflow:hidden;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:14px;}
 .ps-thumb img{width:100%;height:100%;object-fit:cover;}
 .ps-ex-main{flex:1;min-width:0;}
@@ -5057,11 +5060,13 @@ function psBlockHtml(wi,dk,ses,bid){
   var exs=ses.bloques[bid]||[];
   var open=psIsOpen(wi,dk,bid);
   var tc=psTextColor(meta.color);
-  var h='<div class="ps-block"><div class="ps-block-head" style="background:'+meta.color+';color:'+tc+'" onclick="psToggle('+wi+','+dk+",'"+bid+"')\">"
+  var h='<div class="ps-block" ondragover="psExDragOver(event)" ondragleave="psDragLeave(event)" ondrop="psExDrop(event,'+wi+','+dk+',\''+bid+'\',-1)"><div class="ps-block-head" style="background:'+meta.color+';color:'+tc+'" onclick="psToggle('+wi+','+dk+',\''+bid+'\')">'
     +'<span>'+(open?'▾':'▸')+'</span><span class="ps-bn">'+escapeHtml(meta.name)+'</span><span class="ps-bc">'+exs.length+(exs.length===1?' ejercicio':' ejercicios')+'</span>'
     +'<span title="Copiar bloque" style="margin-left:6px;cursor:pointer;padding:0 4px;border-radius:4px;background:rgba(0,0,0,.12)" onclick="event.stopPropagation();psCopyBloque('+wi+','+dk+",'"+bid+"')\">"+'⧉</span></div>';
   if(open){
-    h+='<div class="ps-block-body"><input class="ps-bname" value="'+escAttr(meta.name)+'" placeholder="Nombre del bloque" oninput="psRenBloque('+wi+','+dk+",'"+bid+"',this.value)\">"
+    var tipoAct=tipoDeBloqueKey(bid);
+    h+='<div class="ps-block-body"><div class="ps-btipo"><label>Tipo</label><select onchange="psCambiarTipoBloque('+wi+','+dk+",'"+bid+"',this.value)\">"+getBloques().map(function(b){return '<option value="'+escAttr(b.id)+'"'+(b.id===tipoAct?' selected':'')+'>'+escapeHtml(b.name)+'</option>';}).join('')+(getBloques().some(function(b){return b.id===tipoAct;})?'':'<option selected value="'+escAttr(tipoAct)+'">'+escapeHtml(tipoAct)+'</option>')+'</select></div>'
+      +'<input class="ps-bname" value="'+escAttr(meta.name)+'" placeholder="Nombre del bloque" oninput="psRenBloque('+wi+','+dk+",'"+bid+"',this.value)\">"
       +'<button class="btn btn-secondary btn-xs ps-blsave" title="Guardar este bloque en la biblioteca para reutilizarlo" onclick="psBlGuardar('+wi+','+dk+",'"+bid+"')\">💾 Guardar en biblioteca</button>"
       +' <button class="btn btn-secondary btn-xs ps-blsave" title="Copiar este bloque para pegarlo en otro día o semana" onclick="psCopyBloque('+wi+','+dk+",'"+bid+"')\">⧉ Copiar bloque</button>";
     exs.forEach(function(ex,ei){
@@ -5078,8 +5083,8 @@ function psBlockHtml(wi,dk,ses,bid){
       if(ri)resumen.push(ri+'/km');
       if(kg)resumen.push(kg+' kg');
       if(de)resumen.push('desc. '+de);
-      h+='<div class="ps-ex'+(exOpen?' open':'')+'"><div class="ps-ex-top" onclick="psToggleEx('+base+')">'
-        +'<div class="ps-thumb">'+thumb+'</div>'
+      h+='<div class="ps-ex'+(exOpen?' open':'')+'" ondragover="psExDragOver(event)" ondragleave="psDragLeave(event)" ondrop="psExDrop(event,'+base+')"><div class="ps-ex-top" draggable="true" ondragstart="psExDragStart(event,'+base+')" ondragend="psDragEnd(event)" title="Arrastra para mover a otro bloque o día · Alt/Ctrl al soltar para copiar" onclick="psToggleEx('+base+')">'
+        +'<span class="ps-exgrip">⠿</span><div class="ps-thumb">'+thumb+'</div>'
         +'<div class="ps-ex-main"><div class="ps-ex-name">'+escapeHtml(db.nombre)+(db.descripcion?'<span class="ps-ex-hasdesc" title="Tiene explicación para el atleta">📖</span>':'')+'</div><div class="ps-ex-sum">'+escapeHtml(resumen.join(' · '))+'</div></div>'
         +'<button class="ps-mini" title="Subir" onclick="event.stopPropagation();psMoveEx('+base+',-1)">▲</button>'
         +'<button class="ps-mini" title="Bajar" onclick="event.stopPropagation();psMoveEx('+base+',1)">▼</button>'
@@ -5362,10 +5367,11 @@ function psPasteDay(wi,dk){
   psDaySet(wi,dk,PS_CLIP);markDirtyPrograma();renderProgramaBoard();renderProgramaList();toast('Día pegado');
 }
 function psDragStart(e,wi,dk){PS_DRAG={wi:wi,dk:dk};try{e.dataTransfer.effectAllowed='copyMove';e.dataTransfer.setData('text/plain','dia');}catch(x){}e.currentTarget.style.opacity='.5';}
-function psDragEnd(e){PS_DRAG=null;e.currentTarget.style.opacity='';document.querySelectorAll('.ps-drop').forEach(function(x){x.classList.remove('ps-drop');});}
-function psDragOver(e){if(!PS_DRAG)return;e.preventDefault();e.dataTransfer.dropEffect=(e.altKey||e.ctrlKey||e.metaKey)?'copy':'move';e.currentTarget.classList.add('ps-drop');}
+function psDragEnd(e){PS_DRAG=null;PS_EXDRAG=null;e.currentTarget.style.opacity='';document.querySelectorAll('.ps-drop').forEach(function(x){x.classList.remove('ps-drop');});}
+function psDragOver(e){if(PS_EXDRAG){psExDragOver(e);return;}if(!PS_DRAG)return;e.preventDefault();e.dataTransfer.dropEffect=(e.altKey||e.ctrlKey||e.metaKey)?'copy':'move';e.currentTarget.classList.add('ps-drop');}
 function psDragLeave(e){e.currentTarget.classList.remove('ps-drop');}
 function psDrop(e,wi,dk){
+  if(PS_EXDRAG){psExDrop(e,wi,dk,null,-1);return;}
   if(!PS_DRAG)return;e.preventDefault();e.currentTarget.classList.remove('ps-drop');
   var src=PS_DRAG;PS_DRAG=null;
   if(src.wi===wi&&src.dk===dk)return;
@@ -5377,6 +5383,63 @@ function psDrop(e,wi,dk){
     psDaySet(wi,dk,a);psDaySet(src.wi,src.dk,b);toast(b?'Días intercambiados':'Día movido');
   }
   markDirtyPrograma();renderProgramaBoard();renderProgramaList();
+}
+// ── Arrastrar ejercicios entre bloques y días ──
+var PS_EXDRAG=null;
+function psExDragStart(e,wi,dk,bid,ei){
+  e.stopPropagation();PS_DRAG=null;PS_EXDRAG={wi:wi,dk:dk,bid:bid,ei:ei};
+  try{e.dataTransfer.effectAllowed='copyMove';e.dataTransfer.setData('text/plain','ejercicio');}catch(x){}
+  e.currentTarget.style.opacity='.5';
+}
+function psExDragOver(e){
+  if(!PS_EXDRAG)return;e.preventDefault();e.stopPropagation();
+  e.dataTransfer.dropEffect=(e.altKey||e.ctrlKey||e.metaKey)?'copy':'move';
+  document.querySelectorAll('.ps-drop').forEach(function(x){if(x!==e.currentTarget)x.classList.remove('ps-drop');});
+  e.currentTarget.classList.add('ps-drop');
+}
+// Suelta sobre: un ejercicio (se coloca antes de él), un bloque (al final) o un día (al final de un bloque del mismo tipo, o en uno nuevo)
+function psExDrop(e,wi,dk,bid,ei){
+  if(!PS_EXDRAG)return;e.preventDefault();e.stopPropagation();
+  document.querySelectorAll('.ps-drop').forEach(function(x){x.classList.remove('ps-drop');});
+  var src=PS_EXDRAG;PS_EXDRAG=null;
+  var copiar=e.altKey||e.ctrlKey||e.metaKey;
+  var sm=psMat(src.wi,src.dk),sarr=sm.bloques[src.bid]||[],ex=sarr[src.ei];if(!ex)return;
+  var tm=psMat(wi,dk);tm.bloques=tm.bloques||{};tm.bloqueMeta=tm.bloqueMeta||{};
+  if(bid==null){
+    var tipo=tipoDeBloqueKey(src.bid);
+    bid=Object.keys(tm.bloques).filter(function(k){return tipoDeBloqueKey(k)===tipo;})[0];
+    if(!bid){bid=tipo+'::'+Date.now().toString(36);tm.bloques[bid]=[];var m=resolveBloqueMeta(src.bid,sm);tm.bloqueMeta[bid]={name:m.name,color:m.color};}
+  }
+  if(!tm.bloques[bid])tm.bloques[bid]=[];
+  var mismo=(src.wi===wi&&src.dk===dk&&src.bid===bid);
+  if(mismo&&!copiar&&(ei===src.ei||ei===src.ei+1))return;
+  var item=copiar?JSON.parse(JSON.stringify(ex)):ex;
+  if(!copiar){sarr.splice(src.ei,1);if(mismo&&ei>src.ei)ei--;}
+  var dest=tm.bloques[bid];
+  if(ei<0||ei>dest.length)dest.push(item);else dest.splice(ei,0,item);
+  psExOpen={};psOpen[wi+'|'+dk+'|'+bid]=true;
+  markDirtyPrograma();renderProgramaBoard();renderProgramaList();
+  var nom=((DB.ejercicios[item.id]||{}).nombre)||item.id;
+  toast((copiar?'⧉ Copiado':'↔ Movido')+' «'+nom+'»'+((src.wi!==wi||src.dk!==dk)?' a S'+(wi+1)+' · '+DIAS_SEMANA[dk-1]:'')+' · recuerda Guardar');
+}
+// ── Cambiar el tipo de un bloque sin borrarlo (mantiene ejercicios y posición) ──
+function psCambiarTipoBloque(wi,dk,bid,nuevo){
+  var s=psMat(wi,dk),viejo=tipoDeBloqueKey(bid);if(!nuevo||nuevo===viejo)return;
+  var def=getBloques().find(function(b){return b.id===nuevo;})||{name:nuevo,color:'#a3a3a3'};
+  var defViejo=getBloques().find(function(b){return b.id===viejo;});
+  var meta=resolveBloqueMeta(bid,s);
+  var nombrePropio=meta.name&&!(defViejo&&meta.name===defViejo.name)&&meta.name!==viejo;
+  var inst=bid.indexOf('::')>-1?bid.split('::')[1]:Date.now().toString(36);
+  var nk=nuevo+'::'+inst;while(s.bloques[nk]&&nk!==bid)nk=nuevo+'::'+Date.now().toString(36)+Math.random().toString(36).slice(2,4);
+  var nb={},nm={};
+  Object.keys(s.bloques).forEach(function(k){
+    if(k===bid){nb[nk]=(s.bloques[k]||[]).map(function(ex){var c=Object.assign({},ex);if(c.bloque)c.bloque=nuevo;return c;});nm[nk]={name:nombrePropio?meta.name:def.name,color:def.color};}
+    else{nb[k]=s.bloques[k];if(s.bloqueMeta&&s.bloqueMeta[k])nm[k]=s.bloqueMeta[k];}
+  });
+  s.bloques=nb;s.bloqueMeta=nm;
+  var ok=wi+'|'+dk+'|'+bid;psOpen[wi+'|'+dk+'|'+nk]=psIsOpen(wi,dk,bid)||true;delete psOpen[ok];
+  markDirtyPrograma();renderProgramaBoard();
+  toast('Bloque cambiado a «'+def.name+'»'+(nombrePropio?' (conserva su nombre «'+meta.name+'»)':'')+' · recuerda Guardar');
 }
 function psRename(wi,dk,v){psMat(wi,dk).nombre=v;markDirtyPrograma();}
 function psRestore(wi,dk){
