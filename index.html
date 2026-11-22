@@ -989,6 +989,7 @@ function aplicarCodigoAcceso(){
         </div>
         <div id="pe-content" style="display:none">
           <div class="te-header">
+            <button class="btn btn-secondary btn-sm" id="pe-volver" style="display:none;white-space:nowrap" onclick="peVolverAtleta()"></button>
             <input class="te-name-input" id="pe-name" placeholder="Nombre del programa (ej: Fuerza 8 semanas)..." oninput="markDirtyPrograma()">
             <div style="display:flex;gap:8px">
               <button class="btn btn-secondary btn-sm" onclick="deletePrograma()">Eliminar</button>
@@ -1313,6 +1314,7 @@ function aplicarCodigoAcceso(){
         <div class="pa-card"><div class="pa-ct">Próxima sesión</div><div id="pa-next"></div></div>
         <div class="pa-card"><div class="pa-ct">Tendencia wellness</div><div class="pa-cw"><canvas id="pa-trend"></canvas></div></div>
       </div>
+      <div id="pa-planes"></div>
       <div id="pa-carga"></div>
     </div>
 
@@ -4790,7 +4792,8 @@ function newPrograma(){
   renderProgramaList();showProgramaEditor();
 }
 function selectPrograma(i){
-  if(isDirtyPrograma&&!confirm('Hay cambios sin guardar. ¿Continuar?'))return;
+  if(isDirtyPrograma&&!confirm('Hay cambios sin guardar. ¿Continuar?'))return false;
+  peVolverA=null;var _pv=document.getElementById('pe-volver');if(_pv)_pv.style.display='none';
   currentPrograma=JSON.parse(JSON.stringify(DB.programas[i]));isDirtyPrograma=false;psWeek=0;psOpen={};psExOpen={};
   renderProgramaList();showProgramaEditor();
 }
@@ -5857,6 +5860,7 @@ async function openAtletaPerfil(nombre){
   CX.mes=null;CX.tem=[];CX.reg=[];CX.ev=[];CX.ext=[];PAR_SEL=null;paEvoEj=null;
   var _tp=document.getElementById('pa-tab-par');if(_tp)_tp.style.display=cxPartidosDe(nombre).length?'':'none';if(_tp)_tp.textContent=(f&&f.deporte==='esgrima')?'Competiciones':'Partidos';
   cxRender();paRenderPartidos(nombre);
+  try{paRenderPlanes(nombre);}catch(e){}
 
   var [rw,rt,rh,rev]=await Promise.all([
     api({action:'getWellness',atleta:nombre}),
@@ -5888,6 +5892,56 @@ function paTab(tab){
   if(tab==='rm')paRenderRM(paAtletaActual);
 }
 
+// ── Planes de entrenamiento del atleta: ver cuáles sigue y saltar a editarlos en Biblioteca → Planes ──
+var peVolverA=null;
+function paPlanesDe(nombre){
+  var k=peNormNombre(nombre),hoy=fechaLocalISO(),out=[];
+  (DB.programas||[]).forEach(function(p,idx){
+    if(!p||!p.name)return;
+    var a=peAsignadosLocal(p).find(function(x){return peNormNombre(x.nombre)===k;});
+    if(!a)return;
+    var total=(p.weeks||[]).length||1,act=0;
+    if(a.inicio){var d=Math.floor((new Date(hoy+'T12:00:00')-new Date(a.inicio+'T12:00:00'))/864e5);act=Math.floor(d/7)+1;}
+    out.push({id:p.id,idx:idx,nombre:p.name,total:total,inicio:a.inicio,hasta:a.hastaSemana,actual:act,ultima:a.ultimaSesion,activo:act>=1&&act<=total});
+  });
+  return out.sort(function(x,y){return (y.activo-x.activo)||String(y.ultima).localeCompare(String(x.ultima));});
+}
+function paPlanesHtml(nombre){
+  var L=paPlanesDe(nombre),q=escAttr(String(nombre).replace(/\\/g,'\\\\').replace(/'/g,"\\'"));
+  var fmt=function(f){return f?new Date(f+'T12:00:00').toLocaleDateString('es-ES',{day:'numeric',month:'short'}):'—';};
+  var h='<div class="pa-card" style="margin:14px 0"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><div class="pa-ct" style="margin:0">Plan de entrenamiento</div>'
+    +'<button class="btn btn-secondary btn-sm" onclick="paIrAPlanes()">📚 Ir a Planes</button></div>';
+  if(!L.length)return h+'<div class="pa-empty" style="margin-top:10px">Sin plan asignado. Desde Biblioteca → Planes puedes crear uno y asignárselo.</div></div>';
+  h+=L.map(function(x){
+    var estado=x.activo?('Semana '+x.actual+' de '+x.total):(x.actual>x.total?'Terminado':'Empieza el '+fmt(x.inicio));
+    return '<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-top:1px solid var(--border);margin-top:10px;flex-wrap:wrap">'
+      +'<div><div style="font-weight:700;font-size:14.5px">'+escapeHtml(x.nombre)+'</div><div class="pa-ms">'+estado+' · desde el '+fmt(x.inicio)+' · en su calendario hasta S'+x.hasta+'</div></div>'
+      +'<button class="btn btn-primary btn-sm" onclick="paEditarPlan(\''+escAttr(x.id)+'\',\''+q+'\')">✏️ Editar plan</button></div>';
+  }).join('');
+  return h+'</div>';
+}
+function paRenderPlanes(nombre){var el=document.getElementById('pa-planes');if(el)el.innerHTML=paPlanesHtml(nombre);}
+function paIrAPlanes(){var n=paAtletaActual;paCerrar();switchTab('programas');if(n){peVolverA=n;pePintarVolver();}}
+function paEditarPlan(id,nombre){
+  var idx=(DB.programas||[]).findIndex(function(p){return p.id===id;});
+  if(idx<0){toast('No encuentro ese plan','err');return;}
+  var info=paPlanesDe(nombre).find(function(x){return x.id===id;});
+  paCerrar();switchTab('programas');
+  if(!currentPrograma||currentPrograma.id!==id){if(selectPrograma(idx)===false)return;}
+  var tot=(currentPrograma.weeks||[]).length;
+  if(info&&info.actual>=1)psWeek=Math.min(info.actual,tot)-1;
+  renderProgramaBoard();
+  peVolverA=nombre;pePintarVolver();
+  try{document.getElementById('pe-content').scrollIntoView({block:'start'});}catch(e){}
+  toast('✏️ Editando «'+currentPrograma.name+'»'+(info&&info.activo?' · semana actual de '+String(nombre).split(' ')[0]+': S'+info.actual:'')+' · al guardar se actualiza su calendario');
+}
+function pePintarVolver(){var b=document.getElementById('pe-volver');if(!b)return;if(peVolverA){b.textContent='← '+String(peVolverA).split(' ')[0];b.title='Volver a la ficha de '+peVolverA;b.style.display='';}else b.style.display='none';}
+function peVolverAtleta(){
+  if(!peVolverA)return;
+  if(isDirtyPrograma&&!confirm('Hay cambios sin guardar en el plan. ¿Volver sin guardar?'))return;
+  var n=peVolverA;peVolverA=null;pePintarVolver();
+  openAtletaPerfil(n);
+}
 function paCerrar(){
   document.getElementById('pa-overlay').classList.remove('on');
   paAtletaActual=null;
@@ -6062,7 +6116,7 @@ function paRenderPlan(nombre){
     return '<div class="pa-card" style="margin-bottom:12px"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px"><div><div style="font-weight:700;font-size:15px">'+escapeHtml(s.nombre||'Sesión')+'</div><div class="pa-ms" style="text-transform:capitalize">'+f+'</div></div><div style="text-align:right"><div style="font-weight:700">'+ua+' UA</div><div class="pa-ms">'+min+" min"+(reg?' · ✅ completada':(pasada?' · sin completar':''))+'</div><button class="btn btn-secondary btn-sm" style="margin-top:6px" onclick="paEditarSesion(\''+s.id+'\')">✏️ Editar</button></div></div>'+bh+'</div>';
   }
   var barra='<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px"><input type="date" id="pa-nueva-fecha" value="'+hoy+'" style="padding:8px 10px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text)"><button class="btn btn-primary btn-sm" onclick="paNuevaSesion()">+ Añadir sesión</button><span style="font-size:12px;color:var(--text-muted)">Pulsa ✏️ Editar en una sesión para modificar ejercicios, series, cargas o el nombre.</span></div>';
-  el.innerHTML=barra+(prox.length?prox.map(function(s){return card(s,false);}).join(''):'<div class="pa-empty">No hay sesiones planificadas a partir de hoy.</div>')
+  el.innerHTML=paPlanesHtml(nombre)+barra+(prox.length?prox.map(function(s){return card(s,false);}).join(''):'<div class="pa-empty">No hay sesiones planificadas a partir de hoy.</div>')
     +(ult.length?'<div class="pa-ct" style="margin:18px 0 8px">Últimas sesiones</div>'+ult.map(function(s){return card(s,true);}).join(''):'');
 }
 
