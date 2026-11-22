@@ -578,6 +578,7 @@ input:focus,select:focus,textarea:focus{border-color:#8aa0d6 !important;box-shad
 .ps-day{flex:0 0 310px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;overflow:hidden;}
 .ps-day-head{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-bottom:1px solid var(--border);font-size:13px;font-weight:700;}
 .ps-day-head small{color:var(--text-muted);font-weight:500;font-size:11px;}
+.ps-mini-del{color:#dc2626 !important;}
 .ps-day-tpl{padding:8px 10px;border-bottom:1px solid var(--border);}
 .ps-day-tpl select{width:100%;padding:6px 8px;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;outline:none;}
 .ps-ses-row{display:flex;gap:6px;align-items:center;margin-top:6px;}
@@ -5113,6 +5114,7 @@ function psDayHtml(wi,di){
     +DB.templates.map(function(t){return '<option value="'+escAttr(t.id)+'"'+(t.id===tplId?' selected':'')+'>'+escapeHtml(t.name)+'</option>';}).join('');
   var h='<div class="ps-day" ondragover="psDragOver(event)" ondragleave="psDragLeave(event)" ondrop="psDrop(event,'+wi+','+dk+')"><div class="ps-day-head'+(ses?' ps-grab':'')+'"'+(ses?' draggable="true" ondragstart="psDragStart(event,'+wi+','+dk+')" ondragend="psDragEnd(event)" title="Arrastra para mover a otro día · Alt/Ctrl + arrastrar para copiar"':'')+'><span>'+(ses?'⠿ ':'')+'Día '+dk+' · '+DIAS_SEMANA[di]+'</span><span class="ps-day-btns"><small>'+(ses?total+' ej.':'')+'</small>'
     +(ses?'<button class="ps-mini" title="Copiar este día" onclick="psCopyDay('+wi+','+dk+')">⧉ Copiar</button>':'')
+    +(ses?'<button class="ps-mini ps-mini-del" title="Eliminar este día del plan" onclick="psDelDia('+wi+','+dk+')">🗑</button>':'')
     +(PS_CLIP?'<button class="ps-mini" title="Pegar el día copiado aquí" onclick="psPasteDay('+wi+','+dk+')">📋 Pegar</button>':'')+'</span></div>'
     +'<div class="ps-day-tpl"><select onchange="psSetTpl('+wi+','+dk+',this.value)">'+sel+'</select>';
   if(ses){
@@ -5310,6 +5312,49 @@ function psSetTpl(wi,dk,val){
 var PS_CLIP=null,PS_DRAG=null;
 function psDayGet(wi,dk){var w=currentPrograma.weeks[wi];var dia=(w.dias||{})[dk],ses=(w.sesiones||{})[dk];if(!dia&&!ses)return null;return JSON.parse(JSON.stringify({dia:dia||'',ses:ses||null}));}
 function psDaySet(wi,dk,o){var w=currentPrograma.weeks[wi];if(!w.dias)w.dias={};if(!w.sesiones)w.sesiones={};delete w.dias[dk];delete w.sesiones[dk];if(o){if(o.dia)w.dias[dk]=o.dia;if(o.ses)w.sesiones[dk]=JSON.parse(JSON.stringify(o.ses));}}
+// ── Eliminar un día del plan (y, al guardar, sus sesiones pendientes del calendario de los atletas) ──
+var PS_DIAS_BORRADOS={}; // {programaId:[{sem,dk}]}
+function psSesCalendarioDia(nombrePlan,sem,dk){
+  var pre=peNormNombre(nombrePlan)+' · s',hoy=fechaLocalISO();
+  return (DB.sesiones||[]).filter(function(s){
+    var n=peNormNombre(s.nombre);if(n.indexOf(pre)!==0||!s.fecha||s.fecha<hoy)return false;
+    var m=n.slice(pre.length).match(/^(\d+)/);if(!m||+m[1]!==sem)return false;
+    var d=new Date(s.fecha+'T12:00:00').getDay();return (d===0?7:d)===dk;
+  });
+}
+function psDelDia(wi,dk){
+  var w=currentPrograma.weeks[wi];if(!w)return;
+  var guardado=(DB.programas||[]).find(function(p){return p.id===currentPrograma.id;});
+  var nCal=guardado?psSesCalendarioDia(guardado.name,wi+1,dk).length:0;
+  var msg='¿Eliminar el Día '+dk+' ('+DIAS_SEMANA[dk-1]+') de la semana '+(wi+1)+' del plan?'
+    +(nCal?'\n\nAl pulsar Guardar también se quitará de los calendarios de los atletas: '+nCal+(nCal===1?' sesión':' sesiones')+' de ese día de hoy en adelante (las que ya hayan registrado se conservan).':'');
+  if(!confirm(msg))return;
+  if(w.dias)delete w.dias[dk];
+  if(w.sesiones)delete w.sesiones[dk];
+  var L=PS_DIAS_BORRADOS[currentPrograma.id]||(PS_DIAS_BORRADOS[currentPrograma.id]=[]);
+  if(!L.some(function(x){return x.sem===wi+1&&x.dk===dk;}))L.push({sem:wi+1,dk:dk});
+  markDirtyPrograma();renderProgramaBoard();renderProgramaList();
+  toast('🗑 Día '+dk+' eliminado · pulsa Guardar para confirmarlo');
+}
+// Se llama tras guardar el plan: borra del calendario las sesiones pendientes de los días eliminados
+async function psAplicarDiasBorrados(prog){
+  var L=(PS_DIAS_BORRADOS[prog.id]||[]).filter(function(x){var w=prog.weeks[x.sem-1];return !w||(!((w.dias||{})[x.dk])&&!((w.sesiones||{})[x.dk]));});
+  delete PS_DIAS_BORRADOS[prog.id];
+  if(!L.length)return;
+  try{var rs=await api({action:'getAllSesiones'});if(rs&&rs.ok)DB.sesiones=rs.sesiones||DB.sesiones;}catch(e){}
+  var cand=[];L.forEach(function(x){cand=cand.concat(psSesCalendarioDia(prog.name,x.sem,x.dk));});
+  if(!cand.length)return;
+  var hechas={},atl={};cand.forEach(function(s){atl[s.atleta]=1;});
+  for(var a in atl){try{var h=await api({action:'getHistorial',atleta:a});((h&&h.registros)||[]).forEach(function(r){if(r.sesion_id)hechas[r.sesion_id]=1;});}catch(e){}}
+  var borrar=cand.filter(function(s){return !hechas[s.id];}),ok=0;
+  for(var i=0;i<borrar.length;i++){
+    toast('Quitando del calendario los días eliminados… '+(i+1)+'/'+borrar.length);
+    try{var r=await apiPost({action:'deleteSesion',id:borrar[i].id});if(r&&r.ok){ok++;var bid=borrar[i].id;DB.sesiones=DB.sesiones.filter(function(s){return s.id!==bid;});}}catch(e){}
+    if(i<borrar.length-1)await new Promise(function(r){setTimeout(r,700);});
+  }
+  toast('🗑 '+ok+(ok===1?' sesión quitada':' sesiones quitadas')+' del calendario'+(ok<borrar.length?' · '+(borrar.length-ok)+' no se pudieron borrar':''),ok<borrar.length?'err':'ok');
+  try{if(typeof renderCalendar==='function')renderCalendar();}catch(e){}
+}
 function psCopyDay(wi,dk){var o=psDayGet(wi,dk);if(!o){toast('Ese día es descanso: no hay nada que copiar','err');return;}PS_CLIP=o;toast('Día copiado · pulsa «Pegar» en el día que quieras');renderProgramaBoard();}
 function psPasteDay(wi,dk){
   if(!PS_CLIP)return;
@@ -5417,6 +5462,7 @@ async function savePrograma(){
     if(r&&r.ok&&r.renombradas)toast('✏️ Plan renombrado · '+r.renombradas+(r.renombradas===1?' sesión':' sesiones')+' del calendario cambian de nombre con él');
     if(sync&&sync.errorActualizar)toast('⚠️ No se pudieron actualizar las sesiones ya creadas: '+sync.errorActualizar,'err');
     if(sync&&sync.error)toast('⚠️ Plan guardado, pero no se pudieron crear las semanas nuevas: '+sync.error,'err');
+    if(r&&r.ok)await psAplicarDiasBorrados(JSON.parse(JSON.stringify(currentPrograma)));
     renderPeAsignados();
   }catch(e){toast('⚠️ Guardado en este navegador. Sin conexión con el servidor.','err');}
 }
