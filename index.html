@@ -808,6 +808,10 @@ function aplicarCodigoAcceso(){
     </div>
     <div id="panel-cards" class="stat-grid"></div>
     <div class="card panel-card" style="margin-bottom:18px"><h3><span>📥 Bandeja de revisión <span id="bdj-n" class="bdj-n"></span></span> <span style="display:flex;gap:14px"><a onclick="progAbrir()">📈 Progresión de la semana</a><a onclick="panelBandeja(true)">↻ Actualizar</a></span></h3><div id="panel-bandeja"></div></div>
+    <div class="panel-cols" style="margin-bottom:18px">
+      <div class="card panel-card"><h3>📚 Resumen de programas <a onclick="goTab('programas')">Ver planes ›</a></h3><div id="panel-programas"></div></div>
+      <div class="card panel-card"><h3>💬 Comentarios <a onclick="panelComentarios(true)">↻ Actualizar</a></h3><div id="panel-comentarios"></div></div>
+    </div>
     <div class="card panel-card" style="margin-bottom:18px"><h3>Hoy <a onclick="goTab('calendario')">Ver calendario ›</a></h3><div id="panel-hoy"></div></div>
     <div class="card panel-card" style="margin-bottom:18px"><h3>Informe de actividad <a onclick="panelActividad(true)">↻ Actualizar</a></h3><div id="panel-actividad"></div></div>
     <div class="panel-cols">
@@ -3537,6 +3541,73 @@ async function bdjMarcar(id){
 }
 async function bdjMarcarTodo(){var vis=BDJ.items.filter(function(x){return !bdjRev()[x.id];});if(!vis.length||!confirm('¿Marcar como revisados los '+vis.length+' avisos?'))return;var o=JSON.parse(JSON.stringify(bdjRev()));vis.forEach(function(x){o[x.id]=fechaLocalISO();});DB.config.bandeja_revisados=o;bdjPintar();await apiPost({action:'saveConfig',key:'bandeja_revisados',value:o});}
 function bdjActivos(){return (DB.atletasFull&&DB.atletasFull.length)?DB.atletasFull.filter(function(a){return a.activo!==false;}).map(function(a){return (a.nombre||'').trim();}):(DB.atletas||[]).map(function(n){return String(n).trim();});}
+// ── Panel: resumen de programas (quién no tiene semana prevista) ──
+function panelSemanaRango(off){var d=new Date();d.setDate(d.getDate()-((d.getDay()+6)%7)+7*off);var a=fechaLocalISO(d);d.setDate(d.getDate()+6);return [a,fechaLocalISO(d)];}
+function panelFmtRango(r){var f=function(x){return new Date(x+'T12:00:00').toLocaleDateString('es-ES',{day:'numeric',month:'short'}).replace('.','');};return f(r[0])+'–'+f(r[1]);}
+function panelProgramas(){
+  var el=document.getElementById('panel-programas');if(!el)return;
+  var hoy=fechaLocalISO(),d=new Date();d.setDate(d.getDate()-42);var hace42=fechaLocalISO(d);
+  var W0=panelSemanaRango(0),W1=panelSemanaRango(1);
+  var nz=function(x){return String(x||'').replace(/\s+/g,' ').trim().toLowerCase();};
+  var todas=(DB.sesiones||[]).map(function(s){return {a:nz(s.atleta),f:s.fecha};}).concat((DB.resistencia||[]).filter(function(r){return r.tipo==='sesion';}).map(function(r){return {a:nz(r.atleta),f:r.fecha};}));
+  var activos=((DB.atletasFull&&DB.atletasFull.length)?DB.atletasFull.filter(function(a){return a.activo!==false;}).map(function(a){return a.nombre;}):(DB.atletas||[])).filter(Boolean);
+  var filas=[];
+  activos.forEach(function(n){
+    var k=nz(n),mias=todas.filter(function(x){return x.a===k;});
+    var planes=[];try{planes=paPlanesDe(n);}catch(e){}
+    var reciente=mias.some(function(x){return x.f>=hace42;})||planes.some(function(p){return p.activo;});
+    if(!reciente)return; // solo atletas que estás entrenando ahora (sesiones en las últimas 6 semanas o plan en curso)
+    var c0=mias.filter(function(x){return x.f>=W0[0]&&x.f<=W0[1];}).length,c1=mias.filter(function(x){return x.f>=W1[0]&&x.f<=W1[1];}).length;
+    var pr0=mias.filter(function(x){return x.f>=hoy&&x.f<=W0[1];}).length;
+    var act=planes.filter(function(p){return p.activo;})[0]||null;
+    var fin=act&&act.actual>=act.total;
+    filas.push({n:n,c0:c0,c1:c1,pr0:pr0,plan:act,fin:fin});
+  });
+  var sinProx=filas.filter(function(x){return !x.c1;}),sinEsta=filas.filter(function(x){return !x.c0;}),acaban=filas.filter(function(x){return x.c1&&x.fin;});
+  var q=function(n){return escAttr(String(n).replace(/\\/g,'\\\\').replace(/'/g,"\\'"));};
+  var fila=function(x,txt,col){return '<div class="ath-row" onclick="openAtletaPerfil(\''+q(x.n)+'\')"><span style="width:8px;height:8px;border-radius:50%;background:'+col+';flex:none"></span><div class="nm">'+escapeHtml(x.n)+' <span style="color:var(--text-muted);font-weight:400;font-size:12px">· '+txt+'</span></div></div>';};
+  var planTxt=function(x){return x.plan?(escapeHtml(x.plan.nombre)+' · S'+x.plan.actual+'/'+x.plan.total):'sin plan';};
+  var h='<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;font-size:12.5px">'
+    +'<span class="pill" style="background:#e8f3d2;color:#3d6a00">'+filas.length+' en seguimiento</span>'
+    +'<span class="pill" style="background:'+(sinEsta.length?'#fde7d3;color:#9a3412':'#e8f3d2;color:#3d6a00')+'">Esta semana ('+panelFmtRango(W0)+'): '+(filas.length-sinEsta.length)+' con sesiones</span>'
+    +'<span class="pill" style="background:'+(sinProx.length?'#fee2e2;color:#b91c1c':'#e8f3d2;color:#3d6a00')+'">Próxima ('+panelFmtRango(W1)+'): '+(filas.length-sinProx.length)+' con sesiones</span></div>';
+  if(sinProx.length){h+='<div class="pa-ct" style="margin:6px 0 2px;font-size:11px;color:#b91c1c;letter-spacing:.06em">SIN SEMANA PREVISTA · PRÓXIMA SEMANA</div>'+sinProx.map(function(x){return fila(x,planTxt(x)+(x.c0?' · esta semana '+x.c0+' ses.':''),'#dc2626');}).join('');}
+  var soloEsta=sinEsta.filter(function(x){return x.c1;});
+  if(soloEsta.length){h+='<div class="pa-ct" style="margin:12px 0 2px;font-size:11px;color:#9a3412;letter-spacing:.06em">SIN SESIONES ESTA SEMANA</div>'+soloEsta.map(function(x){return fila(x,planTxt(x),'#f59e0b');}).join('');}
+  if(acaban.length){h+='<div class="pa-ct" style="margin:12px 0 2px;font-size:11px;color:var(--text-muted);letter-spacing:.06em">EL PLAN SE ACABA</div>'+acaban.map(function(x){return fila(x,planTxt(x)+' · última semana','#94a3b8');}).join('');}
+  if(!sinProx.length&&!soloEsta.length&&!acaban.length)h+='<div class="empty-note">✅ Todos los atletas en seguimiento tienen entrenamiento previsto esta semana y la próxima.</div>';
+  h+='<div style="font-size:11px;color:var(--text-muted);margin-top:10px">Atletas activos con sesiones en las últimas 6 semanas o con un plan en curso.</div>';
+  el.innerHTML=h;
+}
+// ── Panel: comentarios de los atletas (sesiones, ejercicios adaptados y wellness · últimos 14 días) ──
+async function panelComentarios(forzar){
+  var el=document.getElementById('panel-comentarios');if(!el)return;
+  var d=new Date();d.setDate(d.getDate()-14);var hace14=fechaLocalISO(d),hoy=fechaLocalISO();
+  if(forzar){el.innerHTML='<div class="empty-note">⏳ Buscando comentarios…</div>';
+    var atls=[];(DB.sesiones||[]).forEach(function(s){if(s.fecha>=hace14&&s.fecha<=hoy&&s.atleta&&atls.indexOf(s.atleta)<0)atls.push(s.atleta);});
+    var cola=atls.slice();await Promise.all([0,1,2,3].map(async function(){while(cola.length){await infRegistros(cola.shift(),true);}}));
+    try{var rw=await api({action:'getWellness'});BDJ.well=(rw&&rw.ok)?(rw.items||[]):BDJ.well;}catch(e){}
+  }
+  var L=[],sesPorId={};(DB.sesiones||[]).forEach(function(s){sesPorId[s.id]=s;});
+  Object.keys(INF.reg||{}).forEach(function(a){
+    (INF.reg[a]||[]).forEach(function(r){
+      var f=String(r.fecha||'').slice(0,10);if(!f||f<hace14)return;
+      var dt=r.datos||{},s=sesPorId[r.sesion_id],nom=s?(s.nombre||'Sesión').replace(/^.*· S\d+ · /,''):'Sesión';
+      if(dt.notas&&String(dt.notas).trim())L.push({a:a,f:f,ic:BDJ_DOLOR.test(dt.notas)?'🩹':'💬',t:String(dt.notas).trim(),ctx:nom,sid:r.sesion_id});
+      (dt.ejercicios||[]).forEach(function(e){if(e&&e.nota_adaptacion){var en=((DB.ejercicios||{})[e.id]||{}).nombre||e.id;L.push({a:a,f:f,ic:'🔧',t:String(e.nota_adaptacion).trim(),ctx:en+' · '+nom,sid:r.sesion_id});}});
+    });
+  });
+  (BDJ.well||[]).forEach(function(w){if(w.notas&&String(w.notas).trim()&&String(w.fecha||'')>=hace14)L.push({a:w.atleta,f:String(w.fecha).slice(0,10),ic:BDJ_DOLOR.test(w.notas)?'🩹':'🌙',t:String(w.notas).trim(),ctx:'Wellness'});});
+  L.sort(function(x,y){return y.f.localeCompare(x.f);});
+  if(!L.length){el.innerHTML='<div class="empty-note">Sin comentarios de los atletas en los últimos 14 días.</div>';return;}
+  var q=function(n){return escAttr(String(n).replace(/\\/g,'\\\\').replace(/'/g,"\\'"));};
+  el.innerHTML=L.slice(0,12).map(function(x){
+    var fe=x.f.slice(8)+'/'+x.f.slice(5,7);
+    return '<div class="ath-row" style="align-items:flex-start" onclick="'+(x.sid?'informeSesion(\''+q(x.sid)+'\')':'openAtletaPerfil(\''+q(x.a)+'\')')+'"><span style="font-size:16px;line-height:20px">'+x.ic+'</span>'
+      +'<div class="nm" style="white-space:normal"><b>'+escapeHtml(x.a)+'</b> <span style="color:var(--text-muted);font-weight:400;font-size:12px">· '+fe+' · '+escapeHtml(x.ctx)+'</span>'
+      +'<div style="font-weight:400;font-size:13px;color:var(--text-dim);margin-top:2px">«'+escapeHtml(x.t.length>180?x.t.slice(0,180)+'…':x.t)+'»</div></div></div>';
+  }).join('')+(L.length>12?'<div style="font-size:11.5px;color:var(--text-muted);margin-top:8px">… y '+(L.length-12)+' más en la Bandeja de revisión</div>':'');
+}
 async function panelBandeja(forzar){
   var el=document.getElementById('panel-bandeja');if(!el)return;
   if(!BDJ.cargada||forzar)el.innerHTML='<div class="empty-note">⏳ Revisando registros, wellness y programación…</div>';
@@ -3734,7 +3805,9 @@ function renderPanel(){
         +'<span class="pill" style="background:'+x.c+'">'+x.t+'</span></div>';
     }).join(''):'<div class="empty-note">Hoy no hay sesiones planificadas.</div>';
   }
-  panelActividad();panelBandeja();
+  panelActividad();
+  try{panelProgramas();}catch(e){console.warn(e);}
+  Promise.resolve(panelBandeja()).then(function(){return panelComentarios();}).catch(function(e){console.warn(e);});
   // Atención: lesionados / en carga / readaptación, y activos sin nada en 7 días
   var atEl=document.getElementById('panel-atencion');
   if(atEl){
