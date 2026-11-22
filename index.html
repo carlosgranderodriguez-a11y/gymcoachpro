@@ -601,6 +601,9 @@ input:focus,select:focus,textarea:focus{border-color:#8aa0d6 !important;box-shad
 .ps-mini:hover{color:var(--text);}
 .ps-ex-top{cursor:pointer;}
 .ps-block-head{cursor:grab;}
+.com-txt{font-weight:400;font-size:13px;color:var(--text-dim);margin-top:2px;white-space:pre-wrap;word-break:break-word;}
+.com-txt.clamp{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;}
+.com-a{font-size:12px;font-weight:600;color:var(--accent-ink);cursor:pointer;}
 .ps-bmv{margin-left:4px;cursor:pointer;padding:0 4px;border-radius:4px;background:rgba(0,0,0,.12);font-size:10px;line-height:16px;}
 .ps-exgrip{cursor:grab;color:var(--text-muted);font-size:13px;padding:0 2px;user-select:none;}
 .ps-btipo{display:flex;align-items:center;gap:6px;margin-bottom:6px;font-size:11.5px;color:var(--text-muted);}
@@ -1325,6 +1328,7 @@ function aplicarCodigoAcceso(){
         <div class="pa-card"><div class="pa-ct">Tendencia wellness</div><div class="pa-cw"><canvas id="pa-trend"></canvas></div></div>
       </div>
       <div id="pa-planes"></div>
+      <div id="pa-comentarios"></div>
       <div id="pa-carga"></div>
     </div>
 
@@ -3603,25 +3607,47 @@ async function panelComentarios(forzar){
     var cola=atls.slice();await Promise.all([0,1,2,3].map(async function(){while(cola.length){await infRegistros(cola.shift(),true);}}));
     try{var rw=await api({action:'getWellness'});BDJ.well=(rw&&rw.ok)?(rw.items||[]):BDJ.well;}catch(e){}
   }
-  var L=[],sesPorId={};(DB.sesiones||[]).forEach(function(s){sesPorId[s.id]=s;});
+  var L=comentariosAtletas(null,hace14);
+  if(!L.length){el.innerHTML='<div class="empty-note">Sin comentarios de los atletas en los últimos 14 días.</div>';return;}
+  el.innerHTML=L.slice(0,12).map(function(x){return comentarioHtml(x,true);}).join('')+(L.length>12?'<div style="font-size:11.5px;color:var(--text-muted);margin-top:8px">… y '+(L.length-12)+' más · los tienes todos en el perfil de cada atleta</div>':'');
+}
+// Reúne los comentarios de los atletas: notas de sesión, adaptaciones de ejercicios y notas de wellness
+function comentariosAtletas(atleta,desde,well){
+  var L=[],sesPorId={},k=atleta?String(atleta).trim():null;(DB.sesiones||[]).forEach(function(s){sesPorId[s.id]=s;});
   Object.keys(INF.reg||{}).forEach(function(a){
+    if(k&&String(a).trim()!==k)return;
     (INF.reg[a]||[]).forEach(function(r){
-      var f=String(r.fecha||'').slice(0,10);if(!f||f<hace14)return;
+      var f=String(r.fecha||'').slice(0,10);if(!f||(desde&&f<desde))return;
       var dt=r.datos||{},s=sesPorId[r.sesion_id],nom=s?(s.nombre||'Sesión').replace(/^.*· S\d+ · /,''):'Sesión';
       if(dt.notas&&String(dt.notas).trim())L.push({a:a,f:f,ic:BDJ_DOLOR.test(dt.notas)?'🩹':'💬',t:String(dt.notas).trim(),ctx:nom,sid:r.sesion_id});
       (dt.ejercicios||[]).forEach(function(e){if(e&&e.nota_adaptacion){var en=((DB.ejercicios||{})[e.id]||{}).nombre||e.id;L.push({a:a,f:f,ic:'🔧',t:String(e.nota_adaptacion).trim(),ctx:en+' · '+nom,sid:r.sesion_id});}});
     });
   });
-  (BDJ.well||[]).forEach(function(w){if(w.notas&&String(w.notas).trim()&&String(w.fecha||'')>=hace14)L.push({a:w.atleta,f:String(w.fecha).slice(0,10),ic:BDJ_DOLOR.test(w.notas)?'🩹':'🌙',t:String(w.notas).trim(),ctx:'Wellness'});});
-  L.sort(function(x,y){return y.f.localeCompare(x.f);});
-  if(!L.length){el.innerHTML='<div class="empty-note">Sin comentarios de los atletas en los últimos 14 días.</div>';return;}
+  (well||BDJ.well||[]).forEach(function(w){if(k&&String(w.atleta||'').trim()!==k)return;if(w.notas&&String(w.notas).trim()&&(!desde||String(w.fecha||'')>=desde))L.push({a:w.atleta,f:String(w.fecha).slice(0,10),ic:BDJ_DOLOR.test(w.notas)?'🩹':'🌙',t:String(w.notas).trim(),ctx:'Wellness'});});
+  return L.sort(function(x,y){return y.f.localeCompare(x.f);});
+}
+// Un comentario: texto completo (se recorta a 3 líneas y se despliega con «Ver todo»)
+function comentarioHtml(x,conNombre,completo){
   var q=function(n){return escAttr(String(n).replace(/\\/g,'\\\\').replace(/'/g,"\\'"));};
-  el.innerHTML=L.slice(0,12).map(function(x){
-    var fe=x.f.slice(8)+'/'+x.f.slice(5,7);
-    return '<div class="ath-row" style="align-items:flex-start" onclick="'+(x.sid?'informeSesion(\''+q(x.sid)+'\')':'openAtletaPerfil(\''+q(x.a)+'\')')+'"><span style="font-size:16px;line-height:20px">'+x.ic+'</span>'
-      +'<div class="nm" style="white-space:normal"><b>'+escapeHtml(x.a)+'</b> <span style="color:var(--text-muted);font-weight:400;font-size:12px">· '+fe+' · '+escapeHtml(x.ctx)+'</span>'
-      +'<div style="font-weight:400;font-size:13px;color:var(--text-dim);margin-top:2px">«'+escapeHtml(x.t.length>180?x.t.slice(0,180)+'…':x.t)+'»</div></div></div>';
-  }).join('')+(L.length>12?'<div style="font-size:11.5px;color:var(--text-muted);margin-top:8px">… y '+(L.length-12)+' más en la Bandeja de revisión</div>':'');
+  var fe=x.f.slice(8)+'/'+x.f.slice(5,7)+(x.f.slice(0,4)!==String(new Date().getFullYear())?'/'+x.f.slice(2,4):'');
+  var largo=!completo&&x.t.length>160;
+  var ir=x.sid?'informeSesion(\''+q(x.sid)+'\')':(conNombre?'openAtletaPerfil(\''+q(x.a)+'\')':'');
+  return '<div class="ath-row com-row" style="align-items:flex-start;cursor:default"><span style="font-size:16px;line-height:20px">'+x.ic+'</span>'
+    +'<div class="nm" style="white-space:normal;min-width:0;flex:1">'+(conNombre?'<b>'+escapeHtml(x.a)+'</b> ':'')+'<span style="color:var(--text-muted);font-weight:400;font-size:12px">'+(conNombre?'· ':'')+fe+' · '+escapeHtml(x.ctx)+'</span>'
+    +'<div class="com-txt'+(largo?' clamp':'')+'">«'+escapeHtml(x.t)+'»</div>'
+    +'<div style="display:flex;gap:12px;margin-top:3px">'+(largo?'<a class="com-a" onclick="var t=this.parentNode.previousSibling;t.classList.toggle(\'clamp\');this.textContent=t.classList.contains(\'clamp\')?\'Ver todo\':\'Ver menos\'">Ver todo</a>':'')
+    +(ir?'<a class="com-a" onclick="'+ir+'">'+(x.sid?'📋 Ver sesión':'👤 Ver perfil')+'</a>':'')+'</div></div></div>';
+}
+// Perfil del atleta: todos sus comentarios
+async function paRenderComentarios(nombre){
+  var el=document.getElementById('pa-comentarios');if(!el)return;
+  el.innerHTML='<div class="pa-card" style="margin:14px 0"><div class="pa-ct">Comentarios del atleta</div><div class="pa-empty">⏳ Cargando…</div></div>';
+  try{await infRegistros(nombre);}catch(e){}
+  var well=BDJ.well;if(!well){try{var rw=await api({action:'getWellness'});well=BDJ.well=(rw&&rw.ok)?(rw.items||[]):[];}catch(e){well=[];}}
+  if(paAtletaActual!==nombre)return;
+  var L=comentariosAtletas(nombre,null,well);
+  el.innerHTML='<div class="pa-card" style="margin:14px 0"><div class="pa-ct">Comentarios del atleta'+(L.length?' · '+L.length:'')+'</div>'
+    +(L.length?'<div style="max-height:420px;overflow:auto">'+L.slice(0,60).map(function(x){return comentarioHtml(x,false,true);}).join('')+'</div>':'<div class="pa-empty">Todavía no ha dejado comentarios en sus sesiones ni en el wellness.</div>')+'</div>';
 }
 async function panelBandeja(forzar){
   var el=document.getElementById('panel-bandeja');if(!el)return;
@@ -6120,6 +6146,7 @@ async function openAtletaPerfil(nombre){
   var _tp=document.getElementById('pa-tab-par');if(_tp)_tp.style.display=cxPartidosDe(nombre).length?'':'none';if(_tp)_tp.textContent=(f&&f.deporte==='esgrima')?'Competiciones':'Partidos';
   cxRender();paRenderPartidos(nombre);
   try{paRenderPlanes(nombre);}catch(e){}
+  try{paRenderComentarios(nombre);}catch(e){}
 
   var [rw,rt,rh,rev]=await Promise.all([
     api({action:'getWellness',atleta:nombre}),
