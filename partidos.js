@@ -66,9 +66,9 @@ window.PARTIDOS={
           dec:{v:45},
           vmax:{v:32.1}
         }},
-      // J10-J12: Informe general MC LAB (31 oct, 8 nov y 14 nov 2026). El informe no trae rival, HMLD ni % POC: completar con el Match Day Report
+      // J10-J12: Informe general MC LAB. J10 Castilla 2-0 Cartagena (31 oct, Di Stéfano) · J11 Castilla 2-2 Hércules (8 nov, Di Stéfano) · J12 Gimnàstic 0-1 Castilla (13 nov, Tarragona). Faltan HMLD y % POC
       // sprint = distancia >24 km/h · esf28 = esfuerzos >24 km/h · v28 = super sprint >28 km/h · acc/dec >3 m/s²
-      {id:'j10',jornada:'J10',partido:'RM Castilla · J10',fecha:'sábado 31 oct 2026',min:101,carga:'',
+      {id:'j10',jornada:'J10',partido:'RM Castilla vs Cartagena · Victoria 2-0',rival:'Cartagena',resultado:'Victoria 2-0',fecha:'sábado 31 oct 2026',min:101,carga:'',
         m:{
           dt:{v:11135},
           hsr:{v:650},
@@ -79,7 +79,7 @@ window.PARTIDOS={
           dec:{v:34},
           vmax:{v:30.3}
         }},
-      {id:'j11',jornada:'J11',partido:'RM Castilla · J11',fecha:'domingo 8 nov 2026',min:102,carga:'',
+      {id:'j11',jornada:'J11',partido:'RM Castilla vs Hércules · Empate 2-2',rival:'Hércules',resultado:'Empate 2-2 · gol de Diego (59\')',fecha:'domingo 8 nov 2026',min:102,carga:'',
         m:{
           dt:{v:11305},
           hsr:{v:704},
@@ -90,7 +90,7 @@ window.PARTIDOS={
           dec:{v:48},
           vmax:{v:30.7}
         }},
-      {id:'j12',jornada:'J12',partido:'RM Castilla · J12',fecha:'viernes 13 nov 2026',min:99,carga:'',
+      {id:'j12',jornada:'J12',partido:'Gimnàstic – RM Castilla · Victoria 0-1',rival:'Gimnàstic de Tarragona',resultado:'Victoria 0-1',fecha:'viernes 13 nov 2026',min:99,carga:'',
         m:{
           dt:{v:10884},
           hsr:{v:645},
