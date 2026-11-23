@@ -250,6 +250,20 @@ td{padding:11px 14px;border-top:1px solid var(--border);font-size:13px;vertical-
 .badge-gray{background:#eef1f6;color:var(--text-muted);}
 .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:600;display:none;align-items:center;justify-content:center;padding:20px;}
 #modal-ejpicker,#modal-newbloque{z-index:700;}
+.ejpick-modal{display:flex;flex-direction:column;overflow:hidden !important;}
+.ejpick-modal>*{flex:0 0 auto;}
+.ejpick-modal .modal-actions{margin-top:12px;}
+.ejpick-grupo{width:100%;padding:8px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;}
+#ejpick-sel{max-height:76px;overflow-y:auto;}
+.ejpick-row{display:flex;align-items:center;gap:10px;padding:8px;border:1px solid var(--border);border-radius:8px;cursor:pointer;user-select:none;}
+.ejpick-row:hover{border-color:var(--text-muted);}
+.ejpick-row.sel{border-color:var(--accent-ink);background:rgba(196,241,53,.16);}
+.ejpick-chk{flex:0 0 22px;width:22px;height:22px;border-radius:6px;border:2px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#000;}
+.ejpick-row.sel .ejpick-chk{background:var(--accent);border-color:var(--accent-ink);}
+.ejpick-sel{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;}
+.ejpick-sel:empty{display:none;}
+.ejpick-pill{display:inline-flex;align-items:center;gap:6px;font-size:12px;padding:4px 8px;border-radius:999px;background:var(--surface2);border:1px solid var(--border);}
+.ejpick-pill b{cursor:pointer;color:var(--text-muted);font-weight:700;}
 .modal-overlay.open{display:flex;}
 .modal{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:24px;width:100%;max-width:560px;max-height:92vh;overflow-y:auto;}
 .modal-title{font-size:18px;font-weight:700;margin-bottom:18px;}
@@ -794,7 +808,7 @@ function aplicarCodigoAcceso(){
     <div class="sb-group">Sistema</div>
     <div class="tab" onclick="switchTab('ajustes',this)"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg><span>Ajustes</span></div>
   </nav>
-  <div class="sb-foot"><div id="auth-chip" style="display:none;font-size:12px;color:#cbd5e1;margin-bottom:10px;line-height:1.4"></div><div style="font-size:10px;color:#64748b;margin-bottom:6px">versión 83</div><div class="status-badge" id="status">⏳ Conectando...</div></div>
+  <div class="sb-foot"><div id="auth-chip" style="display:none;font-size:12px;color:#cbd5e1;margin-bottom:10px;line-height:1.4"></div><div style="font-size:10px;color:#64748b;margin-bottom:6px">versión 98</div><div class="status-badge" id="status">⏳ Conectando...</div></div>
 </aside>
 <div class="sb-backdrop" onclick="closeSidebar()"></div>
 <div class="main">
@@ -1455,13 +1469,15 @@ function aplicarCodigoAcceso(){
 </div>
 
 <div class="modal-overlay" id="modal-ejpicker">
-  <div class="modal" style="max-width:560px;">
-    <div class="modal-title">Añadir ejercicio</div>
+  <div class="modal ejpick-modal" style="max-width:560px;">
+    <div class="modal-title" id="ejpick-title">Añadir ejercicios</div>
+    <div id="ejpick-hint" style="font-size:12px;color:var(--text-muted);margin:-6px 0 10px">Marca uno o varios ejercicios y pulsa «Añadir». Se añaden en el orden en que los marques.</div>
     <input type="text" id="ejpick-search" placeholder="Buscar por nombre..." oninput="renderEjPickerList()" style="width:100%;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;outline:none;margin-bottom:10px;">
     <div id="ejpick-cat-filters" class="filter-chips" style="margin-bottom:6px;"></div>
     <div id="ejpick-grupo-filters" class="filter-chips" style="margin-bottom:10px;"></div>
-    <div id="ejpick-list" style="max-height:340px;overflow-y:auto;display:flex;flex-direction:column;gap:6px;"></div>
-    <div class="modal-actions"><button class="btn btn-secondary" onclick="closeModal('ejpicker')">Cerrar</button></div>
+    <div id="ejpick-list" style="flex:1 1 auto;min-height:160px;overflow-y:auto;display:flex;flex-direction:column;gap:6px;"></div>
+    <div id="ejpick-sel" class="ejpick-sel"></div>
+    <div class="modal-actions"><button class="btn btn-secondary" onclick="closeModal('ejpicker')">Cerrar</button><button class="btn btn-primary" id="ejpick-add" onclick="confirmEjPick()" disabled>Añadir</button></div>
   </div>
 </div>
 
@@ -1853,6 +1869,7 @@ var RESISTENCIA_COLOR='#60a5fa';
 
 var DEFAULT_BLOQUES = [
   {id:'activacion',    name:'Activación',          color:'#60a5fa'},
+  {id:'desplazamientos',name:'Desplazamientos',    color:'#fbbf24'},
   {id:'fuerza',        name:'Fuerza',              color:'#ccff66'},
   {id:'potencia',      name:'Potencia',            color:'#fb923c'},
   {id:'pliometria',    name:'Pliometría',          color:'#f472b6'},
@@ -1860,6 +1877,24 @@ var DEFAULT_BLOQUES = [
   {id:'resistencia',   name:'Resistencia',         color:'#06b6d4'},
   {id:'vuelta-calma',  name:'Vuelta a la Calma',   color:'#4ade80'}
 ];
+// Bloques nuevos que se añaden una sola vez a la lista guardada en Ajustes (detrás de "despuesDe").
+// Se marca en la config para no volver a crearlos si luego se borran a mano desde Ajustes.
+var BLOQUES_NUEVOS=[{id:'desplazamientos',name:'Desplazamientos',color:'#fbbf24',despuesDe:'activacion',marca:'bloque_nuevo_desplazamientos'}];
+function asegurarBloquesNuevos(){
+  var list=(DB.config.bloques_ejercicio||[]).slice();
+  if(!list.length)return; // sin lista guardada se usan los DEFAULT_BLOQUES, que ya lo incluyen
+  BLOQUES_NUEVOS.forEach(function(b){
+    if(DB.config[b.marca])return;
+    if(!list.some(function(x){return x.id===b.id;})){
+      var i=list.findIndex(function(x){return x.id===b.despuesDe;});
+      list.splice(i>=0?i+1:list.length,0,{id:b.id,name:b.name,color:b.color});
+      DB.config.bloques_ejercicio=list;
+      persistBloques(list).catch(function(){});
+    }
+    DB.config[b.marca]=true;
+    apiPost({action:'saveConfig',key:b.marca,value:true}).catch(function(){});
+  });
+}
 function getBloques(){return (DB.config.bloques_ejercicio&&DB.config.bloques_ejercicio.length)?DB.config.bloques_ejercicio:DEFAULT_BLOQUES;}
 async function persistBloques(list){
   try{
@@ -2216,7 +2251,7 @@ window.onload=async function(){
     if(rEq&&rEq.ok) DB.equipos=rEq.equipos||[];
     if(rE.ok) DB.ejercicios=rE.ejercicios||{};
     if(rS.ok) DB.sesiones=rS.sesiones||[];
-    if(rC.ok) DB.config=Object.assign(DB.config,rC.config||{});
+    if(rC.ok){DB.config=Object.assign(DB.config,rC.config||{});try{asegurarBloquesNuevos();}catch(e){}}
     if(rR&&rR.ok) DB.resistencia=rR.items||[];
     if(rPE&&rPE.ok) DB.planExterno=rPE.items||[];
     await aplicarProgramasDelServidor(rP);
@@ -4669,18 +4704,52 @@ function openEjPicker(context,bloqueId){
     var _ejs=Object.values(DB.ejercicios||{});
     ['Resistencia','Cardio'].some(function(c){if(_ejs.some(function(e){return e.categoria===c;})){ejPickerFilterCat=c;return true;}return false;});
   }
+  ejPickSel=[];
+  var multi=ejPickMulti();
+  document.getElementById('ejpick-title').textContent=multi?'Añadir ejercicios':'Intercambiar ejercicio';
+  document.getElementById('ejpick-hint').style.display=multi?'':'none';
+  document.getElementById('ejpick-add').style.display=multi?'':'none';
   document.getElementById('ejpick-search').value='';
   renderEjPickerFilters();
   renderEjPickerList();
+  renderEjPickSel();
   openModal('ejpicker');
+  setTimeout(function(){try{document.getElementById('ejpick-search').focus();}catch(e){}},50);
+}
+// Selección múltiple: se pueden marcar varios ejercicios y añadirlos de una vez al bloque
+// (en el orden en que se marcan). Intercambiar un ejercicio sigue siendo de uno en uno.
+var ejPickSel=[];
+function ejPickMulti(){return !!ejPickerTarget&&ejPickerTarget.context!=='programa-swap';}
+function toggleEjPick(id){
+  var i=ejPickSel.indexOf(id);
+  if(i>=0)ejPickSel.splice(i,1);else ejPickSel.push(id);
+  renderEjPickerList();renderEjPickSel();
+}
+function renderEjPickSel(){
+  var box=document.getElementById('ejpick-sel'),btn=document.getElementById('ejpick-add');
+  if(!box||!btn)return;
+  var n=ejPickSel.length;
+  box.innerHTML=n?ejPickSel.map(function(id,i){var e=DB.ejercicios[id]||{nombre:id};return '<span class="ejpick-pill">'+(i+1)+'. '+escapeHtml(e.nombre)+' <b title="Quitar" onclick="toggleEjPick(\''+escAttr(id)+'\')">✕</b></span>';}).join(''):'';
+  btn.disabled=!n;
+  btn.textContent=n?('Añadir '+n+(n===1?' ejercicio':' ejercicios')):'Añadir';
+}
+function confirmEjPick(){
+  if(!ejPickerTarget||!ejPickSel.length)return;
+  var n=ejPickSel.length;
+  ejPickSel.forEach(function(id){addEjAlDestino(id);});
+  refrescarDestinoEj();
+  ejPickSel=[];
+  closeModal('ejpicker');
+  toast('✅ '+n+(n===1?' ejercicio añadido':' ejercicios añadidos'));
 }
 function renderEjPickerFilters(){
   var cats=DB.config.categorias||[];
   document.getElementById('ejpick-cat-filters').innerHTML='<div class="fchip'+(!ejPickerFilterCat?' active':'')+'" onclick="setEjPickerCat(null)">Todas las categorías</div>'
     +cats.map(function(c){return '<div class="fchip'+(ejPickerFilterCat===c?' active':'')+'" onclick="setEjPickerCat(\''+c.replace(/'/g,"\\'")+'\')">'+c+'</div>';}).join('');
   var grupos=DB.config.grupos_musculares||[];
-  document.getElementById('ejpick-grupo-filters').innerHTML='<div class="fchip'+(!ejPickerFilterGrupo?' active':'')+'" onclick="setEjPickerGrupo(null)">Todos los grupos</div>'
-    +grupos.map(function(g){return '<div class="fchip'+(ejPickerFilterGrupo===g?' active':'')+'" onclick="setEjPickerGrupo(\''+g.replace(/'/g,"\\'")+'\')">'+g+'</div>';}).join('');
+  // Grupos musculares en un desplegable: con tantas opciones, los chips empujaban la lista y el botón «Añadir» fuera de la pantalla
+  document.getElementById('ejpick-grupo-filters').innerHTML='<select class="ejpick-grupo" onchange="setEjPickerGrupo(this.value||null)"><option value="">Todos los grupos musculares</option>'
+    +grupos.map(function(g){return '<option value="'+escAttr(g)+'"'+(ejPickerFilterGrupo===g?' selected':'')+'>'+escapeHtml(g)+'</option>';}).join('')+'</select>';
 }
 function setEjPickerCat(c){ejPickerFilterCat=c;renderEjPickerFilters();renderEjPickerList();}
 function setEjPickerGrupo(g){ejPickerFilterGrupo=g;renderEjPickerFilters();renderEjPickerList();}
@@ -4696,29 +4765,39 @@ function renderEjPickerList(){
   if(!items.length){list.innerHTML='<div style="text-align:center;color:var(--text-muted);font-size:12px;padding:20px;">Sin resultados</div>';return;}
   list.innerHTML=items.map(function(e){
     var img=e.imagen?'<img src="'+e.imagen+'" referrerpolicy="no-referrer" style="width:36px;height:36px;object-fit:cover;border-radius:6px;">':'<div style="width:36px;height:36px;background:var(--surface2);border-radius:6px;display:flex;align-items:center;justify-content:center;">💪</div>';
-    return '<div onclick="pickEjercicio(\''+e.id+'\')" style="display:flex;align-items:center;gap:10px;padding:8px;border:1px solid var(--border);border-radius:8px;cursor:pointer;">'+img+'<div><div style="font-size:13px;font-weight:600;">'+e.nombre+'</div><div style="font-size:11px;color:var(--text-muted);">'+(e.categoria||'')+'</div></div></div>';
+    if(!ejPickMulti())return '<div class="ejpick-row" onclick="pickEjercicio(\''+e.id+'\')">'+img+'<div><div style="font-size:13px;font-weight:600;">'+e.nombre+'</div><div style="font-size:11px;color:var(--text-muted);">'+(e.categoria||'')+'</div></div></div>';
+    var k=ejPickSel.indexOf(e.id);
+    return '<div class="ejpick-row'+(k>=0?' sel':'')+'" onclick="toggleEjPick(\''+e.id+'\')"><span class="ejpick-chk">'+(k>=0?(k+1):'')+'</span>'+img+'<div><div style="font-size:13px;font-weight:600;">'+e.nombre+'</div><div style="font-size:11px;color:var(--text-muted);">'+(e.categoria||'')+'</div></div></div>';
   }).join('');
 }
-function pickEjercicio(id){
-  if(!ejPickerTarget) return;
+function addEjAlDestino(id){
   var bloqueId=ejPickerTarget.bloqueId;
   if(ejPickerTarget.context==='template'){
     if(!currentTemplate.bloques[bloqueId])currentTemplate.bloques[bloqueId]=[];
     currentTemplate.bloques[bloqueId].push({id:id,params:exDefaultParams(id,false)});
-    markDirty();renderBloqueExs(bloqueId);
-  } else if(ejPickerTarget.context==='programa-swap'){
-    var pw=psMat(psCtx.wi,psCtx.dk),tgt=(pw.bloques[bloqueId]||[])[psCtx.ei];
-    if(tgt){tgt.id=id;markDirtyPrograma();renderProgramaBoard();toast('🔄 Ejercicio intercambiado (se mantienen series, reps y cargas)');}
   } else if(ejPickerTarget.context==='programa'){
     var ps=psMat(psCtx.wi,psCtx.dk);
     if(!ps.bloques[bloqueId])ps.bloques[bloqueId]=[];
     ps.bloques[bloqueId].push({id:id,params:exDefaultParams(id,true)});
-    psOpen[psCtx.wi+'|'+psCtx.dk+'|'+bloqueId]=true;
-    markDirtyPrograma();renderProgramaBoard();renderProgramaList();
   } else {
     if(!editingSesion.bloques[bloqueId])editingSesion.bloques[bloqueId]=[];
     editingSesion.bloques[bloqueId].push({id:id,params:exDefaultParams(id,true)});
-    renderSesionBloqueExs(bloqueId);
+  }
+}
+function refrescarDestinoEj(){
+  var bloqueId=ejPickerTarget.bloqueId;
+  if(ejPickerTarget.context==='template'){markDirty();renderBloqueExs(bloqueId);}
+  else if(ejPickerTarget.context==='programa'){psOpen[psCtx.wi+'|'+psCtx.dk+'|'+bloqueId]=true;markDirtyPrograma();renderProgramaBoard();renderProgramaList();}
+  else renderSesionBloqueExs(bloqueId);
+}
+function pickEjercicio(id){
+  if(!ejPickerTarget) return;
+  var bloqueId=ejPickerTarget.bloqueId;
+  if(ejPickerTarget.context==='programa-swap'){
+    var pw=psMat(psCtx.wi,psCtx.dk),tgt=(pw.bloques[bloqueId]||[])[psCtx.ei];
+    if(tgt){tgt.id=id;markDirtyPrograma();renderProgramaBoard();toast('🔄 Ejercicio intercambiado (se mantienen series, reps y cargas)');}
+  } else {
+    addEjAlDestino(id);refrescarDestinoEj();
   }
   closeModal('ejpicker');
 }
@@ -5262,6 +5341,7 @@ function psDayHtml(wi,di){
   var sel='<option value="">— Descanso —</option><option value="__custom__"'+(tplId==='__custom__'?' selected':'')+'>✚ Sesión en blanco</option>'
     +DB.templates.map(function(t){return '<option value="'+escAttr(t.id)+'"'+(t.id===tplId?' selected':'')+'>'+escapeHtml(t.name)+'</option>';}).join('');
   var h='<div class="ps-day" ondragover="psDragOver(event)" ondragleave="psDragLeave(event)" ondrop="psDrop(event,'+wi+','+dk+')"><div class="ps-day-head'+(ses?' ps-grab':'')+'"'+(ses?' draggable="true" ondragstart="psDragStart(event,'+wi+','+dk+')" ondragend="psDragEnd(event)" title="Arrastra para mover a otro día · Alt/Ctrl + arrastrar para copiar"':'')+'><span>'+(ses?'⠿ ':'')+'Día '+dk+' · '+DIAS_SEMANA[di]+'</span><span class="ps-day-btns"><small>'+(ses?total+' ej.':'')+'</small>'
+    +(ses&&total?'<button class="ps-mini" title="Descargar el PDF del entreno de este día" onclick="psPdf('+wi+','+dk+')">📄 PDF</button>':'')
     +(ses?'<button class="ps-mini" title="Copiar este día" onclick="psCopyDay('+wi+','+dk+')">⧉ Copiar</button>':'')
     +(ses?'<button class="ps-mini ps-mini-del" title="Eliminar este día del plan" onclick="psDelDia('+wi+','+dk+')">🗑</button>':'')
     +(PS_CLIP?'<button class="ps-mini" title="Pegar el día copiado aquí" onclick="psPasteDay('+wi+','+dk+')">📋 Pegar</button>':'')+'</span></div>'
@@ -5278,9 +5358,19 @@ function psDayHtml(wi,di){
     var ids=Object.keys(ses.bloques);
     if(!ids.length)h+='<div class="ps-rest">Sin bloques todavía</div>';
     ids.forEach(function(bid){h+=psBlockHtml(wi,dk,ses,bid);});
-    h+='<div class="ps-foot"><button class="btn btn-secondary btn-xs" onclick="psAddBloque('+wi+','+dk+')">+ Añadir bloque</button> <button class="btn btn-secondary btn-xs" title="Elegir un bloque de la biblioteca" onclick="psBlInsertar('+wi+','+dk+')">🧱 Insertar bloque</button> <button class="btn btn-secondary btn-xs" title="Guarda esta sesión en la pestaña Programas, fuera del plan" onclick="psGuardarComoPrograma('+wi+','+dk+')">💾 Guardar como programa</button>'+(PS_BLQ_CLIP?' <button class="btn btn-primary btn-xs" title="Pegar aquí el bloque copiado" onclick="psPasteBloque('+wi+','+dk+')">📋 Pegar bloque «'+escapeHtml(PS_BLQ_CLIP.meta.name||'')+'»</button>':'')+'</div>';
+    h+='<div class="ps-foot"><button class="btn btn-secondary btn-xs" onclick="psAddBloque('+wi+','+dk+')">+ Añadir bloque</button> <button class="btn btn-secondary btn-xs" title="Elegir un bloque de la biblioteca" onclick="psBlInsertar('+wi+','+dk+')">🧱 Insertar bloque</button> <button class="btn btn-secondary btn-xs" title="Guarda esta sesión en la pestaña Programas, fuera del plan" onclick="psGuardarComoPrograma('+wi+','+dk+')">💾 Guardar como programa</button>'+(total?' <button class="btn btn-secondary btn-xs" title="Vista previa y descarga del PDF del entreno de este día" onclick="psPdf('+wi+','+dk+')">📄 PDF del entreno</button>':'')+(PS_BLQ_CLIP?' <button class="btn btn-primary btn-xs" title="Pegar aquí el bloque copiado" onclick="psPasteBloque('+wi+','+dk+')">📋 Pegar bloque «'+escapeHtml(PS_BLQ_CLIP.meta.name||'')+'»</button>':'')+'</div>';
   }
   return h+'</div>';
+}
+// PDF del entreno de un día del plan (misma vista previa y ajustes que el PDF de los programas)
+function psPdf(wi,dk){
+  var ses=psSesion(wi,dk);
+  var n=ses?Object.keys(ses.bloques||{}).reduce(function(a,b){return a+(ses.bloques[b]||[]).length;},0):0;
+  if(!n){toast('Este día no tiene ejercicios','err');return;}
+  var bl={},meta={};
+  Object.keys(ses.bloques).forEach(function(b){if((ses.bloques[b]||[]).length){bl[b]=ses.bloques[b];meta[b]=resolveBloqueMeta(b,ses);}});
+  var nombre=(ses.nombre||'').trim()||((currentPrograma.name||'Plan')+' · S'+(wi+1)+' · '+DIAS_SEMANA[dk-1]);
+  openTemplatePdfSettings({id:'ps_pdf_'+wi+'_'+dk,name:nombre,bloques:JSON.parse(JSON.stringify(bl)),bloqueMeta:JSON.parse(JSON.stringify(meta)),_pdfPrefijo:'Entreno',_pdfEstado:'ENTRENO',_pdfSub:(currentPrograma.name||'Plan')+' · Semana '+(wi+1)+(psFaseDe(currentPrograma.weeks[wi])?' ('+psFaseDe(currentPrograma.weeks[wi])+')':'')+' · '+DIAS_SEMANA[dk-1]});
 }
 async function psGuardarComoPrograma(wi,dk){
   var ses=psSesion(wi,dk);if(!ses)return;
@@ -7531,7 +7621,7 @@ async function buildSesionPDFDoc(ses,registro,imgCache,opts){
     ordered=opts.blockOrder.filter(function(k){return bloques[k]&&bloques[k].length;});
     Object.keys(bloques).forEach(function(k){if(ordered.indexOf(k)<0)ordered.push(k);});
   }else{
-    var bloqueOrder=['activacion','fuerza','potencia','pliometria','pot-resistida','resistencia','vuelta-calma'];
+    var bloqueOrder=['activacion','desplazamientos','fuerza','potencia','pliometria','pot-resistida','resistencia','vuelta-calma'];
     var extraKeys=Object.keys(bloques).filter(function(k){return bloqueOrder.indexOf(k)<0;});
     ordered=bloqueOrder.filter(function(k){return bloques[k];}).concat(extraKeys);
   }
@@ -8024,7 +8114,7 @@ async function buildTemplatePDFDoc(tpl,imgCache,opts){
   doc.setFont('helvetica','bold');doc.setFontSize(8.5);doc.setTextColor(INK_SOFT[0],INK_SOFT[1],INK_SOFT[2]);
   doc.text(TRAINER_BRAND.toUpperCase(),mx,M+13.6);
 
-  var estado='PLANTILLA';
+  var estado=tpl._pdfEstado||'PLANTILLA';
   doc.setFont('helvetica','bold');doc.setFontSize(8.5);
   var estW=doc.getTextWidth(estado)+13;
   doc.setFillColor(238,239,241);
@@ -8040,7 +8130,7 @@ async function buildTemplatePDFDoc(tpl,imgCache,opts){
   var totalBloques=Object.keys(tpl.bloques).length;
   var totalEjs=Object.values(tpl.bloques).reduce(function(a,arr){return a+(arr||[]).length;},0);
   doc.setFont('helvetica','normal');doc.setFontSize(metaSize);doc.setTextColor(INK_SOFT[0],INK_SOFT[1],INK_SOFT[2]);
-  doc.text(totalBloques+(totalBloques===1?' bloque':' bloques')+'   ·   '+totalEjs+(totalEjs===1?' ejercicio':' ejercicios'),M+8,metaY);
+  doc.text((tpl._pdfSub?tpl._pdfSub+'   ·   ':'')+totalBloques+(totalBloques===1?' bloque':' bloques')+'   ·   '+totalEjs+(totalEjs===1?' ejercicio':' ejercicios'),M+8,metaY);
 
 
   var y=M+headerH+8;
@@ -8241,7 +8331,7 @@ async function openSesionPdfSettings(){
   var ses=JSON.parse(JSON.stringify(origSes));
   (ses.ejercicios||[]).forEach(function(ex,i){ex._origIdx=i;});
 
-  var bloqueOrderDefault=['activacion','fuerza','potencia','pliometria','pot-resistida','resistencia','vuelta-calma'];
+  var bloqueOrderDefault=['activacion','desplazamientos','fuerza','potencia','pliometria','pot-resistida','resistencia','vuelta-calma'];
   var presentBids=[];
   (ses.ejercicios||[]).forEach(function(ex){var bid=ex.bloque||'otros';if(presentBids.indexOf(bid)<0)presentBids.push(bid);});
   var blockOrderIds=bloqueOrderDefault.filter(function(k){return presentBids.indexOf(k)>=0;}).concat(presentBids.filter(function(k){return bloqueOrderDefault.indexOf(k)<0;}));
@@ -8255,16 +8345,17 @@ async function openSesionPdfSettings(){
   refreshPdfPreview();
 }
 
-async function openTemplatePdfSettings(){
-  if(!currentTemplate){toast('Selecciona o crea una plantilla','err');return;}
-  if(!Object.keys(currentTemplate.bloques||{}).length){toast('Esta plantilla no tiene bloques','err');return;}
+async function openTemplatePdfSettings(tplOrigen){
+  var src=tplOrigen||currentTemplate;
+  if(!src){toast('Selecciona o crea una plantilla','err');return;}
+  if(!Object.keys(src.bloques||{}).length){toast('Esta plantilla no tiene bloques','err');return;}
   toast('Cargando vista previa...');
   await preloadLogo();
   var allEjercicios=[];
-  Object.keys(currentTemplate.bloques).forEach(function(bid){(currentTemplate.bloques[bid]||[]).forEach(function(ex){allEjercicios.push(ex);});});
+  Object.keys(src.bloques).forEach(function(bid){(src.bloques[bid]||[]).forEach(function(ex){allEjercicios.push(ex);});});
   var imgCache=await preloadExerciseImages(allEjercicios);
 
-  var tpl=JSON.parse(JSON.stringify(currentTemplate));
+  var tpl=JSON.parse(JSON.stringify(src));
   PDF_PREVIEW_CTX={kind:'template',tpl:tpl,imgCache:imgCache,blockOrderIds:Object.keys(tpl.bloques)};
   document.getElementById('pdfopt-exec-wrap').style.display='none';
   document.getElementById('pdfopt-summary-wrap').style.display='none';
@@ -8437,7 +8528,7 @@ async function downloadPdfFromSettings(){
     var ses=PDF_PREVIEW_CTX.ses;
     filename='Sesion_'+ses.atleta.split(' ')[0]+'_'+ses.fecha+'_'+ses.nombre.replace(/[^a-zA-Z0-9]/g,'_')+'.pdf';
   }else{
-    filename='Plantilla_'+(PDF_PREVIEW_CTX.tpl.name||'sin_nombre').replace(/[^a-zA-Z0-9]/g,'_')+'.pdf';
+    filename=(PDF_PREVIEW_CTX.tpl._pdfPrefijo||'Plantilla')+'_'+(PDF_PREVIEW_CTX.tpl.name||'sin_nombre').replace(/[^a-zA-Z0-9]/g,'_')+'.pdf';
   }
   PDF_PREVIEW_CTX.lastDoc.save(filename);
   toast('✅ PDF descargado');

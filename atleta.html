@@ -615,7 +615,8 @@ function cerrarDetalleEjercicio(){
 
 var DEFAULT_BLOQUES=[
   {id:'activacion',    name:'Activación',          color:'#60a5fa'},
-  {id:'fuerza',        name:'Fuerza',              color:'#ccff66'},
+  {id:'desplazamientos',name:'Desplazamientos',    color:'#fbbf24'},
+  {id:'fuerza',      name:'Fuerza',              color:'#ccff66'},
   {id:'potencia',      name:'Potencia',            color:'#fb923c'},
   {id:'pliometria',    name:'Pliometría',          color:'#f472b6'},
   {id:'pot-resistida', name:'Potencia Resistida',  color:'#a78bfa'},
@@ -721,7 +722,11 @@ async function loadAsignadas(){
     if(rPE&&rPE.ok) PLAN_EXTERNO=(rPE.items||[]).filter(function(p){return mismoAtleta(p.atleta,ATLETA);});
     if(rEV&&rEV.ok&&rEV.deporte) EV_DEPORTE=rEV.deporte;
     if(rEV&&rEV.ok) EVENTOS=(rEV.items||[]).filter(function(e){return mismoAtleta(e.atleta,ATLETA);});
-    if(rC&&rC.ok&&rC.config.bloques_ejercicio&&rC.config.bloques_ejercicio.length) BLOQUES=rC.config.bloques_ejercicio;
+    if(rC&&rC.ok&&rC.config.bloques_ejercicio&&rC.config.bloques_ejercicio.length){
+      BLOQUES=rC.config.bloques_ejercicio.slice();
+      // Solo para mostrar nombre y color: si falta algún bloque base (p. ej. Desplazamientos), se usa el de por defecto
+      DEFAULT_BLOQUES.forEach(function(d){if(!BLOQUES.some(function(b){return b.id===d.id;}))BLOQUES.push(d);});
+    }
     if(rC&&rC.ok&&rC.config.tipos_actividad&&rC.config.tipos_actividad.length) ACT_TIPOS=rC.config.tipos_actividad;
     renderSemana();
     cargarExternos();
