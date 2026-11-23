@@ -65,6 +65,41 @@ window.PARTIDOS={
           acc:{v:24},
           dec:{v:45},
           vmax:{v:32.1}
+        }},
+      // J10-J12: Informe general MC LAB (31 oct, 8 nov y 14 nov 2026). El informe no trae rival, HMLD ni % POC: completar con el Match Day Report
+      // sprint = distancia >24 km/h · esf28 = esfuerzos >24 km/h · v28 = super sprint >28 km/h · acc/dec >3 m/s²
+      {id:'j10',jornada:'J10',partido:'RM Castilla · J10',fecha:'sábado 31 oct 2026',min:101,carga:'',
+        m:{
+          dt:{v:11135},
+          hsr:{v:650},
+          v28:{v:46},
+          sprint:{v:287},
+          esf28:{v:21},
+          acc:{v:20},
+          dec:{v:34},
+          vmax:{v:30.3}
+        }},
+      {id:'j11',jornada:'J11',partido:'RM Castilla · J11',fecha:'domingo 8 nov 2026',min:102,carga:'',
+        m:{
+          dt:{v:11305},
+          hsr:{v:704},
+          v28:{v:27},
+          sprint:{v:246},
+          esf28:{v:21},
+          acc:{v:39},
+          dec:{v:48},
+          vmax:{v:30.7}
+        }},
+      {id:'j12',jornada:'J12',partido:'RM Castilla · J12',fecha:'viernes 13 nov 2026',min:99,carga:'',
+        m:{
+          dt:{v:10884},
+          hsr:{v:645},
+          v28:{v:26},
+          sprint:{v:254},
+          esf28:{v:20},
+          acc:{v:24},
+          dec:{v:42},
+          vmax:{v:30.6}
         }}
     ]
   }
