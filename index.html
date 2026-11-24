@@ -121,6 +121,7 @@ body{background:var(--bg);color:var(--text);font-family:'Inter','Segoe UI',syste
 .pa-tabs{display:flex;overflow-x:auto;flex:1;}
 .pa-tab{padding:0 14px;font-size:11px;font-weight:500;letter-spacing:.07em;text-transform:uppercase;color:var(--text-dim);cursor:pointer;border-bottom:2px solid transparent;transition:all .15s;white-space:nowrap;font-family:'DM Mono',monospace;display:flex;align-items:center;height:50px;}
 .pa-tab:hover{color:var(--text);}
+.doc-card{padding:14px 16px}.doc-h{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.doc-tipo{font-size:11px;font-weight:700;border:1px solid;border-radius:999px;padding:2px 9px;white-space:nowrap}.doc-t{flex:1;min-width:160px}.doc-tt{font-weight:700;font-size:14px}.doc-f{font-size:12px;color:var(--text-muted)}.doc-b{display:flex;gap:6px;flex-wrap:wrap}.doc-n{font-size:12.5px;color:var(--text-dim);margin-top:8px;white-space:pre-wrap}.doc-tbl{min-width:560px;font-size:12px}.doc-frame{width:100%;height:75vh;min-height:420px;border:1px solid var(--border);border-radius:10px;margin-top:10px;background:#fff}
 .pa-tab.on{color:var(--accent-ink);border-bottom-color:var(--accent);}
 .pa-main{max-width:1200px;margin:0 auto;padding:20px 16px 60px;}
 .pa-pnl{display:none;}
@@ -809,7 +810,7 @@ function aplicarCodigoAcceso(){
     <div class="sb-group">Sistema</div>
     <div class="tab" onclick="switchTab('ajustes',this)"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg><span>Ajustes</span></div>
   </nav>
-  <div class="sb-foot"><div id="auth-chip" style="display:none;font-size:12px;color:#cbd5e1;margin-bottom:10px;line-height:1.4"></div><div style="font-size:10px;color:#64748b;margin-bottom:6px">versión 103</div><div class="status-badge" id="status">⏳ Conectando...</div></div>
+  <div class="sb-foot"><div id="auth-chip" style="display:none;font-size:12px;color:#cbd5e1;margin-bottom:10px;line-height:1.4"></div><div style="font-size:10px;color:#64748b;margin-bottom:6px">versión 108</div><div class="status-badge" id="status">⏳ Conectando...</div></div>
 </aside>
 <div class="sb-backdrop" onclick="closeSidebar()"></div>
 <div class="main">
@@ -1324,6 +1325,22 @@ function aplicarCodigoAcceso(){
   </div>
 </div>
 
+<!-- ══ INFORME DEL JUGADOR (pestaña Informes) ══ -->
+<div class="modal-overlay" id="modal-docinforme" style="z-index:3000">
+  <div class="modal" style="max-width:520px">
+    <div class="modal-title" id="doc-titulo-modal">📄 Subir informe</div>
+    <div class="form-group"><label>Título</label><input id="doc-titulo" placeholder="p. ej. Informe neuromuscular" style="width:100%"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 10px">
+      <div class="form-group"><label>Tipo</label><select id="doc-tipo" style="width:100%"></select></div>
+      <div class="form-group"><label>Fecha</label><input id="doc-fecha" type="date" style="width:100%"></div>
+    </div>
+    <div class="form-group"><label>Notas (opcional)</label><textarea id="doc-notas" rows="2" style="width:100%" placeholder="Conclusiones, qué trabajar…"></textarea></div>
+    <div class="form-group"><label>PDF</label><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><button class="btn btn-secondary btn-sm" onclick="document.getElementById('doc-pdf-input').click()">Elegir PDF…</button><span id="doc-pdf-estado" style="font-size:12px;color:var(--text-muted)">Ningún archivo</span></div>
+      <input type="file" id="doc-pdf-input" accept="application/pdf,.pdf" style="display:none" onchange="docPdfElegido(this)"></div>
+    <div class="modal-actions"><button class="btn btn-secondary" onclick="closeModal('docinforme')">Cancelar</button><button class="btn btn-primary" id="doc-guardar" onclick="docGuardar()">💾 Guardar</button></div>
+  </div>
+</div>
+
 <!-- ══ PERFIL DE ATLETA (overlay a pantalla completa, estilo ATLETAS-26) ══ -->
 <div class="pa-overlay" id="pa-overlay">
   <div class="pa-nav">
@@ -1338,6 +1355,7 @@ function aplicarCodigoAcceso(){
       <div class="pa-tab" data-pa="tmp" onclick="paTab('tmp')">Temporada</div>
       <div class="pa-tab" data-pa="wel" onclick="paTab('wel')">Wellness</div>
       <div class="pa-tab" data-pa="par" id="pa-tab-par" style="display:none" onclick="paTab('par')">Partidos</div>
+      <div class="pa-tab" data-pa="inf" onclick="paTab('inf')">Informes</div>
       <div class="pa-tab" data-pa="adm" onclick="paTab('adm')">⚙ Gestión</div>
     </div>
     <div class="pa-back" style="border-right:none;border-left:1px solid var(--border);color:var(--accent-ink);font-weight:700" onclick="parSubirInforme()" title="Subir el informe de partido (PDF MC LAB) que te ha mandado el jugador: se leen los datos solos">📄 Subir PDF</div>
@@ -1391,6 +1409,12 @@ function aplicarCodigoAcceso(){
       <div class="pa-st">Partidos</div>
       <div class="pa-ss" style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><span>Datos de partido (MC LAB) comparados con los anteriores</span><button class="btn btn-primary btn-sm" onclick="parSubirInforme()">📄 Subir informe PDF</button></div>
       <div id="pa-par-body"></div>
+    </div>
+    <!-- INFORMES (PDF del jugador: valoraciones, fuerza, partidos…) -->
+    <div id="pa-pnl-inf" class="pa-pnl">
+      <div class="pa-st">Informes</div>
+      <div class="pa-ss" style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><span>Informes en PDF del jugador: valoraciones, fuerza, partidos…</span><button class="btn btn-primary btn-sm" onclick="docNuevo()">📄 Subir informe</button></div>
+      <div id="pa-inf-body"></div>
     </div>
     <div class="cx-pop" id="cx-pop" onclick="if(event.target===this)cxCierra()"><div class="cx-pop-in" id="cx-pop-in"></div></div>
 
@@ -6482,6 +6506,91 @@ async function parGuardar(){
     paRenderPartidos(nombre);try{cxRender();}catch(e){}paTab('par');
   }
 }
+// ── Pestaña Informes: PDF del jugador guardados en Drive; la lista va en la config «informes::Nombre» ──
+var DOC_TIPOS=[{id:'neuromuscular',l:'Neuromuscular',c:'#7c3aed'},{id:'fuerza',l:'Fuerza',c:'#65a30d'},{id:'partido',l:'Partido',c:'#0284c7'},{id:'valoracion',l:'Valoración',c:'#d97706'},{id:'medico',l:'Médico / fisio',c:'#dc2626'},{id:'otro',l:'Otro',c:'#64748b'}];
+var DOC_EDIT=null,DOC_VER={};
+function docKey(n){return 'informes::'+String(n||'').trim();}
+function docLista(n){var v=DB.config&&DB.config[docKey(n)];return Array.isArray(v)?v:[];}
+function docTipo(id){return DOC_TIPOS.find(function(t){return t.id===id;})||DOC_TIPOS[DOC_TIPOS.length-1];}
+function docPreview(u){u=String(u||'');var m=u.match(/\/d\/([\w-]+)/)||u.match(/[?&]id=([\w-]+)/);return m?'https://drive.google.com/file/d/'+m[1]+'/preview':u;}
+function docFecha(iso){if(!iso)return '';var d=new Date(iso+'T12:00:00');return isNaN(d)?iso:d.toLocaleDateString('es-ES',{day:'numeric',month:'short',year:'numeric'});}
+function paRenderDocs(nombre){
+  var el=document.getElementById('pa-inf-body');if(!el)return;
+  var lista=docLista(nombre).map(function(x){return Object.assign({},x);});
+  // los PDF de partido subidos desde «Subir PDF» también salen aquí
+  (((DB.config&&DB.config.partidos_subidos)||{})[nombre]||[]).forEach(function(p){if(p.pdf_url)lista.push({id:'par-'+p.fechaISO,tipo:'partido',titulo:'Informe de partido'+(p.jornada?' '+p.jornada:'')+(p.rival?' · vs '+p.rival:''),fecha:p.fechaISO,url:p.pdf_url,auto:true,notas:p.resultado||''});});
+  lista.sort(function(a,b){return String(b.fecha||'').localeCompare(String(a.fecha||''));});
+  if(!lista.length){el.innerHTML='<div class="pa-card"><div class="pa-empty">Todavía no hay informes. Pulsa «📄 Subir informe» para añadir el PDF que te han mandado.</div></div>';return;}
+  el.innerHTML=lista.map(function(d){
+    var t=docTipo(d.tipo),q=escAttr(d.id);
+    var h='<div class="pa-card pa-mb doc-card"><div class="doc-h"><span class="doc-tipo" style="background:'+t.c+'1a;color:'+t.c+';border-color:'+t.c+'55">'+escapeHtml(t.l)+'</span>'
+      +'<div class="doc-t"><div class="doc-tt">'+escapeHtml(d.titulo||'Informe')+'</div><div class="doc-f">'+escapeHtml(docFecha(d.fecha))+(d.origen?' · '+escapeHtml(d.origen):'')+'</div></div>'
+      +'<div class="doc-b"><button class="btn btn-secondary btn-xs" onclick="docToggleVer(\''+q+'\')">'+(DOC_VER[d.id]?'▲ Ocultar':'👁 Ver')+'</button><a class="btn btn-secondary btn-xs" href="'+escAttr(d.url)+'" target="_blank" rel="noopener">↗ Abrir</a>'
+      +(d.auto?'':'<button class="btn btn-secondary btn-xs" onclick="docEditar(\''+q+'\')">✏️</button><button class="btn btn-danger btn-xs" onclick="docQuitar(\''+q+'\')">🗑</button>')+'</div></div>';
+    if(d.notas)h+='<div class="doc-n">'+escapeHtml(d.notas)+'</div>';
+    if(d.datos&&d.datos.length){
+      var conInt=d.datos.some(function(x){return x.i;}),conD=d.datos.some(function(x){return x.d;});
+      h+='<div style="overflow-x:auto;margin-top:8px"><table class="pa-tbl doc-tbl"><thead><tr><th>Área</th><th>Métrica</th><th>Fecha</th><th>Valor</th><th>Pct.</th>'+(conInt?'<th>Interpretación</th>':'')+(conD?'<th>Δ anterior</th>':'')+'</tr></thead><tbody>'
+        +d.datos.map(function(x){var pn=parseInt(String(x.p||'').replace(/\D/g,''),10),pc=isNaN(pn)?'':(pn<25?'#dc2626':pn<50?'#d97706':'#16a34a');
+          return '<tr><td>'+escapeHtml(x.a||'')+'</td><td>'+escapeHtml(x.m||'')+'</td><td>'+escapeHtml(x.f||'')+'</td><td style="white-space:nowrap"><b>'+escapeHtml(String(x.v))+'</b> '+escapeHtml(x.u||'')+'</td><td style="color:'+pc+';font-weight:700">'+escapeHtml(x.p||'')+'</td>'
+            +(conInt?'<td>'+escapeHtml(x.i||'')+'</td>':'')+(conD?'<td>'+escapeHtml(x.d||'')+'</td>':'')+'</tr>';}).join('')+'</tbody></table></div>';
+    }
+    if(DOC_VER[d.id])h+='<iframe class="doc-frame" src="'+escAttr(docPreview(d.url))+'" loading="lazy" allow="autoplay"></iframe>';
+    return h+'</div>';
+  }).join('');
+}
+function docToggleVer(id){DOC_VER[id]=!DOC_VER[id];paRenderDocs(paAtletaActual);}
+function docNuevo(){
+  if(!paAtletaActual)return;
+  DOC_EDIT={id:null,pdf:null,subiendo:false};
+  document.getElementById('doc-titulo-modal').textContent='📄 Subir informe · '+paAtletaActual;
+  document.getElementById('doc-tipo').innerHTML=DOC_TIPOS.map(function(t){return '<option value="'+t.id+'">'+t.l+'</option>';}).join('');
+  document.getElementById('doc-titulo').value='';document.getElementById('doc-fecha').value=fechaLocalISO();document.getElementById('doc-notas').value='';
+  document.getElementById('doc-pdf-estado').textContent='Ningún archivo';document.getElementById('doc-pdf-input').value='';
+  openModal('docinforme');
+}
+function docEditar(id){
+  var d=docLista(paAtletaActual).find(function(x){return x.id===id;});if(!d)return;
+  docNuevo();DOC_EDIT={id:id,pdf:{url:d.url,nombre:d.archivo||''},subiendo:false};
+  document.getElementById('doc-titulo-modal').textContent='✏️ Editar informe · '+paAtletaActual;
+  document.getElementById('doc-titulo').value=d.titulo||'';document.getElementById('doc-tipo').value=d.tipo||'otro';document.getElementById('doc-fecha').value=d.fecha||'';document.getElementById('doc-notas').value=d.notas||'';
+  document.getElementById('doc-pdf-estado').innerHTML='📄 <a href="'+escAttr(d.url)+'" target="_blank" rel="noopener">'+escapeHtml(d.archivo||'PDF actual')+'</a>';
+}
+async function docPdfElegido(input){
+  var file=input.files&&input.files[0];if(!file||!DOC_EDIT)return;
+  if(file.type&&file.type!=='application/pdf'&&!/\.pdf$/i.test(file.name)){toast('Elige un archivo PDF','err');return;}
+  var est=document.getElementById('doc-pdf-estado');est.textContent='⏳ Subiendo '+file.name+'…';DOC_EDIT.subiendo=true;
+  var t=document.getElementById('doc-titulo');if(t&&!t.value.trim())t.value=file.name.replace(/\.pdf$/i,'').replace(/[_-]+/g,' ').trim();
+  try{
+    var b64=await new Promise(function(ok){var r=new FileReader();r.onload=function(){ok(String(r.result).split(',')[1]);};r.readAsDataURL(file);});
+    var r=await apiPost({action:'uploadPdf',fileName:file.name,mimeType:'application/pdf',base64:b64});
+    if(!r||!r.ok)throw new Error((r&&r.error)||'sin respuesta');
+    DOC_EDIT.pdf={url:r.url,nombre:r.fileName||file.name};est.innerHTML='✅ '+escapeHtml(file.name)+' subido';
+  }catch(e){est.textContent='⚠️ No se pudo subir: '+(e.message||e);}
+  DOC_EDIT.subiendo=false;
+}
+async function docGuardar(){
+  if(!DOC_EDIT)return;var nombre=paAtletaActual;
+  if(DOC_EDIT.subiendo){toast('Espera a que termine de subir el PDF','err');return;}
+  if(!DOC_EDIT.pdf){toast('Elige el PDF del informe','err');return;}
+  var titulo=document.getElementById('doc-titulo').value.trim()||'Informe',fecha=document.getElementById('doc-fecha').value||fechaLocalISO();
+  var lista=JSON.parse(JSON.stringify(docLista(nombre))),prev=DOC_EDIT.id?lista.find(function(x){return x.id===DOC_EDIT.id;}):null;
+  var obj=Object.assign({},prev||{},{id:DOC_EDIT.id||('doc_'+Date.now().toString(36)),titulo:titulo,tipo:document.getElementById('doc-tipo').value,fecha:fecha,notas:document.getElementById('doc-notas').value.trim(),url:DOC_EDIT.pdf.url,archivo:DOC_EDIT.pdf.nombre||(prev&&prev.archivo)||''});
+  lista=lista.filter(function(x){return x.id!==obj.id;});lista.push(obj);
+  var b=document.getElementById('doc-guardar');b.disabled=true;b.textContent='⏳ Guardando…';
+  try{var r=await apiPost({action:'saveConfig',key:docKey(nombre),value:lista});if(!r||!r.ok)throw new Error((r&&r.error)||'sin respuesta');}
+  catch(e){toast('⚠️ No se pudo guardar: '+(e.message||e),'err');b.disabled=false;b.textContent='💾 Guardar';return;}
+  b.disabled=false;b.textContent='💾 Guardar';DB.config[docKey(nombre)]=lista;closeModal('docinforme');DOC_EDIT=null;
+  toast('✅ Informe guardado en la ficha de '+nombre.split(' ')[0]);paRenderDocs(nombre);
+}
+async function docQuitar(id){
+  var nombre=paAtletaActual,d=docLista(nombre).find(function(x){return x.id===id;});if(!d)return;
+  if(!confirm('¿Quitar «'+(d.titulo||'Informe')+'» de la ficha de '+nombre+'? El PDF sigue guardado en Drive.'))return;
+  var lista=docLista(nombre).filter(function(x){return x.id!==id;});
+  var r=await apiPost({action:'saveConfig',key:docKey(nombre),value:lista}).catch(function(){return null;});
+  if(!r||!r.ok){toast('⚠️ No se pudo quitar','err');return;}
+  DB.config[docKey(nombre)]=lista;paRenderDocs(nombre);toast('Informe quitado');
+}
 function parBuscaSubido(iso){var l=((DB.config&&DB.config.partidos_subidos)||{})[paAtletaActual]||[];return l.find(function(x){return x.fechaISO===iso;});}
 function parEditar(iso){
   var p=parBuscaSubido(iso);if(!p)return;
@@ -6575,6 +6684,7 @@ function paTab(tab){
   if(tab==='pla')paRenderPlan(paAtletaActual);
   if(tab==='evo')paRenderEvo(paAtletaActual);
   if(tab==='rm')paRenderRM(paAtletaActual);
+  if(tab==='inf')paRenderDocs(paAtletaActual);
 }
 
 // ── Planes de entrenamiento del atleta: ver cuáles sigue y saltar a editarlos en Biblioteca → Planes ──
