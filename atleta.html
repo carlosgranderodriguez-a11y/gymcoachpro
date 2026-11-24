@@ -15,6 +15,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="carga.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
 <script>try{if(localStorage.getItem('gc_tema_atleta')==='claro')document.documentElement.setAttribute('data-tema','claro');}catch(e){}</script>
 <style>
 :root{
@@ -1053,7 +1054,7 @@ function renderDetalleFuerza(s,activo){
   var done=fuerzaCompletada(s.id);
   var fecha=new Date(s.fecha+'T12:00:00').toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'long'});
   var html='';
-  if(done)html+='<div class="done-badge">✅ Sesión completada</div>';
+  if(done)html+='<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap"><div class="done-badge">✅ Sesión completada</div><button onclick="descargarPdfSesion()" style="margin-bottom:12px;background:transparent;border:1px solid var(--border);color:var(--text);border-radius:8px;padding:5px 10px;font-size:12px;font-weight:700;cursor:pointer">📄 PDF con mis cargas</button></div>';
   html+='<div class="det-title cond">'+(s.nombre||'Sesión de fuerza')+'</div>';
   html+='<div class="det-sub">'+fecha+'</div>';
   html+='<div class="ex-tap-hint">👆 Toca un ejercicio para ver el vídeo y cómo se hace</div>';
@@ -1627,7 +1628,107 @@ function calcRitmo(t,d){var ts=parseTiempoSeg(t),dm=parseDistM(d);if(!(ts>0&&dm>
 function pautaCardio(ex){var se=String(ex.sets||gpv(ex,'series')||''),di=gpv(ex,'distancia'),ti=gpv(ex,'tiempo'),ri=gpv(ex,'ritmo'),rp=gpv(ex,'rpe'),de=gpv(ex,'descanso')||(ex.rest&&ex.rest!=='—'?ex.rest:'');var a=[];if(se&&se!=='1')a.push(se+' ×');if(di)a.push(di+(/[a-z]/i.test(di)?'':' m'));if(ti)a.push(ti+(/[:a-z']/i.test(ti)?'':' min'));if(ri)a.push('ritmo '+ri+'/km');if(rp)a.push('RPE '+rp);if(de)a.push('Descanso '+de);return a.join(' · ');}
 function valSerie(v,i){var a=String(v==null?'':v).split('/').map(function(x){return x.trim();}).filter(function(x){return x!=='';});if(!a.length)return '';return a[Math.min(i,a.length-1)];}
 function numPuro(v){var t=String(v||'').replace(',','.').trim();return /^\d+(\.\d+)?$/.test(t)?t:'';}
+// ── PDF DE LA SESIÓN (atleta): pauta + lo realizado, formato tabla sobrio ──
+var APDF_LOGO='https://drive.google.com/thumbnail?id=1x5U89Qu4b15qyzgeQiVwK10PAPUL_V4N&sz=w400';
+function apdfFileId(u){var m=(u||'').match(/[?&]id=([^&]+)/);return m?m[1]:null;}
+async function apdfImg(url,maxDim){
+  var id=apdfFileId(url);if(!id)return null;
+  try{
+    var r=await api({action:'getImageBase64',fileId:id});if(!r||!r.ok)return null;
+    var src='data:'+(r.mimeType||'image/png')+';base64,'+r.base64;
+    return await new Promise(function(res){var im=new Image();im.onload=function(){try{var w=im.naturalWidth,h=im.naturalHeight,k=Math.min(1,maxDim/Math.max(w,h));var c=document.createElement('canvas');c.width=Math.round(w*k);c.height=Math.round(h*k);var x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,c.width,c.height);x.drawImage(im,0,0,c.width,c.height);res(c.toDataURL('image/jpeg',0.82));}catch(e){res(null);}};im.onerror=function(){res(null);};im.src=src;});
+  }catch(e){return null;}
+}
+function apdfRegistro(s){var l=REGISTROS.filter(function(r){return r.sesion_id===s.id&&r.completada;});return l.length?l[l.length-1]:null;}
+async function descargarPdfSesion(){
+  var s=currentDetalle&&currentDetalle.data;if(!s||currentDetalle.kind!=='fuerza'){toast('Solo disponible en sesiones de fuerza','err');return;}
+  if(!window.jspdf){toast('Cargando… vuelve a intentarlo en unos segundos','err');return;}
+  toast('Preparando PDF…');
+  var reg=apdfRegistro(s),rd=(reg&&reg.datos)||{},regEx=rd.ejercicios||[];
+  var exs=s.ejercicios||[],imgs={};
+  await Promise.all(exs.map(async function(ex){var db=EJERCICIOS_DB[ex.id];if(db&&db.imagen&&!(db.imagen in imgs)){imgs[db.imagen]=null;imgs[db.imagen]=await apdfImg(db.imagen,300);}}));
+  var logo=await apdfImg(APDF_LOGO,200);
+  var doc=new window.jspdf.jsPDF({orientation:'p',unit:'mm',format:'a4'});
+  var W=210,H=297,M=12,INK=[20,23,31],SOFT=[107,112,121],FAINT=[163,167,174],LINE=[228,229,224];
+  var cols={n:{x:M,w:6},img:{x:M+6,w:17},nom:{x:M+24,w:56},pau:{x:M+81,w:42},hec:{x:M+124,w:62}};
+  var y=M,lx=M;
+  if(logo){try{doc.addImage(logo,'JPEG',M,y,9,9);lx=M+12;}catch(e){}}
+  doc.setFont('helvetica','bold');doc.setFontSize(13);doc.setTextColor(INK[0],INK[1],INK[2]);
+  doc.text(doc.splitTextToSize(s.nombre||'Sesión',150)[0],lx,y+4.2);
+  var fecha=new Date(s.fecha+'T12:00:00').toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+  doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(SOFT[0],SOFT[1],SOFT[2]);
+  doc.text(ATLETA+' · '+fecha,lx,y+8.6);
+  doc.setFont('helvetica','bold');doc.setFontSize(7.5);doc.setTextColor(FAINT[0],FAINT[1],FAINT[2]);
+  doc.text(reg?'REALIZADA':'PENDIENTE',W-M,y+4.2,{align:'right'});
+  doc.setFont('helvetica','normal');doc.text('Carlos Grande Training',W-M,y+8.6,{align:'right'});
+  y+=12;doc.setDrawColor(INK[0],INK[1],INK[2]);doc.setLineWidth(0.5);doc.line(M,y,W-M,y);y+=5;
+  if(reg){
+    var dat=[['RPE de la sesión',rd.rpe||'—'],['Duración',rd.duracion?rd.duracion+' min':'—'],['Ejercicios registrados',regEx.filter(function(e){return e&&e.sets&&e.sets.some(function(x){return x.reps||x.load||x.tiempo;});}).length+' / '+exs.length]];
+    var cw=(W-2*M-8)/3;
+    dat.forEach(function(d,i){var x=M+i*(cw+4);doc.setFillColor(244,244,242);doc.rect(x,y,cw,11,'F');
+      doc.setFont('helvetica','normal');doc.setFontSize(7);doc.setTextColor(SOFT[0],SOFT[1],SOFT[2]);doc.text(d[0].toUpperCase(),x+3,y+4);
+      doc.setFont('helvetica','bold');doc.setFontSize(11);doc.setTextColor(INK[0],INK[1],INK[2]);doc.text(String(d[1]),x+3,y+9);});
+    y+=17;
+  }
+  function cab(){doc.setFont('helvetica','bold');doc.setFontSize(6.8);doc.setTextColor(FAINT[0],FAINT[1],FAINT[2]);
+    doc.text('EJERCICIO',cols.nom.x,y);doc.text('PAUTA',cols.pau.x,y);doc.text(reg?'REALIZADO':'',cols.hec.x,y);y+=2.5;}
+  var grupos=[],gk={};
+  exs.forEach(function(ex,i){var b=ex.bloque||'otros',k=b+'::'+(ex.bloqueInstancia||'');
+    if(!gk[k]){var bd=BLOQUES.find(function(x){return x.id===b;})||{name:b};gk[k]={nombre:ex.bloqueNombre||bd.name,filas:[]};grupos.push(gk[k]);}
+    gk[k].filas.push({ex:ex,r:regEx[i]});});
+  var n=0;
+  grupos.forEach(function(g){
+    if(y>H-30){doc.addPage();y=M;}
+    doc.setFillColor(244,244,242);doc.rect(M,y-4,W-2*M,6,'F');doc.setFillColor(INK[0],INK[1],INK[2]);doc.rect(M,y-4,1.2,6,'F');
+    doc.setFont('helvetica','bold');doc.setFontSize(9);doc.setTextColor(INK[0],INK[1],INK[2]);doc.text(String(g.nombre||'').toUpperCase(),M+4,y);
+    y+=6;cab();
+    g.filas.forEach(function(f){
+      var ex=f.ex,r=f.r,db=EJERCICIOS_DB[ex.id]||{};n++;
+      var nombre=db.nombre||String(ex.id||'').replace(/[-_]+/g,' ');
+      var pauta;
+      if(esCardioEx(ex))pauta=pautaCardio(ex);
+      else{var kg=ex.load&&ex.load!=='—'?ex.load+' kg':'',pct=gpv(ex,'pct_rm'),rir=gpv(ex,'rir'),rpe=gpv(ex,'rpe');
+        pauta=(ex.sets||'—')+' × '+(ex.reps||'—')+(kg?' · '+kg:(pct?' · '+pct+'% RM':''))+(rir?' · RIR '+rir:(rpe?' · RPE '+rpe:''))+(ex.rest&&ex.rest!=='—'?' · desc '+ex.rest:'');}
+      var hecho=[];
+      if(r&&r.sets){r.sets.forEach(function(st,j){
+        if(st.tiempo||st.distancia)hecho.push((j+1)+') '+[st.distancia,st.tiempo,st.ritmo?st.ritmo+'/km':''].filter(Boolean).join(' · '));
+        else if(st.reps||st.load)hecho.push((j+1)+') '+(st.reps||'—')+(st.load?' × '+st.load+' kg':''));});}
+      if(r&&r.alternativa)hecho.push('Hecho en su lugar: '+r.alternativa);
+      if(r&&r.adaptado)hecho.push('Adaptado'+(r.nota_adaptacion?': '+r.nota_adaptacion:''));
+      doc.setFont('helvetica','bold');doc.setFontSize(8.8);var nl=doc.splitTextToSize(nombre,cols.nom.w-2);
+      doc.setFont('helvetica','normal');doc.setFontSize(8);var pl=doc.splitTextToSize(pauta,cols.pau.w-2);
+      var hl=[];hecho.forEach(function(t){doc.splitTextToSize(t,cols.hec.w-2).forEach(function(x){hl.push(x);});});
+      if(reg&&!hl.length)hl=['—'];
+      var lines=Math.max(nl.length*1.1,pl.length,hl.length);
+      var rowH=Math.max(13,lines*3.4+4);
+      if(y+rowH>H-16){doc.addPage();y=M;cab();}
+      var top=y;
+      doc.setFont('helvetica','bold');doc.setFontSize(7.5);doc.setTextColor(FAINT[0],FAINT[1],FAINT[2]);doc.text(String(n),cols.n.x+1,top+rowH/2+1);
+      var b64=db.imagen?imgs[db.imagen]:null;
+      if(b64){try{var pr=doc.getImageProperties(b64),rt=pr.width/pr.height,iw=cols.img.w-2,ih=iw/rt;if(ih>10){ih=10;iw=ih*rt;}doc.addImage(b64,'JPEG',cols.img.x+(cols.img.w-2-iw)/2,top+(rowH-ih)/2,iw,ih);}catch(e){}}
+      var ty=top+4.5;
+      doc.setFont('helvetica','bold');doc.setFontSize(8.8);doc.setTextColor(INK[0],INK[1],INK[2]);nl.forEach(function(l){doc.text(l,cols.nom.x,ty);ty+=3.7;});
+      ty=top+4.5;doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(SOFT[0],SOFT[1],SOFT[2]);pl.forEach(function(l){doc.text(l,cols.pau.x,ty);ty+=3.4;});
+      ty=top+4.5;doc.setFont('helvetica','bold');doc.setTextColor(INK[0],INK[1],INK[2]);hl.forEach(function(l){doc.text(l,cols.hec.x,ty);ty+=3.4;});
+      y=top+rowH;doc.setDrawColor(LINE[0],LINE[1],LINE[2]);doc.setLineWidth(0.25);doc.line(M,y,W-M,y);
+    });
+    y+=6;
+  });
+  if(rd.notas){
+    doc.setFont('helvetica','normal');doc.setFontSize(9);var cl=doc.splitTextToSize(rd.notas,W-2*M-8);
+    var ch=cl.length*4.2+10;if(y+ch>H-16){doc.addPage();y=M;}
+    doc.setDrawColor(INK[0],INK[1],INK[2]);doc.setLineWidth(0.3);doc.rect(M,y,W-2*M,ch);
+    doc.setFont('helvetica','bold');doc.setFontSize(7.5);doc.setTextColor(SOFT[0],SOFT[1],SOFT[2]);doc.text('COMENTARIOS DEL ATLETA',M+4,y+5);
+    doc.setFont('helvetica','normal');doc.setFontSize(9);doc.setTextColor(INK[0],INK[1],INK[2]);cl.forEach(function(l,i){doc.text(l,M+4,y+10+i*4.2);});
+  }
+  var pc=doc.internal.getNumberOfPages();
+  for(var p=1;p<=pc;p++){doc.setPage(p);doc.setFont('helvetica','normal');doc.setFontSize(7.5);doc.setTextColor(FAINT[0],FAINT[1],FAINT[2]);
+    doc.text('Carlos Grande Training · GymCoach Pro',M,H-8);doc.text('Página '+p+' / '+pc,W-M,H-8,{align:'right'});}
+  var nom=('Sesion_'+s.fecha+'_'+(s.nombre||'')).replace(/[^\wáéíóúñÁÉÍÓÚÑ-]+/g,'_').slice(0,80)+'.pdf';
+  doc.save(nom);
+}
 function abrirCompletar(){
+
   var isFuerza=currentDetalle.kind==='fuerza';
   var extra=isFuerza?'<div class="g"><label class="lab">⏱️ ¿Cuántos minutos ha durado la sesión?</label><input type="number" min="1" max="300" step="1" id="cp-dur" class="inp" placeholder="Ej. 45"></div>':(
     '<div class="row2">'
@@ -1639,7 +1740,7 @@ function abrirCompletar(){
     +extra
     +'<div class="g"><div class="slider-top"><span class="lab" style="margin:0">💪 RPE percibido</span><span class="slider-val" id="cp-rpe-v" style="color:var(--red)">6</span></div>'
     +'<input type="range" min="1" max="10" value="6" id="cp-rpe" oninput="document.getElementById(\'cp-rpe-v\').textContent=this.value" style="accent-color:var(--red)"></div>'
-    +'<div class="g"><label class="lab">Notas (opcional)</label><textarea id="cp-notas" class="inp" rows="2" placeholder="¿Cómo te sentiste?"></textarea></div>'
+    +'<div class="g"><label class="lab">💬 Comentarios para tu entrenador (opcional)</label><textarea id="cp-notas" class="inp" rows="4" placeholder="¿Cómo te has sentido? ¿Alguna molestia, ejercicio que te ha costado o algo que quieras contarme?"></textarea></div>'
     +'<button class="save" onclick="guardarCompletar()">💾 Guardar y ver resumen</button>'
     +'</div>';
   document.getElementById('detalle-content').insertAdjacentHTML('beforeend',html);
@@ -1757,7 +1858,8 @@ function renderResumen(isFuerza,rpe,notas){
     +'<div class="summary-sub">'+nombre+'</div>'
     +stats
     +compareBlock
-    +(notas?'<div class="card"><div class="lab">Tus notas</div>'+notas+'</div>':'')
+    +(notas?'<div class="card"><div class="lab">Tus comentarios</div>'+escHtmlE(notas)+'</div>':'')
+    +(isFuerza?'<button class="save" style="background:transparent;border:1px solid var(--border);color:var(--text);margin-bottom:10px" onclick="descargarPdfSesion()">📄 Descargar PDF de la sesión</button>':'')
     +'<button class="save" onclick="showPage(\'semana\',document.getElementById(\'nav-semana\'))">Volver a mi semana</button>';
 }
 
