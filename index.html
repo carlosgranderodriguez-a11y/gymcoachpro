@@ -702,7 +702,7 @@ input:focus,select:focus,textarea:focus{border-color:#8aa0d6 !important;box-shad
 .stb td input:hover{border-color:var(--border)}.stb td input:focus{border-color:var(--accent);background:var(--surface);outline:none}
 .stb .stb-n{width:30px;color:var(--text-muted);font-weight:600}
 .stb-x{cursor:pointer;opacity:0;margin-left:2px;font-size:9px}.stb th:hover .stb-x{opacity:.6}.stb-x:hover{opacity:1;color:#dc2626}
-.stb-acc{display:flex;gap:6px;align-items:center;margin-top:5px}
+.stb-acc{display:flex;gap:6px;align-items:center;margin-top:5px;flex-wrap:wrap}.stb-all{margin-left:5px;cursor:pointer;color:var(--accent-ink);font-weight:700;padding:0 3px;border-radius:4px}.stb-all:hover{background:var(--surface2)}
 .stb-carga{display:flex;flex-wrap:wrap;gap:4px 10px;align-items:center;margin-top:6px;font-size:11.5px;color:var(--text-dim)}.stb-carga:empty{display:none}.stb-c-t{font-weight:700;color:var(--accent-ink)}.stb-c-a{background:var(--surface2);border:1px solid var(--border);border-radius:999px;padding:2px 9px;display:inline-flex;gap:5px;align-items:center}.stb-c-a small{color:var(--text-muted)}.stb-c-m{color:var(--text-muted);font-style:italic}
 .blp-ov{position:fixed;inset:0;background:rgba(10,15,25,.55);z-index:10000;display:flex;align-items:flex-start;justify-content:center;padding:24px 12px;overflow:auto}
 .blp-box{background:var(--surface);border-radius:14px;max-width:880px;width:100%;padding:18px;box-shadow:0 20px 60px rgba(0,0,0,.4)}
@@ -809,7 +809,7 @@ function aplicarCodigoAcceso(){
     <div class="sb-group">Sistema</div>
     <div class="tab" onclick="switchTab('ajustes',this)"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg><span>Ajustes</span></div>
   </nav>
-  <div class="sb-foot"><div id="auth-chip" style="display:none;font-size:12px;color:#cbd5e1;margin-bottom:10px;line-height:1.4"></div><div style="font-size:10px;color:#64748b;margin-bottom:6px">versión 100</div><div class="status-badge" id="status">⏳ Conectando...</div></div>
+  <div class="sb-foot"><div id="auth-chip" style="display:none;font-size:12px;color:#cbd5e1;margin-bottom:10px;line-height:1.4"></div><div style="font-size:10px;color:#64748b;margin-bottom:6px">versión 101</div><div class="status-badge" id="status">⏳ Conectando...</div></div>
 </aside>
 <div class="sb-backdrop" onclick="closeSidebar()"></div>
 <div class="main">
@@ -4966,9 +4966,9 @@ function stbHtml(ex,ctx){
     var corto={reps:'Reps',kg:'Kg',pct_rm:'% dif.',rpe:'RPE',rir:'RIR',tiempo:'Tiempo',duracion:'Seg.',distancia:'Dist.',ritmo:'Ritmo',descanso:'Desc.'}[o.p.id]||c.label;
     return '<th title="'+escAttr(c.label+(c.unidad?' ('+c.unidad+')':''))+'">'+escapeHtml(corto)+'<span class="stb-x" title="Quitar columna" onclick="stbDelCol('+k+',\''+o.p.id+'\')">✕</span></th>';}).join('')+'</tr>';
   for(var i=0;i<n;i++){
-    h+='<tr><td class="stb-n">'+(i+1)+'</td>'+cols.map(function(o){return '<td><input data-stb="'+k+'|'+o.p.id+'|'+i+'" style="width:'+Math.max(3,String(valSerie(o.p.val,i)).length+1)+'ch" value="'+escAttr(valSerie(o.p.val,i))+'" oninput="this.style.width=Math.max(3,this.value.length+1)+\'ch\';stbSet('+k+',\''+o.p.id+'\','+i+',this.value)" onclick="this.select()"></td>';}).join('')+'</tr>';
+    h+='<tr><td class="stb-n">'+(i+1)+(n>1&&cols.length?'<span class="stb-all" title="Aplicar esta serie a todas" onclick="stbAplicarTodas('+k+','+i+')">⇊</span>':'')+'</td>'+cols.map(function(o){return '<td><input data-stb="'+k+'|'+o.p.id+'|'+i+'" style="width:'+Math.max(3,String(valSerie(o.p.val,i)).length+1)+'ch" value="'+escAttr(valSerie(o.p.val,i))+'" oninput="this.style.width=Math.max(3,this.value.length+1)+\'ch\';stbSet('+k+',\''+o.p.id+'\','+i+',this.value)" onclick="this.select()"></td>';}).join('')+'</tr>';
   }
-  h+='</table><div class="stb-acc"><button type="button" class="btn btn-secondary btn-xs" onclick="stbSeries('+k+',1)">+ serie</button>'+(n>1?'<button type="button" class="btn btn-secondary btn-xs" onclick="stbSeries('+k+',-1)">− serie</button>':'')+(cols.length?'':'<span style="font-size:11px;color:var(--text-muted)">Añade reps, kg, RPE… con «+ param»</span>')+'</div>'
+  h+='</table><div class="stb-acc"><button type="button" class="btn btn-secondary btn-xs" onclick="stbSeries('+k+',1)">+ serie</button>'+(n>1?'<button type="button" class="btn btn-secondary btn-xs" onclick="stbSeries('+k+',-1)">− serie</button>':'')+(n>1&&cols.length?'<button type="button" class="btn btn-secondary btn-xs" title="Copia reps, kg, RIR… de la serie 1 en todas las series" onclick="stbAplicarTodas('+k+',0)">⇊ Aplicar serie 1 a todas</button>':'')+(cols.length?'':'<span style="font-size:11px;color:var(--text-muted)">Añade reps, kg, RPE… con «+ param»</span>')+'</div>'
     +'<div class="stb-carga" data-k="'+k+'">'+cargaHint(ex,ctx,k)+'</div></div>';
   return h;
 }
@@ -5041,6 +5041,14 @@ function stbSeries(k,d){
   var c=STB.ref[k];if(!c)return;var ex=c.get();if(!ex)return;var n=stbN(ex),nn=Math.max(1,Math.min(20,n+d));
   (ex.params||[]).forEach(function(p){if(!stbEsSerie(p.id))return;var arr=[];for(var j=0;j<nn;j++)arr.push(valSerie(p.val,j));p.val=stbJoin(arr);});
   stbParam(ex,'series',true).val=String(nn);ex.sets=String(nn);c.dirty();c.render();
+}
+// copia los valores de la serie i (reps, kg, RIR, %…) en todas las series del ejercicio
+function stbAplicarTodas(k,i){
+  var c=STB.ref[k];if(!c)return;var ex=c.get();if(!ex)return;
+  (ex.params||[]).forEach(function(p){if(stbEsSerie(p.id))p.val=valSerie(p.val,i);});
+  ['reps','kg'].forEach(function(id){var v=getParamVal(ex,id);if(id==='reps'&&v!=='')ex.reps=v;if(id==='kg'&&v!=='')ex.load=v;});
+  try{cargaPctAuto(ex,null);}catch(e){}
+  c.dirty();c.render();toast('Serie '+(i+1)+' aplicada a todas');
 }
 function stbDelCol(k,pid){var c=STB.ref[k];if(!c)return;var ex=c.get();if(!ex||!ex.params)return;ex.params=ex.params.filter(function(p){return p.id!==pid;});c.dirty();c.render();}
 function stbChips(ex,chipFn){return (ex.params||[]).map(function(p,pi){return (stbEsSerie(p.id)||p.id==='series')?'':chipFn(p,pi);}).join('');}
