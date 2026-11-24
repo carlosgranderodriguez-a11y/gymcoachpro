@@ -809,7 +809,7 @@ function aplicarCodigoAcceso(){
     <div class="sb-group">Sistema</div>
     <div class="tab" onclick="switchTab('ajustes',this)"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg><span>Ajustes</span></div>
   </nav>
-  <div class="sb-foot"><div id="auth-chip" style="display:none;font-size:12px;color:#cbd5e1;margin-bottom:10px;line-height:1.4"></div><div style="font-size:10px;color:#64748b;margin-bottom:6px">versión 102</div><div class="status-badge" id="status">⏳ Conectando...</div></div>
+  <div class="sb-foot"><div id="auth-chip" style="display:none;font-size:12px;color:#cbd5e1;margin-bottom:10px;line-height:1.4"></div><div style="font-size:10px;color:#64748b;margin-bottom:6px">versión 103</div><div class="status-badge" id="status">⏳ Conectando...</div></div>
 </aside>
 <div class="sb-backdrop" onclick="closeSidebar()"></div>
 <div class="main">
@@ -4058,7 +4058,7 @@ function renderAtletas(){
     fw.innerHTML='<div class="fchip'+(!atlFiltroDeporte?' active':'')+'" onclick="setAtlFiltro(null)">Todos</div>'
       +deportesUsados.map(function(dk){var d=DISC_ATL[dk];return '<div class="fchip'+(atlFiltroDeporte===dk?' active':'')+'" onclick="setAtlFiltro(\''+dk+'\')">'+d.icon+' '+d.label+'</div>';}).join('');
   }
-  var q=((document.getElementById('atl-search')||{}).value||'').trim().toLowerCase();
+  var q=busNorm(((document.getElementById('atl-search')||{}).value||'').trim());
   var html='';
   var teamsHtml='';
   (DB.equipos||[]).forEach(function(eq){
@@ -4066,7 +4066,7 @@ function renderAtletas(){
       return full.find(function(a){return a.nombre===n;})||{nombre:n,deporte:'otro',estado:'disponible',activo:true};
     }).filter(function(a){return a.activo!==false;}));
     var visibles=miembros.filter(function(a){
-      return (!atlFiltroDeporte||(a.deporte||'otro')===atlFiltroDeporte)&&(!q||a.nombre.toLowerCase().indexOf(q)>-1);
+      return (!atlFiltroDeporte||(a.deporte||'otro')===atlFiltroDeporte)&&(!q||busNorm(a.nombre).indexOf(q)>-1);
     });
     var filtrando=!!(q||atlFiltroDeporte);
     if(filtrando&&!visibles.length) return;
@@ -4088,7 +4088,7 @@ function renderAtletas(){
   var sueltosHtml='';
   DISC_ATL_ORDER.forEach(function(dk){
     if(atlFiltroDeporte&&atlFiltroDeporte!==dk) return;
-    var list=atlSortNombre(activos.filter(function(a){return (a.deporte||'otro')===dk&&(!q||a.nombre.toLowerCase().indexOf(q)>-1);}));
+    var list=atlSortNombre(activos.filter(function(a){return (a.deporte||'otro')===dk&&(!q||busNorm(a.nombre).indexOf(q)>-1);}));
     if(!list.length) return;
     var d=DISC_ATL[dk];
     sueltosHtml+='<div class="atl-section"><div class="atl-sec-head">'
@@ -4183,12 +4183,14 @@ async function refreshAtletas(){
 }
 
 // ── EJERCICIOS ──
+// búsqueda sin tildes ni mayúsculas: «talon» encuentra «Talón»
+function busNorm(s){return String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();}
 function renderEjercicios(){
   renderFilters();
   var grid=document.getElementById('ejercicios-grid');
-  var search=(document.getElementById('ex-search').value||'').toLowerCase();
+  var search=busNorm((document.getElementById('ex-search').value||'').trim());
   var keys=Object.keys(DB.ejercicios);
-  if(search) keys=keys.filter(function(id){var e=DB.ejercicios[id];return e.nombre.toLowerCase().includes(search)||(e.musculos||'').toLowerCase().includes(search)||(e.grupos_musculares||[]).join(' ').toLowerCase().includes(search);});
+  if(search) keys=keys.filter(function(id){var e=DB.ejercicios[id];return busNorm(e.nombre).includes(search)||busNorm(e.musculos).includes(search)||busNorm((e.grupos_musculares||[]).join(' ')).includes(search);});
   if(filterCat) keys=keys.filter(function(id){return DB.ejercicios[id].categoria===filterCat;});
   if(filterContr) keys=keys.filter(function(id){return (DB.ejercicios[id].tipo_contraccion||[]).includes(filterContr);});
   if(filterMat) keys=keys.filter(function(id){return (DB.ejercicios[id].material||[]).includes(filterMat);});
@@ -4768,10 +4770,10 @@ function renderEjPickerFilters(){
 function setEjPickerCat(c){ejPickerFilterCat=c;renderEjPickerFilters();renderEjPickerList();}
 function setEjPickerGrupo(g){ejPickerFilterGrupo=g;renderEjPickerFilters();renderEjPickerList();}
 function renderEjPickerList(){
-  var q=(document.getElementById('ejpick-search').value||'').toLowerCase();
+  var q=busNorm((document.getElementById('ejpick-search').value||'').trim());
   var list=document.getElementById('ejpick-list');
   var items=Object.keys(DB.ejercicios).map(function(id){return DB.ejercicios[id];}).filter(function(e){
-    if(q&&e.nombre.toLowerCase().indexOf(q)===-1) return false;
+    if(q&&busNorm(e.nombre).indexOf(q)===-1) return false;
     if(ejPickerFilterCat&&e.categoria!==ejPickerFilterCat) return false;
     if(ejPickerFilterGrupo&&(e.grupos_musculares||[]).indexOf(ejPickerFilterGrupo)===-1) return false;
     return true;
