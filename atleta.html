@@ -1692,7 +1692,7 @@ async function descargarPdfSesion(){
       var hecho=[];
       if(r&&r.sets){r.sets.forEach(function(st,j){
         if(st.tiempo||st.distancia)hecho.push((j+1)+') '+[st.distancia,st.tiempo,st.ritmo?st.ritmo+'/km':''].filter(Boolean).join(' · '));
-        else if(st.reps||st.load)hecho.push((j+1)+') '+(st.reps||'—')+(st.load?' × '+st.load+' kg':''));});}
+        else if(st.reps||parseFloat(st.load))hecho.push((j+1)+') '+(st.reps||'—')+(parseFloat(st.load)?' × '+st.load+' kg':' reps'));});}
       if(r&&r.alternativa)hecho.push('Hecho en su lugar: '+r.alternativa);
       if(r&&r.adaptado)hecho.push('Adaptado'+(r.nota_adaptacion?': '+r.nota_adaptacion:''));
       doc.setFont('helvetica','bold');doc.setFontSize(8.8);var nl=doc.splitTextToSize(nombre,cols.nom.w-2);
