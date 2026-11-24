@@ -809,7 +809,7 @@ function aplicarCodigoAcceso(){
     <div class="sb-group">Sistema</div>
     <div class="tab" onclick="switchTab('ajustes',this)"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg><span>Ajustes</span></div>
   </nav>
-  <div class="sb-foot"><div id="auth-chip" style="display:none;font-size:12px;color:#cbd5e1;margin-bottom:10px;line-height:1.4"></div><div style="font-size:10px;color:#64748b;margin-bottom:6px">versión 101</div><div class="status-badge" id="status">⏳ Conectando...</div></div>
+  <div class="sb-foot"><div id="auth-chip" style="display:none;font-size:12px;color:#cbd5e1;margin-bottom:10px;line-height:1.4"></div><div style="font-size:10px;color:#64748b;margin-bottom:6px">versión 102</div><div class="status-badge" id="status">⏳ Conectando...</div></div>
 </aside>
 <div class="sb-backdrop" onclick="closeSidebar()"></div>
 <div class="main">
@@ -1884,6 +1884,7 @@ var DEFAULT_BLOQUES = [
   {id:'activacion',    name:'Activación',          color:'#60a5fa'},
   {id:'desplazamientos',name:'Desplazamientos',    color:'#fbbf24'},
   {id:'fuerza',        name:'Fuerza',              color:'#ccff66'},
+  {id:'especifico',    name:'Trabajo específico',  color:'#f87171'},
   {id:'potencia',      name:'Potencia',            color:'#fb923c'},
   {id:'pliometria',    name:'Pliometría',          color:'#f472b6'},
   {id:'pot-resistida', name:'Potencia Resistida',  color:'#a78bfa'},
@@ -1892,7 +1893,7 @@ var DEFAULT_BLOQUES = [
 ];
 // Bloques nuevos que se añaden una sola vez a la lista guardada en Ajustes (detrás de "despuesDe").
 // Se marca en la config para no volver a crearlos si luego se borran a mano desde Ajustes.
-var BLOQUES_NUEVOS=[{id:'desplazamientos',name:'Desplazamientos',color:'#fbbf24',despuesDe:'activacion',marca:'bloque_nuevo_desplazamientos'}];
+var BLOQUES_NUEVOS=[{id:'desplazamientos',name:'Desplazamientos',color:'#fbbf24',despuesDe:'activacion',marca:'bloque_nuevo_desplazamientos'},{id:'especifico',name:'Trabajo específico',color:'#f87171',despuesDe:'fuerza',marca:'bloque_nuevo_especifico'}];
 function asegurarBloquesNuevos(){
   var list=(DB.config.bloques_ejercicio||[]).slice();
   if(!list.length)return; // sin lista guardada se usan los DEFAULT_BLOQUES, que ya lo incluyen
