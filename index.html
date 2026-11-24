@@ -808,7 +808,7 @@ function aplicarCodigoAcceso(){
     <div class="sb-group">Sistema</div>
     <div class="tab" onclick="switchTab('ajustes',this)"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg><span>Ajustes</span></div>
   </nav>
-  <div class="sb-foot"><div id="auth-chip" style="display:none;font-size:12px;color:#cbd5e1;margin-bottom:10px;line-height:1.4"></div><div style="font-size:10px;color:#64748b;margin-bottom:6px">versión 98</div><div class="status-badge" id="status">⏳ Conectando...</div></div>
+  <div class="sb-foot"><div id="auth-chip" style="display:none;font-size:12px;color:#cbd5e1;margin-bottom:10px;line-height:1.4"></div><div style="font-size:10px;color:#64748b;margin-bottom:6px">versión 99</div><div class="status-badge" id="status">⏳ Conectando...</div></div>
 </aside>
 <div class="sb-backdrop" onclick="closeSidebar()"></div>
 <div class="main">
@@ -1315,6 +1315,14 @@ function aplicarCodigoAcceso(){
   </div>
 </div>
 
+<!-- ══ INFORME DE PARTIDO (PDF MC LAB) → datos de la pestaña Partidos ══ -->
+<div class="modal-overlay" id="modal-parinforme" style="z-index:3000">
+  <div class="modal" style="max-width:560px">
+    <div class="modal-title">📄 Informe de partido</div>
+    <div id="parinf-body"></div>
+  </div>
+</div>
+
 <!-- ══ PERFIL DE ATLETA (overlay a pantalla completa, estilo ATLETAS-26) ══ -->
 <div class="pa-overlay" id="pa-overlay">
   <div class="pa-nav">
@@ -1331,6 +1339,8 @@ function aplicarCodigoAcceso(){
       <div class="pa-tab" data-pa="par" id="pa-tab-par" style="display:none" onclick="paTab('par')">Partidos</div>
       <div class="pa-tab" data-pa="adm" onclick="paTab('adm')">⚙ Gestión</div>
     </div>
+    <div class="pa-back" style="border-right:none;border-left:1px solid var(--border);color:var(--accent-ink);font-weight:700" onclick="parSubirInforme()" title="Subir el informe de partido (PDF MC LAB) que te ha mandado el jugador: se leen los datos solos">📄 Subir PDF</div>
+    <input type="file" id="par-pdf-input" accept="application/pdf,.pdf" style="display:none" onchange="parPdfElegido(this)">
   </div>
   <div class="pa-main">
 
@@ -1378,7 +1388,7 @@ function aplicarCodigoAcceso(){
     <!-- PARTIDOS -->
     <div id="pa-pnl-par" class="pa-pnl">
       <div class="pa-st">Partidos</div>
-      <div class="pa-ss">Datos de partido (MC LAB) comparados con los anteriores</div>
+      <div class="pa-ss" style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><span>Datos de partido (MC LAB) comparados con los anteriores</span><button class="btn btn-primary btn-sm" onclick="parSubirInforme()">📄 Subir informe PDF</button></div>
       <div id="pa-par-body"></div>
     </div>
     <div class="cx-pop" id="cx-pop" onclick="if(event.target===this)cxCierra()"><div class="cx-pop-in" id="cx-pop-in"></div></div>
@@ -1825,6 +1835,7 @@ function aplicarCodigoAcceso(){
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.0/jspdf.plugin.autotable.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <script src="partidos.js"></script>
+<script src="mclab.js"></script>
 <script>
 var API = 'https://script.google.com/macros/s/AKfycbzqXBcIAhrrXHXs2u1_jk8137QI17VxC_IKA3z15cm4ZKwlkTYFbB96zjKpoxk07B4yUA/exec';
 
@@ -2251,7 +2262,7 @@ window.onload=async function(){
     if(rEq&&rEq.ok) DB.equipos=rEq.equipos||[];
     if(rE.ok) DB.ejercicios=rE.ejercicios||{};
     if(rS.ok) DB.sesiones=rS.sesiones||[];
-    if(rC.ok){DB.config=Object.assign(DB.config,rC.config||{});try{asegurarBloquesNuevos();}catch(e){}}
+    if(rC.ok){DB.config=Object.assign(DB.config,rC.config||{});try{asegurarBloquesNuevos();}catch(e){}try{parAplicarSubidos();}catch(e){}}
     if(rR&&rR.ok) DB.resistencia=rR.items||[];
     if(rPE&&rPE.ok) DB.planExterno=rPE.items||[];
     await aplicarProgramasDelServidor(rP);
@@ -6200,6 +6211,192 @@ var PAR_SEL=null;
 function cxMedia(arr,k){var v=arr.map(function(p){return p.m&&p.m[k]?p.m[k].v:null;}).filter(function(x){return x!=null;});return v.length?v.reduce(function(a,b){return a+b;},0)/v.length:null;}
 function cxDelta(v,ref){if(ref==null||!ref)return '<span style="color:var(--text-muted)">—</span>';var d=Math.round((v-ref)/ref*100),col=d>=5?'var(--green)':d<=-10?'var(--red)':'var(--text-muted)';return '<span style="color:'+col+'">'+(d>0?'+':'')+d+'%</span>';}
 function paSelPartido(i){PAR_SEL=i;paRenderPartidos(paAtletaActual);}
+
+// ── Subir informe de partido (PDF MC LAB): se lee con OCR en el navegador y se guarda en la config (partidos_subidos) ──
+var PAR_INF=null,PAR_LIBS=null;
+var PAR_DIAS=['domingo','lunes','martes','miércoles','jueves','viernes','sábado'],PAR_MESES=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+function parFechaTxt(iso){var d=new Date(iso+'T12:00:00');return PAR_DIAS[d.getDay()]+' '+d.getDate()+' '+PAR_MESES[d.getMonth()]+' '+d.getFullYear();}
+function parSlug(n){return cxNorm(n).split(' ').filter(Boolean).join('-');}
+// mete los partidos subidos desde la app dentro de window.PARTIDOS (los de partidos.js se respetan salvo que coincida la fecha)
+function parAplicarSubidos(){
+  var sub=(DB.config&&DB.config.partidos_subidos)||{};
+  window.PARTIDOS=window.PARTIDOS||{};
+  Object.keys(window.PARTIDOS).forEach(function(k){var d=window.PARTIDOS[k];if(d&&d.partidos)d.partidos=d.partidos.filter(function(p){return !p._subido;});});
+  Object.keys(sub).forEach(function(nombre){
+    var lista=sub[nombre]||[];if(!lista.length)return;
+    var d=cxParData(nombre);
+    if(!d){d=window.PARTIDOS[parSlug(nombre)]={partidos:[]};}
+    if(!d.partidos)d.partidos=[];
+    lista.forEach(function(p){
+      d.partidos=d.partidos.filter(function(x){return cxParseFecha(x.fecha)!==p.fechaISO;});
+      d.partidos.push(Object.assign({},p,{_subido:true}));
+    });
+    d.partidos.sort(function(a,b){return String(cxParseFecha(a.fecha)||'').localeCompare(String(cxParseFecha(b.fecha)||''));});
+  });
+}
+function parCargaScript(src){return new Promise(function(ok,ko){var s=document.createElement('script');s.src=src;s.onload=ok;s.onerror=function(){ko(new Error('No se pudo cargar '+src.split('/').pop()));};document.head.appendChild(s);});}
+function parLibs(){
+  if(!PAR_LIBS)PAR_LIBS=Promise.all([
+    window.pdfjsLib?null:parCargaScript('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js'),
+    window.Tesseract?null:parCargaScript('https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js'),
+    window.mclabParse?null:parCargaScript('mclab.js')
+  ]).then(function(){window.pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';}).catch(function(e){PAR_LIBS=null;throw e;});
+  return PAR_LIBS;
+}
+function parProg(t){var el=document.getElementById('parinf-body');if(el)el.innerHTML='<div style="padding:26px 10px;text-align:center"><div class="loading-inline" style="margin:0 auto 12px"></div><div style="font-size:14px">'+escapeHtml(t)+'</div><div style="font-size:11px;color:var(--text-muted);margin-top:8px">El informe se lee en tu navegador; no cierres esta ventana.</div></div>';}
+function parSubirInforme(){
+  if(!paAtletaActual){toast('Abre primero la ficha del jugador','err');return;}
+  var i=document.getElementById('par-pdf-input');i.value='';i.click();
+}
+// recorta una columna de la gráfica, la amplía y deja solo el texto oscuro ('osc') o el texto blanco ('bla')
+function parMascara(cv,x,y,w,h,f,modo){
+  var c=document.createElement('canvas');c.width=Math.max(1,Math.round(w*f));c.height=Math.max(1,Math.round(h*f));
+  var g=c.getContext('2d');g.imageSmoothingEnabled=true;g.drawImage(cv,x,y,w,h,0,0,c.width,c.height);
+  var im=g.getImageData(0,0,c.width,c.height),d=im.data,fondo=-1;
+  if(modo==='bla2'){ // texto blanco dentro de barras oscuras: todo lo claro que no sea el color del fondo
+    var hist=new Array(256).fill(0);for(var j=0;j<d.length;j+=4){var vj=Math.round(0.299*d[j]+0.587*d[j+1]+0.114*d[j+2]);if(vj>200)hist[vj]++;}
+    fondo=hist.indexOf(Math.max.apply(null,hist));
+  }
+  for(var i=0;i<d.length;i+=4){var v=0.299*d[i]+0.587*d[i+1]+0.114*d[i+2],o;
+    if(modo==='osc')o=v<110?0:255;else if(modo==='bla')o=v>246?0:255;else o=(v>190&&Math.abs(v-fondo)>6)?0:255;
+    d[i]=d[i+1]=d[i+2]=o;d[i+3]=255;}
+  g.putImageData(im,0,0);return c;
+}
+async function parPdfElegido(input){
+  var file=input.files&&input.files[0];if(!file)return;
+  if(file.type&&file.type!=='application/pdf'&&!/\.pdf$/i.test(file.name)){toast('Elige un archivo PDF','err');return;}
+  var nombre=paAtletaActual;
+  PAR_INF={nombre:nombre,pdf:null,subiendo:true,res:null};
+  openModal('parinforme');parProg('Preparando el lector…');
+  // el PDF se guarda en Drive mientras se lee
+  var b64=await new Promise(function(ok){var r=new FileReader();r.onload=function(){ok(String(r.result).split(',')[1]);};r.readAsDataURL(file);});
+  apiPost({action:'uploadPdf',fileName:file.name,mimeType:'application/pdf',base64:b64}).then(function(r){
+    if(!PAR_INF)return;PAR_INF.subiendo=false;
+    if(r&&r.ok)PAR_INF.pdf={url:r.url,nombre:r.fileName||file.name};else PAR_INF.pdfError=(r&&r.error)||'sin respuesta';
+    parPintaPdf();
+  }).catch(function(){if(PAR_INF){PAR_INF.subiendo=false;PAR_INF.pdfError='sin conexión';parPintaPdf();}});
+  var worker=null;
+  try{
+    await parLibs();
+    parProg('Abriendo el PDF…');
+    var pdf=await window.pdfjsLib.getDocument({data:await file.arrayBuffer()}).promise;
+    var page=await pdf.getPage(1);
+    // el informe es una imagen alta metida en una página: primero se localiza dónde está y luego se pinta solo esa zona a ~2500 px de ancho
+    var v1=page.getViewport({scale:1}),s0=700/v1.width,vp0=page.getViewport({scale:s0});
+    var c0=document.createElement('canvas');c0.width=Math.ceil(vp0.width);c0.height=Math.ceil(vp0.height);
+    await page.render({canvasContext:c0.getContext('2d'),viewport:vp0}).promise;
+    var d0=c0.getContext('2d').getImageData(0,0,c0.width,c0.height).data,L=c0.width,T=c0.height,R=0,B=0;
+    for(var yy=0;yy<c0.height;yy++)for(var xx=0;xx<c0.width;xx++){var k=(yy*c0.width+xx)*4;if(d0[k+3]>0&&(d0[k]<250||d0[k+1]<250||d0[k+2]<250)){if(xx<L)L=xx;if(xx>R)R=xx;if(yy<T)T=yy;if(yy>B)B=yy;}}
+    if(R<=L||B<=T){L=0;T=0;R=c0.width;B=c0.height;}
+    var cwU=(R-L+1)/s0,chU=(B-T+1)/s0,sc=2500/cwU;
+    if(cwU*chU*sc*sc>16e6)sc=Math.sqrt(16e6/(cwU*chU));
+    var vp=page.getViewport({scale:sc,offsetX:-L/s0*sc,offsetY:-T/s0*sc});
+    var cv=document.createElement('canvas');cv.width=Math.floor(cwU*sc);cv.height=Math.floor(chU*sc);
+    var g0=cv.getContext('2d');g0.fillStyle='#fff';g0.fillRect(0,0,cv.width,cv.height);
+    await page.render({canvasContext:g0,viewport:vp}).promise;
+    parProg('Cargando el reconocedor de texto…');
+    worker=await window.Tesseract.createWorker('eng',1,{logger:function(m){if(m&&m.status==='recognizing text'&&PAR_INF&&PAR_INF.fase==='pagina')parProg('Leyendo el informe… '+Math.round((m.progress||0)*100)+'%');}});
+    await worker.setParameters({tessedit_pageseg_mode:'11'});
+    PAR_INF.fase='pagina';parProg('Leyendo el informe… 0%');
+    var r1=await worker.recognize(cv);
+    var words=(r1.data.words||[]).map(function(w){return {text:w.text,x0:w.bbox.x0,y0:w.bbox.y0,x1:w.bbox.x1,y1:w.bbox.y1};});
+    var loc=window.mclabParse(words,cv.width,cv.height,nombre);
+    PAR_INF.fase='graficas';
+    await worker.setParameters({tessedit_char_whitelist:'0123456789.,'});
+    var colWords={};
+    for(var i=0;i<loc.cols.length;i++){
+      var c=loc.cols[i];colWords[c.g]=[];parProg('Leyendo las gráficas… '+(i+1)+' de '+loc.cols.length);
+      var x0=Math.max(0,Math.round(c.x-loc.colAncho/2)),w0=Math.min(Math.round(loc.colAncho),cv.width-x0),y0=Math.round(c.y0),h0=Math.max(4,Math.round(c.y1-c.y0));
+      var pasadas=[[2,'osc'],[3,'osc'],[4,'osc'],[2,'bla'],[3,'bla'],[4,'bla'],[2,'bla2'],[3,'bla2'],[4,'bla2']];
+      for(var a=0;a<pasadas.length;a++){
+        var f=pasadas[a][0],r=await worker.recognize(parMascara(cv,x0,y0,w0,h0,f,pasadas[a][1]));
+        (r.data.words||[]).forEach(function(w){colWords[c.g].push({t:w.text,y:y0+(w.bbox.y0+w.bbox.y1)/2/f});});
+      }
+    }
+    // números de la tarjeta del jugador, también ampliados y en varias pasadas
+    var cardWords={},cb=loc.cardBoxes||{};
+    for(var k in cb){
+      var bx=cb[k],bx0=Math.max(0,Math.round(bx.x0)),by0=Math.max(0,Math.round(bx.y0)),bw=Math.min(cv.width-bx0,Math.round(bx.x1-bx.x0)),bh=Math.round(bx.y1-bx.y0);
+      if(bw<4||bh<4)continue;cardWords[k]=[];
+      for(var f2 of [2,3,4]){var r2=await worker.recognize(parMascara(cv,bx0,by0,bw,bh,f2,'osc'));(r2.data.words||[]).forEach(function(w){cardWords[k].push(w.text);});}
+    }
+    PAR_INF.res=window.mclabRellena(loc,colWords,cardWords);
+    PAR_INF._dbg={W:cv.width,H:cv.height,words:words,loc:loc,colWords:colWords,cardWords:cardWords};
+  }catch(e){
+    PAR_INF.res={jornada:'',fechaISO:'',min:null,m:{},avisos:['No se pudo leer el PDF ('+(e&&e.message||e)+'). Puedes rellenar los datos a mano.']};
+  }finally{if(worker)try{await worker.terminate();}catch(e){}}
+  parFormulario(PAR_INF.res,null);
+}
+function parPintaPdf(){
+  var el=document.getElementById('parinf-pdf');if(!el||!PAR_INF)return;
+  el.innerHTML=PAR_INF.pdf?'📄 PDF guardado · <a href="'+escAttr(PAR_INF.pdf.url)+'" target="_blank" rel="noopener">abrir</a>':PAR_INF.subiendo?'⏳ Guardando el PDF en Drive…':(PAR_INF.pdfError?'⚠️ El PDF no se pudo guardar ('+escapeHtml(PAR_INF.pdfError)+'); los datos sí se guardan':'');
+}
+// formulario para revisar/corregir lo leído antes de guardar (también sirve para corregir uno ya subido)
+function parFormulario(res,previo){
+  previo=previo||{};var m=res.m||{};
+  var campo=function(id,lab,val,tipo,extra){return '<div class="form-group" style="margin-bottom:8px"><label style="font-size:11px">'+lab+'</label><input id="'+id+'" type="'+(tipo||'text')+'" value="'+escAttr(val==null?'':val)+'" '+(extra||'')+' style="width:100%"></div>';};
+  var h='<div style="font-size:12px;color:var(--text-muted);margin:-6px 0 10px">'+escapeHtml(PAR_INF.nombre)+' · revisa los datos leídos del informe y corrige lo que haga falta</div>';
+  if(res.avisos&&res.avisos.length)h+='<div style="background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;border-radius:8px;padding:8px 10px;font-size:12px;margin-bottom:10px">⚠️ '+res.avisos.map(escapeHtml).join('<br>⚠️ ')+'</div>';
+  h+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:0 10px">'
+    +campo('pi-jornada','Jornada',previo.jornada||res.jornada||'')
+    +campo('pi-fecha','Fecha del partido',previo.fechaISO||res.fechaISO||'','date')
+    +campo('pi-rival','Rival',previo.rival||'','text','placeholder="p. ej. Algeciras"')
+    +campo('pi-resultado','Resultado',previo.resultado||'','text','placeholder="p. ej. Victoria 2-0"')
+    +campo('pi-min','Minutos jugados',previo.min!=null?previo.min:res.min,'number','inputmode="numeric"')
+    +campo('pi-carga','Carga (opcional)',previo.carga||'','text','placeholder="Alta / Media / Baja"')
+    +'</div><div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin:6px 0 6px">Datos del partido</div>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:0 10px">'
+    +PAR_METS.map(function(x){var v=previo.m&&previo.m[x.k]?previo.m[x.k].v:m[x.k];return campo('pi-m-'+x.k,x.l+(x.u?' ('+x.u+')':''),v==null?'':String(v).replace('.',x.d?',':'.'),'text','inputmode="decimal"'+(v==null?' style="width:100%;border-color:#f59e0b"':''));}).join('')
+    +'</div><div id="parinf-pdf" style="font-size:12px;margin:8px 0 4px"></div>'
+    +'<div class="modal-actions"><button class="btn btn-secondary" onclick="closeModal(\'parinforme\');PAR_INF=null">Cancelar</button><button class="btn btn-primary" id="pi-guardar" onclick="parGuardar()">💾 Guardar partido</button></div>';
+  document.getElementById('parinf-body').innerHTML=h;
+  parPintaPdf();
+}
+async function parGuardar(){
+  if(!PAR_INF)return;
+  var v=function(id){var e=document.getElementById(id);return e?e.value.trim():'';};
+  var iso=v('pi-fecha');if(!/^\d{4}-\d{2}-\d{2}$/.test(iso)){toast('Pon la fecha del partido','err');return;}
+  if(PAR_INF.subiendo){var b=document.getElementById('pi-guardar');if(b){b.disabled=true;b.textContent='⏳ Esperando a que termine de subir el PDF…';}
+    for(var t=0;t<120&&PAR_INF&&PAR_INF.subiendo;t++)await new Promise(function(r){setTimeout(r,500);});}
+  if(!PAR_INF)return;
+  var jor=v('pi-jornada').toUpperCase(),rival=v('pi-rival'),resu=v('pi-resultado'),mins=v('pi-min');
+  var met={};PAR_METS.forEach(function(x){var t=v('pi-m-'+x.k).replace(/\./g,x.d?'.':'').replace(',','.');if(t!==''&&!isNaN(Number(t)))met[x.k]={v:Number(t)};});
+  var previo=PAR_INF.previo||{};
+  var obj={id:'sub-'+iso,jornada:jor,rival:rival,resultado:resu,fechaISO:iso,fecha:parFechaTxt(iso),min:mins===''?null:Number(mins),carga:v('pi-carga'),
+    partido:[jor,rival?('vs '+rival):'Partido'].filter(Boolean).join(' · ')+(resu?' · '+resu:''),m:met,
+    pdf_url:PAR_INF.pdf?PAR_INF.pdf.url:(previo.pdf_url||''),pdf_nombre:PAR_INF.pdf?PAR_INF.pdf.nombre:(previo.pdf_nombre||'')};
+  if(previo.m)Object.keys(previo.m).forEach(function(k){if(met[k]&&previo.m[k]&&previo.m[k].v===met[k].v){if(previo.m[k].p!=null)met[k].p=previo.m[k].p;if(previo.m[k].st)met[k].st=previo.m[k].st;}});
+  var todos=JSON.parse(JSON.stringify((DB.config&&DB.config.partidos_subidos)||{}));
+  var lista=(todos[PAR_INF.nombre]||[]).filter(function(x){return x.fechaISO!==iso&&x.fechaISO!==previo.fechaISO;});
+  lista.push(obj);lista.sort(function(a,b){return a.fechaISO.localeCompare(b.fechaISO);});todos[PAR_INF.nombre]=lista;
+  var btn=document.getElementById('pi-guardar');if(btn){btn.disabled=true;btn.textContent='⏳ Guardando…';}
+  try{var r=await apiPost({action:'saveConfig',key:'partidos_subidos',value:todos});if(!r||!r.ok)throw new Error((r&&r.error)||'sin respuesta');}
+  catch(e){toast('⚠️ No se pudo guardar: '+(e.message||e),'err');if(btn){btn.disabled=false;btn.textContent='💾 Guardar partido';}return;}
+  DB.config.partidos_subidos=todos;parAplicarSubidos();
+  var nombre=PAR_INF.nombre;closeModal('parinforme');PAR_INF=null;
+  toast('✅ Partido '+(jor||parFechaTxt(iso))+' guardado en la ficha de '+nombre.split(' ')[0]);
+  if(paAtletaActual===nombre){
+    var ps=cxPartidosDe(nombre);PAR_SEL=ps.findIndex(function(x){return cxParseFecha(x.fecha)===iso;});if(PAR_SEL<0)PAR_SEL=null;
+    var tp=document.getElementById('pa-tab-par');if(tp)tp.style.display='';
+    paRenderPartidos(nombre);try{cxRender();}catch(e){}paTab('par');
+  }
+}
+function parBuscaSubido(iso){var l=((DB.config&&DB.config.partidos_subidos)||{})[paAtletaActual]||[];return l.find(function(x){return x.fechaISO===iso;});}
+function parEditar(iso){
+  var p=parBuscaSubido(iso);if(!p)return;
+  PAR_INF={nombre:paAtletaActual,pdf:p.pdf_url?{url:p.pdf_url,nombre:p.pdf_nombre}:null,subiendo:false,previo:p};
+  openModal('parinforme');parFormulario({jornada:p.jornada,fechaISO:p.fechaISO,min:p.min,m:{},avisos:[]},p);
+}
+async function parQuitar(iso){
+  var p=parBuscaSubido(iso);if(!p)return;
+  if(!confirm('¿Quitar el partido '+(p.jornada||'')+' ('+p.fecha+') de la ficha de '+paAtletaActual+'? El PDF sigue en Drive.'))return;
+  var todos=JSON.parse(JSON.stringify(DB.config.partidos_subidos||{}));
+  todos[paAtletaActual]=(todos[paAtletaActual]||[]).filter(function(x){return x.fechaISO!==iso;});
+  var r=await apiPost({action:'saveConfig',key:'partidos_subidos',value:todos}).catch(function(){return null;});
+  if(!r||!r.ok){toast('⚠️ No se pudo quitar','err');return;}
+  DB.config.partidos_subidos=todos;parAplicarSubidos();PAR_SEL=null;paRenderPartidos(paAtletaActual);try{cxRender();}catch(e){}
+  toast('Partido quitado');
+}
 function paRenderPartidos(nombre){
   var el=document.getElementById('pa-par-body');if(!el)return;
   var d=cxParData(nombre),ps=d?d.partidos:[];
@@ -6207,6 +6404,7 @@ function paRenderPartidos(nombre){
   if(PAR_SEL==null||PAR_SEL>=ps.length)PAR_SEL=ps.length-1;
   var p=ps[PAR_SEL],prev=ps.slice(0,PAR_SEL),ult5=prev.slice(-5);
   var h='<div class="pt-sel">'+ps.map(function(x,i){return '<button class="'+(i===PAR_SEL?'on':'')+'" onclick="paSelPartido('+i+')">'+escapeHtml(x.jornada||('P'+(i+1)))+' · '+escapeHtml(cxRival(x))+'</button>';}).join('')+'</div>';
+  if(p._subido)h+='<div style="display:flex;gap:6px;flex-wrap:wrap;margin:-4px 0 10px">'+(p.pdf_url?'<a class="btn btn-secondary btn-xs" href="'+escAttr(p.pdf_url)+'" target="_blank" rel="noopener">📄 Ver PDF</a>':'')+'<button class="btn btn-secondary btn-xs" onclick="parEditar(\''+escAttr(p.fechaISO)+'\')">✏️ Corregir datos</button><button class="btn btn-danger btn-xs" onclick="parQuitar(\''+escAttr(p.fechaISO)+'\')">🗑 Quitar partido</button></div>';
   h+='<div class="pa-card pa-mb"><div class="pa-ct">'+escapeHtml(p.partido)+' · '+escapeHtml(p.fecha||'')+' · '+(p.min||'—')+"' · carga "+escapeHtml(p.carga||'—')+'</div>'
     +'<div style="font-size:11px;color:var(--text-muted);margin-bottom:10px">Cada métrica comparada con los '+(ult5.length)+' partidos anteriores y con todo el histórico previo ('+prev.length+')</div><div class="pt-g">';
   PAR_METS.forEach(function(m){var x=p.m&&p.m[m.k];if(!x)return;var a5=cxMedia(ult5,m.k),ah=cxMedia(prev,m.k);
@@ -6242,6 +6440,7 @@ async function openAtletaPerfil(nombre){
   document.getElementById('pa-overlay').classList.add('on');
 
   CX.mes=null;CX.tem=[];CX.reg=[];CX.ev=[];CX.ext=[];PAR_SEL=null;paEvoEj=null;
+  try{parAplicarSubidos();}catch(e){}
   var _tp=document.getElementById('pa-tab-par');if(_tp)_tp.style.display=cxPartidosDe(nombre).length?'':'none';if(_tp)_tp.textContent=(f&&f.deporte==='esgrima')?'Competiciones':'Partidos';
   cxRender();paRenderPartidos(nombre);
   try{paRenderPlanes(nombre);}catch(e){}
