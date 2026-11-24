@@ -1742,6 +1742,13 @@ function aplicarCodigoAcceso(){
       <div style="width:250px;flex-shrink:0;">
         <div id="pdfpanel-ajustes">
           <div class="form-group">
+            <label>Formato</label>
+            <select id="pdfopt-formato" onchange="refreshPdfPreview()">
+              <option value="resumen">Resumen (tabla compacta)</option>
+              <option value="tarjetas">Tarjetas grandes</option>
+            </select>
+          </div>
+          <div class="form-group">
             <label>Tamaño de imagen</label>
             <select id="pdfopt-imgsize" onchange="refreshPdfPreview()">
               <option value="grande">Grande</option>
@@ -7616,7 +7623,7 @@ var PDF_IMG_SIZE = {
   pequeno: {single:18, grid:16},
   oculta:  {single:0,  grid:0}
 };
-var DEFAULT_PDF_OPTS = {imgSize:'grande', density:'normal', maxCols:3, showNotes:true, showExec:true, showSummary:true, showMuscleReport:true};
+var DEFAULT_PDF_OPTS = {formato:'resumen', imgSize:'grande', density:'normal', maxCols:3, showNotes:true, showExec:true, showSummary:true, showMuscleReport:true};
 function loadSavedPdfOpts(){
   try{ return Object.assign({},DEFAULT_PDF_OPTS,JSON.parse(localStorage.getItem('gc_pdf_opts')||'{}')); }
   catch(e){ return Object.assign({},DEFAULT_PDF_OPTS); }
@@ -7768,8 +7775,137 @@ function drawExecAndNotes(doc,x,y,w,content,dens){
 }
 
 // Construye el documento PDF de una sesión ya con todos los datos cargados (sin guardar). Reutilizable por la vista previa en vivo.
+// ── PDF EN FORMATO RESUMEN (tabla compacta: una fila por ejercicio) ──
+function pdfNombreEj(ex){
+  var db=DB.ejercicios[ex.id];
+  if(db&&db.nombre) return db.nombre;
+  var s=String(ex.id||'').replace(/[-_]+/g,' ').trim();
+  return s.charAt(0).toUpperCase()+s.slice(1);
+}
+// d = {titulo, sub, estado, grupos:[{nombre,color,filas:[{ex,reg}]}]}
+async function buildResumenPDFDoc(d,imgCache,opts,muscleFn){
+  var jsPDF=window.jspdf.jsPDF;
+  var doc=new jsPDF({orientation:'p',unit:'mm',format:'a4'});
+  var W=210,H=297,M=12;
+  var INK=[20,23,31],SOFT=[107,112,121],FAINT=[163,167,174],LINE=[228,229,224];
+  var conImg=opts.imgSize!=='oculta';
+  var compacto=opts.density!=='normal';
+  var TH=conImg?(compacto?10:13):0;           // alto de la miniatura
+  var FONT=compacto?8.3:9;
+  var cols=[{k:'n',w:6},{k:'img',w:conImg?TH*1.35+3:0},{k:'nom',w:0},{k:'series',w:14,t:'Series'},{k:'reps',w:17,t:'Reps'},{k:'carga',w:19,t:'Carga'},{k:'int',w:19,t:'Intens.'},{k:'desc',w:16,t:'Desc.'}];
+  var fijo=cols.reduce(function(a,c){return a+c.w;},0);
+  cols[2].w=W-2*M-fijo;
+  var x=M;cols.forEach(function(c){c.x=x;x+=c.w;});
+  var y=M;
+
+  // Cabecera en una sola franja
+  var lx=M;
+  if(LOGO_BASE64){try{doc.addImage(LOGO_BASE64,'PNG',M,y,9,9);lx=M+12;}catch(e){}}
+  doc.setFont('helvetica','bold');doc.setFontSize(13);doc.setTextColor(INK[0],INK[1],INK[2]);
+  var tit=doc.splitTextToSize(d.titulo||'Entreno',W-2*M-(lx-M)-30)[0];
+  doc.text(tit,lx,y+4.2);
+  doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(SOFT[0],SOFT[1],SOFT[2]);
+  doc.text(doc.splitTextToSize(d.sub||'',W-2*M-(lx-M)-30)[0]||'',lx,y+8.6);
+  doc.setFont('helvetica','bold');doc.setFontSize(7.5);doc.setTextColor(FAINT[0],FAINT[1],FAINT[2]);
+  doc.text((d.estado||'').toUpperCase(),W-M,y+4.2,{align:'right'});
+  doc.setFont('helvetica','normal');
+  doc.text(TRAINER_BRAND,W-M,y+8.6,{align:'right'});
+  y+=12;
+  doc.setDrawColor(INK[0],INK[1],INK[2]);doc.setLineWidth(0.5);doc.line(M,y,W-M,y);
+  y+=5;
+
+  function cabTabla(){
+    doc.setFont('helvetica','bold');doc.setFontSize(6.8);doc.setTextColor(FAINT[0],FAINT[1],FAINT[2]);
+    doc.text('EJERCICIO',cols[2].x+(conImg?0:0),y);
+    cols.slice(3).forEach(function(c){doc.text(c.t.toUpperCase(),c.x+c.w/2,y,{align:'center'});});
+    y+=2.5;
+  }
+  var n=0;
+  d.grupos.forEach(function(g){
+    if(!g.filas.length) return;
+    if(y>H-30){doc.addPage();y=M;}
+    doc.setFillColor(244,244,242);doc.rect(M,y-4,W-2*M,6,'F');
+    doc.setFillColor(INK[0],INK[1],INK[2]);doc.rect(M,y-4,1.2,6,'F');
+    doc.setFont('helvetica','bold');doc.setFontSize(9);doc.setTextColor(INK[0],INK[1],INK[2]);
+    doc.text(String(g.nombre||'').toUpperCase(),M+4,y);
+    doc.setFont('helvetica','normal');doc.setFontSize(7.5);doc.setTextColor(SOFT[0],SOFT[1],SOFT[2]);
+    doc.text(g.filas.length+(g.filas.length===1?' ejercicio':' ejercicios'),W-M-2,y,{align:'right'});
+    y+=6;cabTabla();
+    g.filas.forEach(function(f){
+      var ex=f.ex,reg=f.reg;n++;
+      var sets=getParamVal(ex,'series')||ex.sets||'—';
+      var reps=getParamVal(ex,'reps')||ex.reps||'';
+      var tiempo=getParamVal(ex,'tiempo')||'',dist=getParamVal(ex,'distancia')||'';
+      if(!reps) reps=tiempo||dist||'—';
+      var kg=getParamVal(ex,'kg')||(ex.load&&ex.load!=='—'?ex.load:'');
+      var pct=getParamVal(ex,'pct_rm'),pctD=getParamVal(ex,'pct_dif');
+      var carga=kg?kg+' kg':(pct?pct+'% RM':(pctD?pctD+'% dif':'—'));
+      var rir=getParamVal(ex,'rir'),rpe=getParamVal(ex,'rpe');
+      var inten=rir?'RIR '+rir:(rpe?'RPE '+rpe:'—');
+      var desc=getParamVal(ex,'descanso')||ex.rest||'—';
+      doc.setFont('helvetica','bold');doc.setFontSize(FONT);
+      var nom=doc.splitTextToSize(pdfNombreEj(ex),cols[2].w-2);
+      var extra=[];
+      if(opts.showExec!==false&&reg&&reg.sets&&reg.sets.length){
+        var hecho=reg.sets.filter(function(s){return s.reps||s.load;}).map(function(s){return (s.reps||'—')+(s.load?'×'+s.load+'kg':'');});
+        if(hecho.length) extra.push({t:'Hecho: '+hecho.join(' · ')+(reg.rpe?' · RPE '+reg.rpe:''),c:INK});
+      }
+      var notas=opts.showNotes!==false?getParamVal(ex,'notas'):'';
+      if(notas) extra.push({t:notas,c:SOFT});
+      doc.setFont('helvetica','normal');doc.setFontSize(FONT-1.5);
+      var extraL=[];extra.forEach(function(e){doc.splitTextToSize(e.t,cols[2].w-2).forEach(function(l){extraL.push({t:l,c:e.c});});});
+      var txtH=nom.length*FONT*0.4+extraL.length*(FONT-1.5)*0.4;
+      var rowH=Math.max(TH+2.4,txtH+3.4,compacto?6.2:7.5);
+      if(y+rowH>H-16){doc.addPage();y=M;cabTabla();}
+      var top=y,mid=top+rowH/2;
+      doc.setFont('helvetica','bold');doc.setFontSize(7.5);doc.setTextColor(FAINT[0],FAINT[1],FAINT[2]);
+      doc.text(String(n),cols[0].x+1,mid+1);
+      if(conImg) drawExThumb(doc,cols[1].x,top+1.2,cols[1].w-3,TH,DB.ejercicios[ex.id]||{},imgCache,LINE,FAINT);
+      var ty=mid-txtH/2+FONT*0.33;
+      doc.setFont('helvetica','bold');doc.setFontSize(FONT);doc.setTextColor(INK[0],INK[1],INK[2]);
+      nom.forEach(function(l){doc.text(l,cols[2].x,ty);ty+=FONT*0.4;});
+      doc.setFont('helvetica','normal');doc.setFontSize(FONT-1.5);
+      extraL.forEach(function(l){doc.setTextColor(l.c[0],l.c[1],l.c[2]);doc.text(l.t,cols[2].x,ty);ty+=(FONT-1.5)*0.4;});
+      doc.setFont('helvetica','bold');doc.setFontSize(FONT);doc.setTextColor(INK[0],INK[1],INK[2]);
+      [['series',sets],['reps',reps],['carga',carga],['int',inten],['desc',desc]].forEach(function(p){
+        var c=cols.find(function(cc){return cc.k===p[0];});
+        var v=doc.splitTextToSize(String(p[1]),c.w-1.5)[0];
+        doc.text(v,c.x+c.w/2,mid+1,{align:'center'});
+      });
+      y=top+rowH;
+      doc.setDrawColor(LINE[0],LINE[1],LINE[2]);doc.setLineWidth(0.25);doc.line(M,y,W-M,y);
+    });
+    y+=6;
+  });
+
+  if(opts.showMuscleReport!==false&&muscleFn){
+    var z=muscleFn();
+    await addMuscleReportPageToDoc(doc,z,opts.muscleMetodo||'tonelaje');
+  }
+  var pc=doc.internal.getNumberOfPages();
+  for(var p=1;p<=pc;p++){
+    doc.setPage(p);
+    doc.setFont('helvetica','normal');doc.setFontSize(7.5);doc.setTextColor(FAINT[0],FAINT[1],FAINT[2]);
+    doc.text(TRAINER_BRAND+'  ·  '+TRAINER_EMAIL,M,H-8);
+    doc.text('Página '+p+' / '+pc,W-M,H-8,{align:'right'});
+  }
+  return doc;
+}
 async function buildSesionPDFDoc(ses,registro,imgCache,opts){
   opts=Object.assign({},DEFAULT_PDF_OPTS,opts||{});
+  if(opts.formato!=='tarjetas'){
+    var regD=(registro&&registro.datos&&registro.datos.ejercicios)||[];
+    var gr={},orden=[];
+    (ses.ejercicios||[]).forEach(function(ex,i){
+      var bid=ex.bloque||'otros',key=bid+'::'+(ex.bloqueInstancia||'');
+      if(!gr[key]){var bDef=getBloques().find(function(b){return b.id===bid;})||{name:bid,color:'#999'};gr[key]={bid:bid,nombre:ex.bloqueNombre||bDef.name,color:bDef.color,filas:[]};orden.push(key);}
+      gr[key].filas.push({ex:ex,reg:regD[ex._origIdx!==undefined?ex._origIdx:i]});
+    });
+    var bo=opts.blockOrder||[];
+    orden.sort(function(a,b){var ia=bo.indexOf(gr[a].bid),ib=bo.indexOf(gr[b].bid);return (ia<0?99:ia)-(ib<0?99:ib);});
+    var fecha=new Date(ses.fecha+'T12:00:00').toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'long'});
+    return buildResumenPDFDoc({titulo:ses.nombre,sub:ses.atleta+' · '+fecha,estado:registro?'Realizada':'Entreno',grupos:orden.map(function(k){return gr[k];})},imgCache,opts,function(){return computeMuscleLoad(ses,registro,opts.muscleMetodo||'tonelaje');});
+  }
   var dens=PDF_DENSITY[opts.density]||PDF_DENSITY.normal;
   var imgSizes=PDF_IMG_SIZE[opts.imgSize]||PDF_IMG_SIZE.grande;
 
@@ -8338,6 +8474,13 @@ async function exportSesionPDF(){
 // ── EXPORTAR PDF DE PLANTILLA (vista previa, sin datos de ejecución) ──
 async function buildTemplatePDFDoc(tpl,imgCache,opts){
   opts=Object.assign({},DEFAULT_PDF_OPTS,opts||{});
+  if(opts.formato!=='tarjetas'){
+    var ids=(opts.blockOrder&&opts.blockOrder.length?opts.blockOrder:[]).filter(function(k){return tpl.bloques[k];});
+    Object.keys(tpl.bloques).forEach(function(k){if(ids.indexOf(k)<0)ids.push(k);});
+    var grupos=ids.map(function(bid){var m=resolveBloqueMeta(bid,tpl);return {nombre:m.name,color:m.color,filas:(tpl.bloques[bid]||[]).map(function(ex){return {ex:ex};})};});
+    var nEj=grupos.reduce(function(a,g){return a+g.filas.length;},0);
+    return buildResumenPDFDoc({titulo:tpl.name||'Plantilla',sub:(tpl._pdfSub?tpl._pdfSub+' · ':'')+nEj+' ejercicios',estado:tpl._pdfEstado||'Plantilla',grupos:grupos},imgCache,opts,function(){return computeMuscleLoadTemplate(tpl,opts.muscleMetodo||'tonelaje');});
+  }
   var dens=PDF_DENSITY[opts.density]||PDF_DENSITY.normal;
   var imgSizes=PDF_IMG_SIZE[opts.imgSize]||PDF_IMG_SIZE.grande;
 
@@ -8563,6 +8706,7 @@ var PDF_PREVIEW_CTX=null;
 
 function getPdfOptsFromForm(){
   return {
+    formato:document.getElementById('pdfopt-formato').value,
     imgSize:document.getElementById('pdfopt-imgsize').value,
     density:document.getElementById('pdfopt-density').value,
     maxCols:parseInt(document.getElementById('pdfopt-cols').value,10)||3,
@@ -8574,6 +8718,7 @@ function getPdfOptsFromForm(){
   };
 }
 function setPdfOptsToForm(opts){
+  document.getElementById('pdfopt-formato').value=opts.formato||'resumen';
   document.getElementById('pdfopt-imgsize').value=opts.imgSize;
   document.getElementById('pdfopt-density').value=opts.density;
   document.getElementById('pdfopt-cols').value=String(opts.maxCols);
