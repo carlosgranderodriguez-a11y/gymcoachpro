@@ -14,6 +14,7 @@
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="carga.js"></script>
 <script>try{if(localStorage.getItem('gc_tema_atleta')==='claro')document.documentElement.setAttribute('data-tema','claro');}catch(e){}</script>
 <style>
 :root{
@@ -557,6 +558,7 @@ function fechaLocalISO(d){ d=d||new Date(); return d.getFullYear()+'-'+String(d.
 // (ej. "Carlos Grande ") y una comparación estricta descartaría sus sesiones.
 function normalizaNombre(n){ return String(n||'').trim().replace(/\s+/g,' ').toLowerCase(); }
 function mismoAtleta(a,b){ return normalizaNombre(a)===normalizaNombre(b); }
+var CONFIG_ALL={};         // Config del servidor (máximos «rm::Nombre» para calcular los kg con el RIR)
 var REGISTROS=[];         // Registros de sesiones de fuerza ya completadas
 var EJERCICIOS_DB={};     // Catálogo de ejercicios (nombre + imagen)
 var WELLNESS=[];          // Wellness diario del atleta
@@ -728,6 +730,7 @@ async function loadAsignadas(){
       DEFAULT_BLOQUES.forEach(function(d){if(!BLOQUES.some(function(b){return b.id===d.id;}))BLOQUES.push(d);});
     }
     if(rC&&rC.ok&&rC.config.tipos_actividad&&rC.config.tipos_actividad.length) ACT_TIPOS=rC.config.tipos_actividad;
+    if(rC&&rC.ok) CONFIG_ALL=rC.config||{};
     renderSemana();
     cargarExternos();
     var _pe=document.getElementById('page-entreno');if(_pe&&_pe.classList.contains('active'))renderEntreno();
@@ -1084,8 +1087,10 @@ function renderDetalleFuerza(s,activo){
             +'<input type="text" class="inp set-tiempo" value="'+escHtmlE(tS)+'" placeholder="tiempo (mm:ss)" style="flex:1;padding:7px;font-size:12px;">'
             +'<input type="text" class="inp set-dist" value="'+escHtmlE(dS)+'" placeholder="distancia (m)" style="flex:1;padding:7px;font-size:12px;">'
           +'</div>';}}
+        var cargaC=cardio?null:cargaEx(ex,s.fecha);
         for(var si=0;si<(cardio?0:setsCount);si++){
           var rS=valSerie(plannedReps,si),kS=valSerie(plannedKg,si),rN=numPuro(rS),kN=numPuro(kS);
+          if(kN===''&&!kS&&cargaC&&cargaC.rm&&cargaC.series[si]&&cargaC.series[si].kg!=null)kN=String(cargaC.series[si].kg);
           rows+='<div style="display:flex;gap:6px;margin-top:5px;align-items:center;">'
             +'<span style="font-size:10px;color:var(--text-muted);width:16px;">'+(si+1)+'</span>'
             +'<input type="number" class="inp set-reps" value="'+rN+'" placeholder="'+(rN===''&&rS?rS:repsLabel)+'" style="flex:1;padding:7px;font-size:12px;">'
@@ -1101,12 +1106,12 @@ function renderDetalleFuerza(s,activo){
         +'<div class="ex-opt-extra" id="adapt-extra-'+globalIdx+'"><textarea class="ex-adapt-nota" rows="2" placeholder="¿Cómo lo has adaptado? (ej. menor rango, con apoyo...)"></textarea></div>'
         +'<div class="ex-opt-extra" id="alt-extra-'+globalIdx+'"><input type="text" class="ex-alt-input" placeholder="¿Qué ejercicio has hecho en su lugar?"></div>';
         html+='<div class="ex-card" style="align-items:flex-start;" id="exsets-'+globalIdx+'" data-exid="'+ex.id+'" data-exnombre="'+db.nombre.replace(/"/g,'&quot;')+'">'+img
-          +'<div style="flex:1;"><div class="ex-name">'+exNombreHtml(ex,db,globalIdx)+videoLink+'</div><div class="ex-meta">Objetivo: '+(cardio?escHtmlE(pautaCardio(ex)):(plannedReps+' '+repsLabel+(plannedKg?' · '+plannedKg+'kg':'')+' · Descanso '+(ex.rest||'—')))+'</div>'
+          +'<div style="flex:1;"><div class="ex-name">'+exNombreHtml(ex,db,globalIdx)+videoLink+'</div><div class="ex-meta">Objetivo: '+(cardio?escHtmlE(pautaCardio(ex)):(plannedReps+' '+repsLabel+(plannedKg?' · '+plannedKg+'kg':'')+escHtmlE(cargaTxt(ex,s.fecha))+' · Descanso '+(ex.rest||'—')))+'</div>'
           +exExplicacionHtml(ex,db)+rows+applyAllBtn+optRow+'</div></div>';
       } else {
         var esUnilateral2=String(db.unilateral||'').toLowerCase().indexOf('s')===0;
         html+='<div class="ex-card">'+img+'<div style="flex:1;min-width:0"><div class="ex-name">'+exNombreHtml(ex,db,globalIdx)+'</div><div class="ex-meta">'
-          +(esCardioEx(ex)?escHtmlE(pautaCardio(ex)):((ex.sets||'—')+'×'+(ex.reps||'—')+(esUnilateral2?'/lado':'')+(ex.load&&ex.load!=='—'?' · '+ex.load:'')+' · Descanso '+(ex.rest||'—')))
+          +(esCardioEx(ex)?escHtmlE(pautaCardio(ex)):((ex.sets||'—')+'×'+(ex.reps||'—')+(esUnilateral2?'/lado':'')+(ex.load&&ex.load!=='—'?' · '+ex.load:'')+escHtmlE(cargaTxt(ex,s.fecha))+' · Descanso '+(ex.rest||'—')))
         +'</div>'+exExplicacionHtml(ex,db)+'</div></div>';
       }
     });
@@ -1606,6 +1611,13 @@ async function syncGarminAhora(){
 
 // Valores distintos por serie: "40/45/50" → serie 1 = 40, serie 2 = 45, serie 3 = 50 (si faltan, se repite el último)
 // ── Cardio / resistencia: tiempo + distancia → ritmo ──
+// kg de trabajo calculados con reps + RIR y el máximo del atleta (carga.js); null si el ejercicio no lleva RIR
+function cargaEx(ex,fecha){try{return window.CARGA?CARGA.calc(ex,{config:CONFIG_ALL,nombre:ATLETA,fecha:fecha,registros:REGISTROS}):null;}catch(e){return null;}}
+function cargaTxt(ex,fecha){
+  var c=cargaEx(ex,fecha);if(!c)return '';var rir=gpv(ex,'rir');
+  var kgs=c.rm?CARGA.juntar(c.series.map(function(x){return x.kg;})):'';
+  return (kgs&&!(ex.load&&ex.load!=='—')?' · '+(c.rm.estimado?'≈':'')+kgs+' kg':'')+' · RIR '+rir;
+}
 function gpv(ex,id){var p=((ex&&ex.params)||[]).find(function(q){return q.id===id;});return p?String(p.val==null?'':p.val):'';}
 function esCardioEx(ex){return !!(ex&&((ex.params||[]).some(function(q){return q&&(q.id==='tiempo'||q.id==='distancia'||q.id==='ritmo');})));}
 function parseTiempoSeg(v){v=String(v||'').trim().toLowerCase().replace(',','.');if(!v)return 0;if(/^\d+(\.\d+)?\s*s(eg)?$/.test(v))return parseFloat(v);if(/^\d+(\.\d+)?\s*(min|')?$/.test(v))return parseFloat(v)*60;var q=v.split(':').map(Number);if(q.some(isNaN))return 0;if(q.length===2)return q[0]*60+q[1];if(q.length===3)return q[0]*3600+q[1]*60+q[2];return 0;}

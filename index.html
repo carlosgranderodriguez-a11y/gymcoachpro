@@ -703,6 +703,7 @@ input:focus,select:focus,textarea:focus{border-color:#8aa0d6 !important;box-shad
 .stb .stb-n{width:30px;color:var(--text-muted);font-weight:600}
 .stb-x{cursor:pointer;opacity:0;margin-left:2px;font-size:9px}.stb th:hover .stb-x{opacity:.6}.stb-x:hover{opacity:1;color:#dc2626}
 .stb-acc{display:flex;gap:6px;align-items:center;margin-top:5px}
+.stb-carga{display:flex;flex-wrap:wrap;gap:4px 10px;align-items:center;margin-top:6px;font-size:11.5px;color:var(--text-dim)}.stb-carga:empty{display:none}.stb-c-t{font-weight:700;color:var(--accent-ink)}.stb-c-a{background:var(--surface2);border:1px solid var(--border);border-radius:999px;padding:2px 9px;display:inline-flex;gap:5px;align-items:center}.stb-c-a small{color:var(--text-muted)}.stb-c-m{color:var(--text-muted);font-style:italic}
 .blp-ov{position:fixed;inset:0;background:rgba(10,15,25,.55);z-index:10000;display:flex;align-items:flex-start;justify-content:center;padding:24px 12px;overflow:auto}
 .blp-box{background:var(--surface);border-radius:14px;max-width:880px;width:100%;padding:18px;box-shadow:0 20px 60px rgba(0,0,0,.4)}
 .blp-head{display:flex;gap:8px;align-items:center;margin-bottom:10px;flex-wrap:wrap}.blp-head b{font-size:17px}
@@ -808,7 +809,7 @@ function aplicarCodigoAcceso(){
     <div class="sb-group">Sistema</div>
     <div class="tab" onclick="switchTab('ajustes',this)"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg><span>Ajustes</span></div>
   </nav>
-  <div class="sb-foot"><div id="auth-chip" style="display:none;font-size:12px;color:#cbd5e1;margin-bottom:10px;line-height:1.4"></div><div style="font-size:10px;color:#64748b;margin-bottom:6px">versión 99</div><div class="status-badge" id="status">⏳ Conectando...</div></div>
+  <div class="sb-foot"><div id="auth-chip" style="display:none;font-size:12px;color:#cbd5e1;margin-bottom:10px;line-height:1.4"></div><div style="font-size:10px;color:#64748b;margin-bottom:6px">versión 100</div><div class="status-badge" id="status">⏳ Conectando...</div></div>
 </aside>
 <div class="sb-backdrop" onclick="closeSidebar()"></div>
 <div class="main">
@@ -1836,6 +1837,7 @@ function aplicarCodigoAcceso(){
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <script src="partidos.js"></script>
 <script src="mclab.js"></script>
+<script src="carga.js"></script>
 <script>
 var API = 'https://script.google.com/macros/s/AKfycbzqXBcIAhrrXHXs2u1_jk8137QI17VxC_IKA3z15cm4ZKwlkTYFbB96zjKpoxk07B4yUA/exec';
 
@@ -1921,7 +1923,7 @@ var DEFAULT_PARAMS_CATALOG = [
   {id:'series', label:'Series',   type:'number'},
   {id:'reps',   label:'Reps',     type:'text'},
   {id:'kg',     label:'kg',       type:'text'},
-  {id:'pct_rm', label:'% RM',     type:'number'},
+  {id:'pct_rm', label:'% RM (dificultad)', type:'number'},
   {id:'pct_dif', label:'% Dificultad carga', type:'number'},
   {id:'rir',    label:'RIR',      type:'number'},
   {id:'rpe',    label:'RPE',      type:'number'},
@@ -4961,12 +4963,13 @@ function stbHtml(ex,ctx){
   cols.sort(function(a,b){return SET_PARAMS.indexOf(a.p.id)-SET_PARAMS.indexOf(b.p.id);});
   var cat=getParamsCatalog();
   var h='<div class="stb" onclick="event.stopPropagation()"><table><tr><th class="stb-n">Serie</th>'+cols.map(function(o){var c=cat.find(function(x){return x.id===o.p.id;})||{label:o.p.id};
-    var corto={reps:'Reps',kg:'Kg',pct_rm:'%',rpe:'RPE',rir:'RIR',tiempo:'Tiempo',duracion:'Seg.',distancia:'Dist.',ritmo:'Ritmo',descanso:'Desc.'}[o.p.id]||c.label;
+    var corto={reps:'Reps',kg:'Kg',pct_rm:'% dif.',rpe:'RPE',rir:'RIR',tiempo:'Tiempo',duracion:'Seg.',distancia:'Dist.',ritmo:'Ritmo',descanso:'Desc.'}[o.p.id]||c.label;
     return '<th title="'+escAttr(c.label+(c.unidad?' ('+c.unidad+')':''))+'">'+escapeHtml(corto)+'<span class="stb-x" title="Quitar columna" onclick="stbDelCol('+k+',\''+o.p.id+'\')">✕</span></th>';}).join('')+'</tr>';
   for(var i=0;i<n;i++){
     h+='<tr><td class="stb-n">'+(i+1)+'</td>'+cols.map(function(o){return '<td><input data-stb="'+k+'|'+o.p.id+'|'+i+'" style="width:'+Math.max(3,String(valSerie(o.p.val,i)).length+1)+'ch" value="'+escAttr(valSerie(o.p.val,i))+'" oninput="this.style.width=Math.max(3,this.value.length+1)+\'ch\';stbSet('+k+',\''+o.p.id+'\','+i+',this.value)" onclick="this.select()"></td>';}).join('')+'</tr>';
   }
-  h+='</table><div class="stb-acc"><button type="button" class="btn btn-secondary btn-xs" onclick="stbSeries('+k+',1)">+ serie</button>'+(n>1?'<button type="button" class="btn btn-secondary btn-xs" onclick="stbSeries('+k+',-1)">− serie</button>':'')+(cols.length?'':'<span style="font-size:11px;color:var(--text-muted)">Añade reps, kg, RPE… con «+ param»</span>')+'</div></div>';
+  h+='</table><div class="stb-acc"><button type="button" class="btn btn-secondary btn-xs" onclick="stbSeries('+k+',1)">+ serie</button>'+(n>1?'<button type="button" class="btn btn-secondary btn-xs" onclick="stbSeries('+k+',-1)">− serie</button>':'')+(cols.length?'':'<span style="font-size:11px;color:var(--text-muted)">Añade reps, kg, RPE… con «+ param»</span>')+'</div>'
+    +'<div class="stb-carga" data-k="'+k+'">'+cargaHint(ex,ctx,k)+'</div></div>';
   return h;
 }
 function stbParam(ex,pid,crear){ex.params=ex.params||[];var p=ex.params.find(function(q){return q.id===pid;});if(!p&&crear){p={id:pid,val:''};ex.params.push(p);}return p;}
@@ -4975,7 +4978,64 @@ function stbSet(k,pid,i,v){
   var arr=[];for(var j=0;j<n;j++)arr.push(valSerie(p.val,j));arr[i]=v;
   p.val=stbJoin(arr);
   if(pid==='tiempo'||pid==='distancia')cardioRitmo(ex,k);
+  if(pid==='reps'||pid==='rir'||pid==='kg'){cargaPctAuto(ex,k);cargaRefresca(k);}
   c.dirty();
+}
+
+// ═══ CARGA: reps + RIR → % del máximo (dificultad) y kg de cada atleta (carga.js) ═══
+var CARGA_ATL={t:0,v:[]},CARGA_REG_PEND={};
+// el % de dificultad (columna «%») se calcula solo con las reps y el RIR de cada serie
+function cargaPctAuto(ex,k){
+  var rir=getParamVal(ex,'rir');if(String(rir||'').trim()===''||!window.CARGA)return;
+  var n=stbN(ex),reps=getParamVal(ex,'reps')||ex.reps||'',arr=[],alguno=false;
+  for(var i=0;i<n;i++){var pc=CARGA.pct(valSerie(reps,i),valSerie(rir,i));arr.push(pc==null?'':String(pc));if(pc!=null)alguno=true;}
+  if(!alguno)return;
+  var p=stbParam(ex,'pct_rm',true);p.val=stbJoin(arr);
+  var pd=(ex.params||[]).find(function(q){return q.id==='pct_dif';});if(pd)pd.val=p.val;
+  if(k!=null)for(var j=0;j<n;j++){var el=document.querySelector('[data-stb="'+k+'|pct_rm|'+j+'"]');if(el){el.value=valSerie(p.val,j);el.style.width=Math.max(3,el.value.length+1)+'ch';}}
+}
+// atletas a los que se calcula: en un plan, los que lo tienen asignado; en una sesión, su atleta
+function cargaAtletas(ctx){
+  if(ctx&&ctx.atletas)return ctx.atletas();
+  if(ctx&&ctx.render===renderProgramaBoard&&typeof currentPrograma!=='undefined'&&currentPrograma){
+    if(Date.now()-CARGA_ATL.t>3000||CARGA_ATL.id!==currentPrograma.id){CARGA_ATL={t:Date.now(),id:currentPrograma.id,v:peAsignadosLocal(currentPrograma).map(function(a){return a.nombre;})};}
+    return CARGA_ATL.v;
+  }
+  return [];
+}
+function cargaFecha(ctx){return (ctx&&ctx.fecha&&ctx.fecha())||fechaLocalISO();}
+function cargaHint(ex,ctx,k){
+  if(!window.CARGA)return '';
+  var base=CARGA.calc(ex,{});if(!base)return '';
+  var uniq=function(a){return a.filter(function(x,i){return a.indexOf(x)===i;});};
+  var pcts=uniq(base.series.map(function(x){return x.pct==null?'—':String(x.pct).replace('.',',')+'%';}));
+  var h='<span class="stb-c-t">🎯 RIR '+escapeHtml(getParamVal(ex,'rir'))+' → '+pcts.join(' · ')+' del máximo</span>';
+  var atl=cargaAtletas(ctx),fecha=cargaFecha(ctx);
+  if(String(getParamVal(ex,'kg')||'').trim()!=='')h+='<span class="stb-c-m">Los kg puestos a mano mandan sobre el cálculo.</span>';
+  atl.slice(0,8).forEach(function(n){
+    var reg=(INF.reg&&INF.reg[n])||((typeof paAtletaActual!=='undefined'&&paAtletaActual&&cxMismo(paAtletaActual,n)&&CX.reg&&CX.reg.length)?CX.reg:null);
+    var r=CARGA.calc(ex,{config:DB.config,nombre:n,fecha:fecha,registros:reg||[]});
+    if(!r||!r.rm){
+      if(!reg&&!CARGA_REG_PEND[n]){CARGA_REG_PEND[n]=1;infRegistros(n).then(function(){cargaRefresca();}).catch(function(){});}
+      h+='<span class="stb-c-a"><b>'+escapeHtml(n.split(' ')[0])+'</b> '+(reg?'sin máximo ni series registradas':'buscando sus series…')+'</span>';return;
+    }
+    var kgs=CARGA.juntar(r.series.map(function(x){return x.kg;}));
+    h+='<span class="stb-c-a" title="Máximo '+(r.rm.estimado?'estimado':'registrado')+': '+String(r.rm.kg).replace('.',',')+' kg'+(r.rm.fecha?' ('+r.rm.fecha+')':'')+'"><b>'+escapeHtml(n.split(' ')[0])+'</b> '+(r.rm.estimado?'≈':'')+kgs+' kg'
+      +' <small>· máx. '+(r.rm.estimado?'est. ':'')+String(r.rm.kg).replace('.',',')+'</small>'
+      +(ctx&&ctx.ponerKg&&k!=null?' <button type="button" class="btn btn-secondary btn-xs" onclick="cargaPonerKg('+k+')" title="Escribir estos kg en la columna Kg de la sesión">↓ Kg</button>':'')+'</span>';
+  });
+  return h;
+}
+function cargaRefresca(k){
+  document.querySelectorAll('.stb-carga').forEach(function(el){
+    var kk=+el.dataset.k;if(k!=null&&kk!==k)return;var c=STB.ref[kk];if(!c)return;var ex=c.get();if(!ex)return;el.innerHTML=cargaHint(ex,c,kk);
+  });
+}
+function cargaPonerKg(k){
+  var c=STB.ref[k];if(!c)return;var ex=c.get();if(!ex)return;var atl=cargaAtletas(c);if(!atl.length)return;
+  var r=CARGA.calc(ex,{config:DB.config,nombre:atl[0],fecha:cargaFecha(c),registros:(INF.reg&&INF.reg[atl[0]])||[]});if(!r||!r.rm)return;
+  var p=stbParam(ex,'kg',true);p.val=stbJoin(r.series.map(function(x){return x.kg==null?'':String(x.kg);}));ex.load=p.val;
+  c.dirty();c.render();toast('Kg calculados con el máximo de '+atl[0].split(' ')[0]);
 }
 function stbSeries(k,d){
   var c=STB.ref[k];if(!c)return;var ex=c.get();if(!ex)return;var n=stbN(ex),nn=Math.max(1,Math.min(20,n+d));
@@ -7301,7 +7361,7 @@ function renderSesionBloqueExs(bloqueId){
     row.ondragover=function(e){e.preventDefault();row.classList.add('drag-over');};
     row.ondrop=function(e){e.preventDefault();row.classList.remove('drag-over');dropExSesion(bloqueId,idx);};
     var paramsHtml=stbChips(ex,function(p,pi){return buildSesionParamChip(p,bloqueId,idx,pi);});
-    var stbS=stbHtml(ex,{get:(function(b,i){return function(){return (editingSesion.bloques[b]||[])[i];};})(bloqueId,idx),dirty:function(){try{renderSesionMuscleSummary();}catch(e){}},render:(function(b){return function(){renderSesionBloqueExs(b);};})(bloqueId)});
+    var stbS=stbHtml(ex,{get:(function(b,i){return function(){return (editingSesion.bloques[b]||[])[i];};})(bloqueId,idx),atletas:function(){var a=(document.getElementById('sesion-atleta')||{}).value||editingSesion.atleta;return a?[a]:[];},fecha:function(){return editingSesion.fecha;},ponerKg:true,dirty:function(){try{renderSesionMuscleSummary();}catch(e){}},render:(function(b){return function(){renderSesionBloqueExs(b);};})(bloqueId)});
     var thumbHtml=db.imagen?'<img src="'+db.imagen+'" referrerpolicy="no-referrer" style="width:40px;height:40px;object-fit:cover;border-radius:7px;flex-shrink:0;">':'<div style="width:40px;height:40px;background:var(--surface2);border-radius:7px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:15px;">💪</div>';
     row.innerHTML='<div class="ex-drag-handle">⠿</div>'+thumbHtml+'<div class="ex-row-info"><div class="ex-row-name">'+db.nombre+'</div>'+stbS+'<div class="ex-params">'+paramsHtml+'<button class="param-add-btn" onclick="showSesionParamPicker(event,\''+bloqueId+'\','+idx+')">+ param</button></div></div><button class="btn btn-danger btn-xs" onclick="removeExFromSesion(\''+bloqueId+'\','+idx+')">✕</button>';
     list.appendChild(row);
