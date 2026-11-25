@@ -408,6 +408,7 @@ html[data-tema="claro"] .day-card.today .day-head{background:rgba(163,230,53,.22
   <!-- SEMANA -->
   <div id="page-semana" class="page active">
     <div class="wrap">
+      <div id="sem-estado"></div>
       <div id="next-sessions"></div>
       <div class="week-nav">
         <button onclick="shiftWeek(-1)">‹</button>
@@ -706,37 +707,81 @@ function enterApp(){
   calc();loadData(false);loadAsignadas();
 }
 
-async function loadAsignadas(){
+// ── Carga de la semana ──
+// 1) Al abrir se enseña al instante lo último descargado (guardado en el móvil).
+// 2) Se piden los datos al servidor y se pinta en cuanto llegan sesiones + ejercicios, sin esperar al resto.
+// 3) Mientras no hay nada que enseñar sale «Cargando tu semana…» (nunca una semana vacía engañosa).
+function semEstado(txt,tipo){
+  var el=document.getElementById('sem-estado');if(!el)return;
+  if(!txt){el.innerHTML='';return;}
+  var est={cargando:'background:rgba(96,165,250,.12);border:1px solid rgba(96,165,250,.35);color:var(--text)',sutil:'background:transparent;border:1px dashed var(--border);color:var(--text-muted)',err:'background:rgba(248,113,113,.12);border:1px solid rgba(248,113,113,.4);color:var(--text)'}[tipo||'cargando'];
+  el.innerHTML='<div style="'+est+';border-radius:10px;padding:8px 12px;font-size:12.5px;margin-bottom:10px;text-align:center">'+txt+'</div>';
+}
+function semCacheKey(){return 'gc_semana_v1_'+String(ATLETA||'').trim().toLowerCase();}
+function semCacheGuardar(){
   try{
-    var [rS,rR,rReg,rEj,rW,rC,rPE,rEV]=await Promise.all([
-      api({action:'getAllSesiones'}),
-      api({action:'getResistencia'}),
-      api({action:'getHistorial',atleta:ATLETA}),
-      api({action:'getEjercicios'}),
-      api({action:'getWellness',atleta:ATLETA}),
-      api({action:'getConfig'}),
-      api({action:'getPlanExterno'}),
-      api({action:'getEventosAtleta',atleta:ATLETA})
-    ]);
-    if(rS&&rS.ok) FUERZA_SESIONES=(rS.sesiones||[]).filter(function(s){return mismoAtleta(s.atleta,ATLETA);});
-    if(rR&&rR.ok) RES_SESIONES=(rR.items||[]).filter(function(r){return r.tipo==='sesion'&&mismoAtleta(r.atleta,ATLETA);});
-    if(rReg&&rReg.ok) REGISTROS=rReg.registros||[];
-    if(rEj&&rEj.ok) EJERCICIOS_DB=rEj.ejercicios||{};
-    if(rW&&rW.ok) WELLNESS=rW.items||[];
-    if(rPE&&rPE.ok) PLAN_EXTERNO=(rPE.items||[]).filter(function(p){return mismoAtleta(p.atleta,ATLETA);});
-    if(rEV&&rEV.ok&&rEV.deporte) EV_DEPORTE=rEV.deporte;
-    if(rEV&&rEV.ok) EVENTOS=(rEV.items||[]).filter(function(e){return mismoAtleta(e.atleta,ATLETA);});
-    if(rC&&rC.ok&&rC.config.bloques_ejercicio&&rC.config.bloques_ejercicio.length){
-      BLOQUES=rC.config.bloques_ejercicio.slice();
-      // Solo para mostrar nombre y color: si falta algún bloque base (p. ej. Desplazamientos), se usa el de por defecto
-      DEFAULT_BLOQUES.forEach(function(d){if(!BLOQUES.some(function(b){return b.id===d.id;}))BLOQUES.push(d);});
-    }
-    if(rC&&rC.ok&&rC.config.tipos_actividad&&rC.config.tipos_actividad.length) ACT_TIPOS=rC.config.tipos_actividad;
-    if(rC&&rC.ok) CONFIG_ALL=rC.config||{};
-    renderSemana();
+    var cfg={};Object.keys(CONFIG_ALL||{}).forEach(function(k){if(k==='bloques_ejercicio'||k==='tipos_actividad'||(k.indexOf('rm::')===0&&mismoAtleta(k.slice(4),ATLETA)))cfg[k]=CONFIG_ALL[k];});
+    localStorage.setItem(semCacheKey(),JSON.stringify({t:Date.now(),F:FUERZA_SESIONES,R:RES_SESIONES,G:REGISTROS,E:EJERCICIOS_DB,W:WELLNESS,P:PLAN_EXTERNO,V:EVENTOS,D:EV_DEPORTE,B:BLOQUES,A:ACT_TIPOS,C:cfg}));
+  }catch(e){}
+}
+function semCacheCargar(){
+  try{
+    var c=JSON.parse(localStorage.getItem(semCacheKey())||'null');if(!c||!c.t)return 0;
+    FUERZA_SESIONES=c.F||[];RES_SESIONES=c.R||[];REGISTROS=c.G||[];EJERCICIOS_DB=c.E||{};WELLNESS=c.W||[];PLAN_EXTERNO=c.P||[];EVENTOS=c.V||[];
+    if(c.D)EV_DEPORTE=c.D;if(c.B&&c.B.length)BLOQUES=c.B;if(c.A&&c.A.length)ACT_TIPOS=c.A;CONFIG_ALL=c.C||{};
+    return c.t;
+  }catch(e){return 0;}
+}
+function semAplicarConfig(rC){
+  if(!(rC&&rC.ok))return;
+  if(rC.config.bloques_ejercicio&&rC.config.bloques_ejercicio.length){
+    BLOQUES=rC.config.bloques_ejercicio.slice();
+    // Solo para mostrar nombre y color: si falta algún bloque base (p. ej. Desplazamientos), se usa el de por defecto
+    DEFAULT_BLOQUES.forEach(function(d){if(!BLOQUES.some(function(b){return b.id===d.id;}))BLOQUES.push(d);});
+  }
+  if(rC.config.tipos_actividad&&rC.config.tipos_actividad.length) ACT_TIPOS=rC.config.tipos_actividad;
+  CONFIG_ALL=rC.config||{};
+}
+function semRefrescarVistas(){
+  renderSemana();
+  var _pe=document.getElementById('page-entreno');if(_pe&&_pe.classList.contains('active'))renderEntreno();
+}
+async function loadAsignadas(){
+  var enCache=semCacheCargar();
+  if(enCache){semRefrescarVistas();semEstado('🔄 Actualizando tu semana…','sutil');}
+  else{
+    semEstado('⏳ Cargando tu semana… puede tardar unos segundos','cargando');
+    var wd=document.getElementById('week-days');if(wd)wd.innerHTML='';
+  }
+  var pS=api({action:'getAllSesiones'}),pEj=api({action:'getEjercicios'}),pR=api({action:'getResistencia'}),
+      pReg=api({action:'getHistorial',atleta:ATLETA}),pW=api({action:'getWellness',atleta:ATLETA}),pC=api({action:'getConfig'}),
+      pPE=api({action:'getPlanExterno'}),pEV=api({action:'getEventosAtleta',atleta:ATLETA});
+  var fallos=0;
+  // fase 1: lo imprescindible para ver la semana
+  try{
+    var r1=await Promise.all([pS,pEj,pR]);
+    if(r1[0]&&r1[0].ok) FUERZA_SESIONES=(r1[0].sesiones||[]).filter(function(s){return mismoAtleta(s.atleta,ATLETA);});else fallos++;
+    if(r1[1]&&r1[1].ok) EJERCICIOS_DB=r1[1].ejercicios||{};
+    if(r1[2]&&r1[2].ok) RES_SESIONES=(r1[2].items||[]).filter(function(r){return r.tipo==='sesion'&&mismoAtleta(r.atleta,ATLETA);});
+    semRefrescarVistas();
+    if(!fallos)semEstado('🔄 Actualizando…','sutil');
+  }catch(e){fallos++;}
+  // fase 2: el resto (historial, wellness, máximos, planificación externa, eventos)
+  try{
+    var r2=await Promise.all([pReg,pW,pC,pPE,pEV]);
+    if(r2[0]&&r2[0].ok) REGISTROS=r2[0].registros||[];
+    if(r2[1]&&r2[1].ok) WELLNESS=r2[1].items||[];
+    semAplicarConfig(r2[2]);
+    if(r2[3]&&r2[3].ok) PLAN_EXTERNO=(r2[3].items||[]).filter(function(p){return mismoAtleta(p.atleta,ATLETA);});
+    if(r2[4]&&r2[4].ok&&r2[4].deporte) EV_DEPORTE=r2[4].deporte;
+    if(r2[4]&&r2[4].ok) EVENTOS=(r2[4].items||[]).filter(function(e){return mismoAtleta(e.atleta,ATLETA);});
+    semRefrescarVistas();
     cargarExternos();
-    var _pe=document.getElementById('page-entreno');if(_pe&&_pe.classList.contains('active'))renderEntreno();
-  }catch(e){toast('No se pudo cargar tu semana','err');}
+  }catch(e){fallos++;}
+  if(fallos){
+    semEstado(enCache?'⚠️ Sin conexión con el servidor: estás viendo lo último guardado en tu móvil':'⚠️ No se pudo cargar tu semana. Comprueba la conexión y vuelve a abrir la app.','err');
+    if(!enCache)toast('No se pudo cargar tu semana','err');
+  }else{semEstado('');semCacheGuardar();}
 }
 
 /* NAV */
