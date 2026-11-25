@@ -1772,7 +1772,43 @@ async function descargarPdfSesion(){
   var nom=('Sesion_'+s.fecha+'_'+(s.nombre||'')).replace(/[^\wáéíóúñÁÉÍÓÚÑ-]+/g,'_').slice(0,80)+'.pdf';
   doc.save(nom);
 }
+// ── Molestias / dolor al terminar la sesión: zona + lado + intensidad 0-10 ──
+var MOL_ZONAS=['Pubis','Aductor','Isquiotibial','Cuádriceps','Gemelo / sóleo','Rodilla','Tobillo / pie','Cadera / glúteo','Lumbar','Abdomen','Hombro','Otra'];
+var MOL_ULT=[],MOL_SI=false;
+function molTxt(arr){return (arr||[]).map(function(m){return m.zona+(m.lado&&m.lado!=='—'?' '+m.lado:'')+' '+m.dolor+'/10'+(m.nota?' ('+m.nota+')':'');}).join(' · ');}
+function molBloqueHtml(){
+  var b='padding:8px 18px;border-radius:999px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-weight:700;font-size:13px;cursor:pointer';
+  return '<div class="g"><label class="lab">🩹 ¿Has tenido alguna molestia o dolor?</label>'
+    +'<div style="display:flex;gap:8px;margin-bottom:8px"><button type="button" id="mol-no" style="'+b+'" onclick="molSN(false)">No</button><button type="button" id="mol-si" style="'+b+'" onclick="molSN(true)">Sí</button></div>'
+    +'<div id="mol-lista"></div>'
+    +'<button type="button" id="mol-add" style="display:none;'+b+';font-weight:600;font-size:12px;padding:6px 12px" onclick="molAdd()">+ Otra zona</button></div>';
+}
+function molSN(si){
+  MOL_SI=!!si;
+  var on='var(--red)';document.getElementById('mol-si').style.background=si?on:'var(--surface2)';document.getElementById('mol-si').style.color=si?'#fff':'var(--text)';
+  document.getElementById('mol-no').style.background=si?'var(--surface2)':'var(--green, #16a34a)';document.getElementById('mol-no').style.color=si?'var(--text)':'#fff';
+  var l=document.getElementById('mol-lista');l.innerHTML='';document.getElementById('mol-add').style.display=si?'inline-block':'none';
+  if(si)molAdd();
+}
+function molAdd(){
+  var l=document.getElementById('mol-lista'),i=l.children.length,sel='width:100%;padding:8px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:13px';
+  var d=document.createElement('div');d.className='mol-fila';d.style.cssText='border:1px solid var(--border);border-radius:10px;padding:10px;margin-bottom:8px';
+  d.innerHTML='<div style="display:grid;grid-template-columns:1fr 110px;gap:8px">'
+    +'<select class="mol-zona" style="'+sel+'"><option value="">Zona…</option>'+MOL_ZONAS.map(function(z){return '<option>'+z+'</option>';}).join('')+'</select>'
+    +'<select class="mol-lado" style="'+sel+'"><option>Izq.</option><option>Dcha.</option><option>Ambos</option><option value="—">Centro</option></select></div>'
+    +'<div style="display:flex;justify-content:space-between;align-items:center;margin:10px 0 2px;font-size:12px;color:var(--text-dim)"><span>Dolor (0 = nada · 10 = máximo)</span><b class="mol-v" style="font-size:16px;color:var(--red)">3</b></div>'
+    +'<input type="range" class="mol-dolor" min="0" max="10" value="3" style="width:100%;accent-color:var(--red)" oninput="this.parentNode.querySelector(\'.mol-v\').textContent=this.value">'
+    +'<input type="text" class="mol-nota inp" placeholder="¿Cuándo? (p. ej. en los saltos, al acabar…) — opcional" style="margin-top:8px;font-size:12px">';
+  l.appendChild(d);
+}
+function molRecoger(){
+  var out=[];document.querySelectorAll('#mol-lista .mol-fila').forEach(function(f){
+    var z=f.querySelector('.mol-zona').value;if(!z)return;
+    out.push({zona:z,lado:f.querySelector('.mol-lado').value,dolor:Number(f.querySelector('.mol-dolor').value),nota:(f.querySelector('.mol-nota').value||'').trim()});
+  });return out;
+}
 function abrirCompletar(){
+  MOL_SI=false;
 
   var isFuerza=currentDetalle.kind==='fuerza';
   var extra=isFuerza?'<div class="g"><label class="lab">⏱️ ¿Cuántos minutos ha durado la sesión?</label><input type="number" min="1" max="300" step="1" id="cp-dur" class="inp" placeholder="Ej. 45"></div>':(
@@ -1785,7 +1821,8 @@ function abrirCompletar(){
     +extra
     +'<div class="g"><div class="slider-top"><span class="lab" style="margin:0">💪 RPE percibido</span><span class="slider-val" id="cp-rpe-v" style="color:var(--red)">6</span></div>'
     +'<input type="range" min="1" max="10" value="6" id="cp-rpe" oninput="document.getElementById(\'cp-rpe-v\').textContent=this.value" style="accent-color:var(--red)"></div>'
-    +'<div class="g"><label class="lab">💬 Comentarios para tu entrenador (opcional)</label><textarea id="cp-notas" class="inp" rows="4" placeholder="¿Cómo te has sentido? ¿Alguna molestia, ejercicio que te ha costado o algo que quieras contarme?"></textarea></div>'
+    +molBloqueHtml()
+    +'<div class="g"><label class="lab">💬 Comentarios sobre la sesión (opcional)</label><textarea id="cp-notas" class="inp" rows="4" placeholder="¿Cómo te ha ido? ¿Algún ejercicio que te haya costado o algo que quieras contarme?"></textarea></div>'
     +'<button class="save" onclick="guardarCompletar()">💾 Guardar y ver resumen</button>'
     +'</div>';
   document.getElementById('detalle-content').insertAdjacentHTML('beforeend',html);
@@ -1795,6 +1832,8 @@ function abrirCompletar(){
 async function guardarCompletar(){
   var rpe=document.getElementById('cp-rpe').value;
   var notas=document.getElementById('cp-notas').value.trim();
+  var molestias=molRecoger();MOL_ULT=molestias;
+  if(MOL_SI&&!molestias.length){toast('Elige la zona de la molestia (o marca «No»)','err');return;}
   var isFuerza=currentDetalle.kind==='fuerza';
   var durEl=document.getElementById('cp-dur'),duracion=durEl?(parseInt(durEl.value,10)||''):'';
   var s=currentDetalle.data;
@@ -1824,12 +1863,14 @@ async function guardarCompletar(){
         if(esAlternativa){entry.alternativa=(altEl.querySelector('input').value||'').trim();}
         ejerciciosDatos[idx]=entry;
       });
-      var r=await apiPost({action:'guardarRegistro',atleta:ATLETA,fecha:s.fecha,sesion_id:s.id,datos:{ejercicios:ejerciciosDatos,rpe:rpe,notas:notas,duracion:duracion},completada:true});
+      var datosReg={ejercicios:ejerciciosDatos,rpe:rpe,notas:notas,duracion:duracion,molestias:molestias};
+      var r=await apiPost({action:'guardarRegistro',atleta:ATLETA,fecha:s.fecha,sesion_id:s.id,datos:datosReg,completada:true});
       if(!r||!r.ok){toast('Error al guardar','err');return;}
-      REGISTROS.push({id:r.id,atleta:ATLETA,fecha:s.fecha,sesion_id:s.id,datos:{ejercicios:ejerciciosDatos,rpe:rpe,notas:notas,duracion:duracion},completada:true});
+      REGISTROS.push({id:r.id,atleta:ATLETA,fecha:s.fecha,sesion_id:s.id,datos:datosReg,completada:true});
     } else {
       var km=document.getElementById('cp-km').value;
       var tiempo=document.getElementById('cp-tiempo').value;
+      if(molestias.length)notas=(notas?notas+'\n':'')+'🩹 Molestias: '+molTxt(molestias);
       var body=Object.assign({},s,{action:'updateResistencia',distancia_real:km,duracion_real:tiempo,rpe_real:rpe,notas_atleta:notas});
       var r2=await apiPost(body);
       if(!r2||!r2.ok){toast('Error al guardar','err');return;}
@@ -1903,6 +1944,7 @@ function renderResumen(isFuerza,rpe,notas){
     +'<div class="summary-sub">'+nombre+'</div>'
     +stats
     +compareBlock
+    +(MOL_ULT&&MOL_ULT.length&&isFuerza?'<div class="card"><div class="lab">🩹 Molestias</div>'+escHtmlE(molTxt(MOL_ULT))+'</div>':'')
     +(notas?'<div class="card"><div class="lab">Tus comentarios</div>'+escHtmlE(notas)+'</div>':'')
     +(isFuerza?'<button class="save" style="background:transparent;border:1px solid var(--border);color:var(--text);margin-bottom:10px" onclick="descargarPdfSesion()">📄 Descargar PDF de la sesión</button>':'')
     +'<button class="save" onclick="showPage(\'semana\',document.getElementById(\'nav-semana\'))">Volver a mi semana</button>';

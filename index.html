@@ -122,6 +122,7 @@ body{background:var(--bg);color:var(--text);font-family:'Inter','Segoe UI',syste
 .pa-tab{padding:0 14px;font-size:11px;font-weight:500;letter-spacing:.07em;text-transform:uppercase;color:var(--text-dim);cursor:pointer;border-bottom:2px solid transparent;transition:all .15s;white-space:nowrap;font-family:'DM Mono',monospace;display:flex;align-items:center;height:50px;}
 .pa-tab:hover{color:var(--text);}
 .doc-card{padding:14px 16px}.doc-h{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.doc-tipo{font-size:11px;font-weight:700;border:1px solid;border-radius:999px;padding:2px 9px;white-space:nowrap}.doc-t{flex:1;min-width:160px}.doc-tt{font-weight:700;font-size:14px}.doc-f{font-size:12px;color:var(--text-muted)}.doc-b{display:flex;gap:6px;flex-wrap:wrap}.doc-n{font-size:12.5px;color:var(--text-dim);margin-top:8px;white-space:pre-wrap}.doc-tbl{min-width:560px;font-size:12px}.doc-frame{width:100%;height:75vh;min-height:420px;border:1px solid var(--border);border-radius:10px;margin-top:10px;background:#fff}
+.ps-coms{margin-top:8px;border:1px dashed var(--border);border-radius:9px;padding:7px 8px;background:var(--surface)}.ps-coms-h{font-size:10.5px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px}.ps-com-r{font-size:11.5px;padding:5px 0;border-top:1px solid var(--border);cursor:pointer}.ps-com-r:first-of-type{border-top:none}.ps-com-f{color:var(--text-muted);font-size:10.5px}.ps-com-rpe{font-size:10px;font-weight:700;background:#fde7d3;color:#9a3412;border-radius:999px;padding:0 6px}.ps-com-n{margin-top:3px;color:var(--text-dim);white-space:pre-wrap}.mol-chip{display:inline-block;font-size:10.5px;border:1px solid;border-radius:999px;padding:1px 7px;margin:1px 2px 1px 0;background:#fff}.mol-chip i{color:var(--text-muted);font-style:normal}
 .pa-tab.on{color:var(--accent-ink);border-bottom-color:var(--accent);}
 .pa-main{max-width:1200px;margin:0 auto;padding:20px 16px 60px;}
 .pa-pnl{display:none;}
@@ -810,7 +811,7 @@ function aplicarCodigoAcceso(){
     <div class="sb-group">Sistema</div>
     <div class="tab" onclick="switchTab('ajustes',this)"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg><span>Ajustes</span></div>
   </nav>
-  <div class="sb-foot"><div id="auth-chip" style="display:none;font-size:12px;color:#cbd5e1;margin-bottom:10px;line-height:1.4"></div><div style="font-size:10px;color:#64748b;margin-bottom:6px">versión 109</div><div class="status-badge" id="status">⏳ Conectando...</div></div>
+  <div class="sb-foot"><div id="auth-chip" style="display:none;font-size:12px;color:#cbd5e1;margin-bottom:10px;line-height:1.4"></div><div style="font-size:10px;color:#64748b;margin-bottom:6px">versión 110</div><div class="status-badge" id="status">⏳ Conectando...</div></div>
 </aside>
 <div class="sb-backdrop" onclick="closeSidebar()"></div>
 <div class="main">
@@ -3580,6 +3581,7 @@ async function informeSesion(sesId){
     +'<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:flex-start"><button class="btn btn-secondary btn-sm" onclick="infPDF(\''+s.id+'\')">🖨 PDF</button><button class="btn btn-secondary btn-sm" onclick="infCerrar();editSesion(\''+s.id+'\')">✏️ Editar</button><button class="btn btn-secondary btn-sm" onclick="infCerrar()">✕</button></div></div>';
   if(!reg)h+='<div class="inf-pend">⏳ El atleta todavía no ha completado esta sesión. Abajo tienes lo que tiene mandado.</div>';
   else h+='<div class="inf-kpis">'+kpi('RPE',rpe!=null?rpe:'—')+kpi('Duración',(dur||durPlan)+"'",dur?'':'prevista')+kpi('Carga',ua!=null?ua+' UA':'—','min × RPE')+kpi('Series hechas',setsHech+'/'+setsPres,cumpl!=null?cumpl+'% cumplido':'')+kpi('Tonelaje',Math.round(tonelaje)+' kg','reps × kg')+'</div>'
+    +((d.molestias||[]).length?'<div class="inf-com" style="border-color:#fecaca;background:#fef2f2">🩹 <b>Molestias:</b> '+molChips(d)+'</div>':'')
     +(d.notas?'<div class="inf-com">💬 <b>Comentario del atleta:</b> '+escapeHtml(d.notas)+'</div>':'');
   if(Object.keys(mat).length)h+='<div class="inf-mat"><b>Material:</b> '+Object.keys(mat).map(escapeHtml).join(', ')+'</div>';
   h+=cuerpo;
@@ -3624,6 +3626,10 @@ async function panelActividad(forzar){
 
 // ═══ BANDEJA DE REVISIÓN (lo que requiere tu atención, con acción) ═══
 var BDJ={items:[],well:null,verRev:false,cargada:false};
+// Molestias que el atleta marca al terminar la sesión (datos.molestias: [{zona, lado, dolor 0-10, nota}])
+function molTxt(dt){return ((dt&&dt.molestias)||[]).map(function(m){return m.zona+(m.lado&&m.lado!=='—'?' '+m.lado:'')+' '+m.dolor+'/10'+(m.nota?' ('+m.nota+')':'');}).join(' · ');}
+function molMax(dt){return ((dt&&dt.molestias)||[]).reduce(function(a,m){return Math.max(a,Number(m.dolor)||0);},-1);}
+function molChips(dt){return ((dt&&dt.molestias)||[]).map(function(m){var d=Number(m.dolor)||0,c=d>=6?'#dc2626':d>=3?'#d97706':'#65a30d';return '<span class="mol-chip" style="border-color:'+c+';color:'+c+'">🩹 '+escapeHtml(m.zona+(m.lado&&m.lado!=='—'?' '+m.lado:''))+' <b>'+d+'/10</b>'+(m.nota?' <i>'+escapeHtml(m.nota)+'</i>':'')+'</span>';}).join(' ');}
 var BDJ_DOLOR=/dolor|duel|molest|pinch|lesi|tir[oó]n|contractur|sobrecarg|inflam|mal(?:a|o)?\b|no pude|no he podido/i;
 function bdjRev(){var o=DB.config.bandeja_revisados;return (o&&typeof o==='object'&&!Array.isArray(o))?o:{};}
 async function bdjMarcar(id){
@@ -3708,6 +3714,7 @@ function comentariosAtletas(atleta,desde,well){
     (INF.reg[a]||[]).forEach(function(r){
       var f=String(r.fecha||'').slice(0,10);if(!f||(desde&&f<desde))return;
       var dt=r.datos||{},s=sesPorId[r.sesion_id],nom=s?(s.nombre||'Sesión').replace(/^.*· S\d+ · /,''):'Sesión';
+      if((dt.molestias||[]).length)L.push({a:a,f:f,ic:'🩹',t:'Molestias: '+molTxt(dt),ctx:nom,sid:r.sesion_id});
       if(dt.notas&&String(dt.notas).trim())L.push({a:a,f:f,ic:BDJ_DOLOR.test(dt.notas)?'🩹':'💬',t:String(dt.notas).trim(),ctx:nom,sid:r.sesion_id});
       (dt.ejercicios||[]).forEach(function(e){if(e&&e.nota_adaptacion){var en=((DB.ejercicios||{})[e.id]||{}).nombre||e.id;L.push({a:a,f:f,ic:'🔧',t:String(e.nota_adaptacion).trim(),ctx:en+' · '+nom,sid:r.sesion_id});}});
     });
@@ -3757,6 +3764,7 @@ async function panelBandeja(forzar){
     if(!reg){if(s.fecha<hoy){(sinReg[s.atleta]=sinReg[s.atleta]||[]).push(s);}return;}
     var dt=reg.datos||{},rpe=infNum(dt.rpe),bl=cxBloques(s),rp=bl.length?bl.reduce(function(a,b){return a+b.rpe*b.dur;},0)/Math.max(1,bl.reduce(function(a,b){return a+b.dur;},0)):null;
     var acc=[{t:'📋 Ver informe',f:"informeSesion('"+s.id+"')"}];
+    if((dt.molestias||[]).length){var mx=molMax(dt);it.push({id:'mol:'+reg.id,p:mx>=3?1:2,ic:'🩹',t:'Molestia marcada'+(mx>=0?' ('+mx+'/10)':''),a:s.atleta,f:s.fecha,det:molTxt(dt)+' · '+nom,acc:acc});}
     if(dt.notas){var dol=BDJ_DOLOR.test(dt.notas);it.push({id:'nota:'+reg.id,p:dol?1:3,ic:dol?'🩹':'💬',t:dol?'Molestia o dolor comentado':'Comentario del atleta',a:s.atleta,f:s.fecha,det:'«'+dt.notas+'» · '+nom,acc:acc});}
     if(rpe!=null&&(rpe>=9||(rp&&rpe-rp>=2)))it.push({id:'rpe:'+reg.id,p:2,ic:'🔥',t:'RPE más alto de lo previsto',a:s.atleta,f:s.fecha,det:'RPE '+rpe+(rp?' (previsto ≈ '+Math.round(rp*10)/10+')':'')+' · '+nom,acc:acc});
     var pres=0,hech=0,camb=[];(s.ejercicios||[]).forEach(function(ex,i){var ser=parseInt(getParamVal(ex,'series')||ex.sets)||0;pres+=ser;var er=(dt.ejercicios||[])[i];if(er&&er.id===ex.id){hech+=Math.min(infSetsHechos(er).length,ser||99);if(er.adaptado||er.alternativa)camb.push(((DB.ejercicios||{})[ex.id]||{}).nombre||ex.id);}});
@@ -3820,7 +3828,7 @@ function prgProponer(s,ex,regs){
   var kgs=st.map(function(x){return infNum(x.load)||0;}),maxKg=Math.max.apply(null,kgs),repsMin=Math.min.apply(null,st.map(function(x){return infNum(x.reps)||0;}));
   var completo=st.length>=serP&&(repP==null||repsMin>=repP);
   var rpe=infNum(dt.rpe),rpeP=exAnt?infNum(getParamVal(exAnt,'rpe')):null,lim=rpeP||7;
-  var dolor=(dt.notas&&BDJ_DOLOR.test(dt.notas))||u.er.adaptado||u.er.alternativa;
+  var dolor=(dt.notas&&BDJ_DOLOR.test(dt.notas))||molMax(dt)>=3||u.er.adaptado||u.er.alternativa;
   var kgAct=infNum(getParamVal(ex,'kg')||(ex.load!=='—'?ex.load:'')),repAct=getParamVal(ex,'reps')||ex.reps||'';
   var o={s:s,ex:ex,ult:u.reg.fecha,hecho:st.map(function(x){return (x.reps||'—')+(infNum(x.load)?'×'+x.load:'');}).join(' · '),rpe:rpe,kgAct:kgAct,repAct:repAct,kg:null,reps:null,acc:'mantener',por:''};
   if(dolor){o.acc='mantener';o.por=u.er.adaptado||u.er.alternativa?'Adaptó o cambió el ejercicio':'Comentó molestias';if(maxKg)o.kg=maxKg;}
@@ -5494,9 +5502,30 @@ function psDayHtml(wi,di){
     var ids=Object.keys(ses.bloques);
     if(!ids.length)h+='<div class="ps-rest">Sin bloques todavía</div>';
     ids.forEach(function(bid){h+=psBlockHtml(wi,dk,ses,bid);});
+    h+=psComentariosDia(wi,dk);
     h+='<div class="ps-foot"><button class="btn btn-secondary btn-xs" onclick="psAddBloque('+wi+','+dk+')">+ Añadir bloque</button> <button class="btn btn-secondary btn-xs" title="Elegir un bloque de la biblioteca" onclick="psBlInsertar('+wi+','+dk+')">🧱 Insertar bloque</button> <button class="btn btn-secondary btn-xs" title="Guarda esta sesión en la pestaña Programas, fuera del plan" onclick="psGuardarComoPrograma('+wi+','+dk+')">💾 Guardar como programa</button>'+(total?' <button class="btn btn-secondary btn-xs" title="Vista previa y descarga del PDF del entreno de este día" onclick="psPdf('+wi+','+dk+')">📄 PDF del entreno</button>':'')+(PS_BLQ_CLIP?' <button class="btn btn-primary btn-xs" title="Pegar aquí el bloque copiado" onclick="psPasteBloque('+wi+','+dk+')">📋 Pegar bloque «'+escapeHtml(PS_BLQ_CLIP.meta.name||'')+'»</button>':'')+'</div>';
   }
   return h+'</div>';
+}
+// Comentarios y molestias que dejaron los atletas al terminar la sesión de este día del plan
+function psComentariosDia(wi,dk){
+  if(typeof currentPrograma==='undefined'||!currentPrograma||!currentPrograma.name)return '';
+  var atl=cargaAtletas({render:renderProgramaBoard});if(!atl.length)return '';
+  var pre=String(currentPrograma.name).trim()+' · S'+(wi+1)+' · ',hoy=fechaLocalISO(),filas=[];
+  atl.forEach(function(a){
+    (DB.sesiones||[]).filter(function(x){if(!cxMismo(x.atleta,a)||String(x.nombre||'').indexOf(pre)!==0||!x.fecha)return false;var d=new Date(x.fecha+'T12:00:00').getDay();return ((d+6)%7)+1===dk;}).forEach(function(x){
+      var regs=INF.reg[a];
+      if(!regs){if(!CARGA_REG_PEND[a]){CARGA_REG_PEND[a]=1;infRegistros(a).then(function(){renderProgramaBoard();}).catch(function(){});}filas.push('<div class="ps-com-r"><b>'+escapeHtml(a.split(' ')[0])+'</b> <span class="ps-com-f">'+escapeHtml(x.fecha.slice(8)+'/'+x.fecha.slice(5,7))+'</span> <span style="color:var(--text-muted)">cargando…</span></div>');return;}
+      var reg=regs.find(function(r){return r.sesion_id===x.id;});
+      if(!reg){if(x.fecha<hoy)filas.push('<div class="ps-com-r"><b>'+escapeHtml(a.split(' ')[0])+'</b> <span class="ps-com-f">'+escapeHtml(x.fecha.slice(8)+'/'+x.fecha.slice(5,7))+'</span> <span style="color:var(--text-muted)">sin registrar</span></div>');return;}
+      var dt=reg.datos||{},rpe=infNum(dt.rpe);
+      filas.push('<div class="ps-com-r" onclick="informeSesion(\''+x.id+'\')" title="Ver el informe de la sesión"><b>'+escapeHtml(a.split(' ')[0])+'</b> <span class="ps-com-f">'+escapeHtml(x.fecha.slice(8)+'/'+x.fecha.slice(5,7))+'</span>'+(rpe!=null?' <span class="ps-com-rpe">RPE '+rpe+'</span>':'')
+        +((dt.molestias||[]).length?'<div style="margin-top:3px">'+molChips(dt)+'</div>':'')
+        +(dt.notas?'<div class="ps-com-n">💬 '+escapeHtml(dt.notas)+'</div>':(!(dt.molestias||[]).length?'<div class="ps-com-n" style="color:var(--text-muted)">Sin comentarios ni molestias</div>':''))+'</div>');
+    });
+  });
+  if(!filas.length)return '';
+  return '<div class="ps-coms"><div class="ps-coms-h">💬 Al terminar la sesión</div>'+filas.join('')+'</div>';
 }
 // PDF del entreno de un día del plan (misma vista previa y ajustes que el PDF de los programas)
 function psPdf(wi,dk){
