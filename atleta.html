@@ -25,6 +25,23 @@
   --text:#f0f0f0; --text-dim:#888; --text-muted:#555;
   --accent-ink:var(--accent);
 }
+.hero{margin-bottom:14px}
+.hero-hd{margin:2px 0 10px}.hero-fecha{font-size:12px;color:var(--text-dim);text-transform:capitalize}.hero-hola{font-size:24px;font-weight:800;line-height:1.15}
+.hero-stats{display:flex;gap:10px;margin-bottom:10px}.hero-stat{flex:1;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;text-align:center}
+.hero-big{font-size:26px;font-weight:800}.hero-lbl{font-size:11.5px;color:var(--text-dim)}
+.hero-ring{width:54px;height:54px;border-radius:50%;display:grid;place-items:center}.hero-ring div{width:42px;height:42px;border-radius:50%;background:var(--surface);display:grid;place-items:center;font-weight:800;font-size:13px}
+.hero-hoy{background:linear-gradient(160deg,rgba(204,255,102,.16),rgba(204,255,102,.04));border:1px solid rgba(204,255,102,.45);border-radius:18px;padding:14px;margin-bottom:10px;cursor:pointer}
+.hero-hoy.done{background:var(--surface);border-color:var(--border)}.hero-hoy.rest{background:var(--surface);border:1px dashed var(--border);cursor:default}
+.hero-tag{font-size:11px;font-weight:800;letter-spacing:.8px;color:var(--accent-ink)}.hero-nom{font-size:22px;font-weight:800;margin:3px 0 2px}.hero-info{font-size:12.5px;color:var(--text-dim)}
+.hero-bar{display:flex;gap:3px;margin-top:10px}.hero-bar span{height:6px;border-radius:3px}
+.hero-thumbs{display:flex;gap:6px;margin-top:10px;align-items:center}.hero-thumbs img{width:58px;height:46px;object-fit:cover;border-radius:9px;background:#fff}.hero-thumbs span{font-size:12px;color:var(--text-dim);font-weight:700}
+.hero-btn{display:block;width:100%;margin-top:12px;padding:13px;border:none;border-radius:12px;background:var(--accent);color:#000;font-weight:800;font-size:15px;cursor:pointer}
+.hero-hoy.done .hero-btn{background:transparent;border:1px solid var(--border);color:var(--text)}
+.hero-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:12px;margin-bottom:10px}.hero-card-h{font-size:13px;font-weight:700;margin-bottom:8px}.hero-card-h span{font-weight:400;color:var(--text-dim);font-size:11px;margin-left:6px}
+.hero-spark{display:flex;align-items:flex-end;gap:6px;height:46px}.hero-spark span{flex:1;background:var(--surface2);border-radius:4px}
+.hero-pr{margin-top:8px;font-size:12.5px;font-weight:700;color:var(--accent-ink)}
+.hero-prox{display:flex;align-items:center;gap:10px;padding:6px 0;border-top:1px solid var(--border);cursor:pointer}.hero-prox:first-of-type{border-top:none}
+.hero-prox .nd{width:38px;text-align:center;line-height:1}.hero-prox .nd b{font-size:17px;display:block}.hero-prox .nd span{font-size:10px;color:var(--text-dim);text-transform:uppercase}.hero-prox .nn{flex:1;font-size:13.5px;font-weight:600}
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
 html{background:var(--bg);}
 body{background:var(--bg);color:var(--text);font-family:'Inter',system-ui,sans-serif;font-size:14px;min-height:100vh;padding-bottom:78px;overflow-x:hidden;overscroll-behavior-y:none;}
@@ -1004,7 +1021,101 @@ function proximasSesiones(n){
   return f.concat(r).sort(function(a,b){return a.fecha.localeCompare(b.fecha);}).slice(0,n);
 }
 
+// ── CABECERA MOTIVANTE: hoy + racha + semana + evolución ──
+function heroHecha(s){return s.kind==='fuerza'?fuerzaCompletada(s.data.id):resistenciaCompletada(s.data);}
+function heroSesiones(){
+  return FUERZA_SESIONES.map(function(s){return {kind:'fuerza',data:s,fecha:s.fecha};})
+    .concat(RES_SESIONES.map(function(s){return {kind:'resistencia',data:s,fecha:s.fecha};}))
+    .sort(function(a,b){return a.fecha.localeCompare(b.fecha);});
+}
+function heroRacha(todas,hoy){
+  var pas=todas.filter(function(x){return x.fecha<=hoy;}),n=0;
+  for(var i=pas.length-1;i>=0;i--){var h=heroHecha(pas[i]);if(h)n++;else if(pas[i].fecha<hoy)break;}
+  return n;
+}
+function heroMejora(){
+  // mejor subida de carga máxima: últimos 28 días frente a los 28 anteriores
+  var hoy=new Date(fechaLocalISO()+'T12:00:00'),c1=new Date(hoy),c2=new Date(hoy);c1.setDate(c1.getDate()-28);c2.setDate(c2.getDate()-56);
+  var f1=fmtISO(c1),f2=fmtISO(c2),rec={},act={},semanas=[0,0,0,0];
+  REGISTROS.forEach(function(r){
+    if(!r.completada||!r.fecha||r.fecha<f2)return;
+    var ses=FUERZA_SESIONES.find(function(s){return s.id===r.sesion_id;}),exs=(ses&&ses.ejercicios)||[];
+    var dias=Math.floor((hoy-new Date(r.fecha+'T12:00:00'))/864e5),wk=Math.floor(dias/7);
+    ((r.datos&&r.datos.ejercicios)||[]).forEach(function(e,i){
+      var id=(exs[i]&&exs[i].id)||e&&e.id;if(!id||!e||!e.sets)return;
+      e.sets.forEach(function(st){var kg=parseFloat(String(st.load||'').replace(',','.'))||0,rp=parseFloat(st.reps)||0;
+        if(wk<4)semanas[3-wk]+=kg*rp;
+        if(!kg)return;var m=r.fecha>=f1?act:rec;m[id]=Math.max(m[id]||0,kg);});
+    });
+  });
+  var mejor=null;Object.keys(act).forEach(function(id){if(rec[id]&&act[id]>rec[id]){var p=(act[id]-rec[id])/rec[id]*100;if(!mejor||p>mejor.p)mejor={id:id,p:p,kg:act[id]};}});
+  return {mejor:mejor,semanas:semanas};
+}
+function renderHero(){
+  var box=document.getElementById('next-sessions');if(!box)return;
+  var hoy=fechaLocalISO(),todas=heroSesiones();
+  var nombre=String(ATLETA||'').replace(/\s*\(.*\)\s*/,'').split(' ')[0]||'';
+  var lunes=getMonday(new Date()),dom=new Date(lunes);dom.setDate(dom.getDate()+6);
+  var semana=todas.filter(function(x){return x.fecha>=fmtISO(lunes)&&x.fecha<=fmtISO(dom);});
+  var hechas=semana.filter(heroHecha).length,tot=semana.length,pct=tot?Math.round(hechas/tot*100):0;
+  var racha=heroRacha(todas,hoy);
+  var hoyS=todas.filter(function(x){return x.fecha===hoy;});
+  var pend=hoyS.filter(function(x){return !heroHecha(x);});
+  var prox=todas.filter(function(x){return x.fecha>hoy;}).slice(0,3);
+  var fechaTxt=new Date(hoy+'T12:00:00').toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'long'});
+  var saludo=pend.length?'¡A por ello, '+escHtmlE(nombre)+'! 💪':(hoyS.length?'¡Trabajo hecho, '+escHtmlE(nombre)+'! 🙌':'Hola, '+escHtmlE(nombre)+' 👋');
+  var h='<div class="hero-hd"><div class="hero-fecha">'+fechaTxt+'</div><div class="hero-hola cond">'+saludo+'</div></div>';
+  // stats
+  var ring='<div class="hero-ring" style="background:conic-gradient(var(--accent) 0 '+pct+'%,var(--surface2) 0)"><div>'+hechas+'/'+tot+'</div></div>';
+  h+='<div class="hero-stats">'
+    +'<div class="hero-stat"><div class="hero-big">'+(racha?'🔥 '+racha:'—')+'</div><div class="hero-lbl">'+(racha===1?'sesión seguida':'sesiones seguidas')+'</div></div>'
+    +'<div class="hero-stat">'+ring+'<div class="hero-lbl">'+(tot?(hechas===tot?'¡semana completa!':'esta semana'):'sin sesiones esta semana')+'</div></div>'
+  +'</div>';
+  // hoy
+  if(hoyS.length){
+    hoyS.forEach(function(x){
+      var s=x.data,done=heroHecha(x);
+      var info='',barra='',thumbs='';
+      if(x.kind==='fuerza'){
+        var exs=s.ejercicios||[],bl=[],cnt={};
+        exs.forEach(function(e){var k=(e.bloque||'otros')+'::'+(e.bloqueInstancia||'');if(!(k in cnt)){cnt[k]=0;bl.push(k);}cnt[k]++;});
+        var series=exs.reduce(function(a,e){return a+(parseInt(e.sets||gpv(e,'series'))||3);},0);
+        info=bl.length+(bl.length===1?' bloque':' bloques')+' · '+exs.length+' ejercicios · ~'+Math.max(20,Math.round(series*2.2/5)*5)+' min';
+        barra='<div class="hero-bar">'+bl.map(function(k){var d=BLOQUES.find(function(b){return b.id===k.split('::')[0];})||{color:'#888'};return '<span style="flex:'+cnt[k]+';background:'+d.color+'"></span>';}).join('')+'</div>';
+        var imgs=[],vistos={};exs.forEach(function(e){var db=EJERCICIOS_DB[e.id];if(db&&db.imagen&&!vistos[db.imagen]&&imgs.length<4){vistos[db.imagen]=1;imgs.push(db.imagen);}});
+        thumbs=imgs.length?'<div class="hero-thumbs">'+imgs.map(function(u){return '<img src="'+u+'" referrerpolicy="no-referrer" loading="lazy">';}).join('')+(exs.length>imgs.length?'<span>+'+(exs.length-imgs.length)+'</span>':'')+'</div>':'';
+      } else {
+        info=escHtmlE(s.tipo||'Resistencia')+(s.duracion?' · '+s.duracion+' min':'');
+      }
+      h+='<div class="hero-hoy'+(done?' done':'')+'" onclick="abrirDetalle(\''+x.kind+'\',\''+s.id+'\')">'
+        +'<div class="hero-tag">'+(done?'✅ HECHA HOY':'SESIÓN DE HOY')+'</div>'
+        +'<div class="hero-nom cond">'+escHtmlE(String(s.nombre||'Sesión').replace(/^.*·\s*/,''))+'</div>'
+        +'<div class="hero-info">'+info+'</div>'+barra+thumbs
+        +'<button class="hero-btn" onclick="event.stopPropagation();abrirDetalle(\''+x.kind+'\',\''+s.id+'\')">'+(done?'Ver lo que hiciste':'▶ Empezar sesión')+'</button>'
+      +'</div>';
+    });
+  } else {
+    var sig=prox[0];
+    h+='<div class="hero-hoy rest"><div class="hero-tag">HOY</div><div class="hero-nom cond">Día de descanso 😌</div><div class="hero-info">'
+      +(sig?'Próxima: '+new Date(sig.fecha+'T12:00:00').toLocaleDateString('es-ES',{weekday:'long',day:'numeric'})+' · '+escHtmlE(String(sig.data.nombre||'Sesión').replace(/^.*·\s*/,'')):'Recupera bien, que se nota.')+'</div></div>';
+  }
+  // evolución
+  var ev=heroMejora(),mx=Math.max.apply(null,ev.semanas.concat([1]));
+  if(ev.semanas.some(function(v){return v>0;})||ev.mejor){
+    h+='<div class="hero-card"><div class="hero-card-h">Tu evolución <span>volumen últimas 4 semanas</span></div>'
+      +'<div class="hero-spark">'+ev.semanas.map(function(v,i){return '<span style="height:'+Math.max(8,Math.round(v/mx*100))+'%;'+(i===3?'background:var(--accent)':'')+'"></span>';}).join('')+'</div>'
+      +(ev.mejor?'<div class="hero-pr">🏆 +'+Math.round(ev.mejor.p)+'% de carga en '+escHtmlE((EJERCICIOS_DB[ev.mejor.id]||{}).nombre||ev.mejor.id)+' ('+ev.mejor.kg+' kg)</div>':'')
+    +'</div>';
+  }
+  // próximas
+  if(prox.length){
+    h+='<div class="hero-card"><div class="hero-card-h">Próximas</div>'+prox.map(function(p){var d=new Date(p.fecha+'T12:00:00');
+      return '<div class="hero-prox" onclick="abrirDetalle(\''+p.kind+'\',\''+p.data.id+'\')"><div class="nd"><b>'+d.getDate()+'</b><span>'+d.toLocaleDateString('es-ES',{weekday:'short'})+'</span></div><div class="nn">'+(p.kind==='fuerza'?'💪 ':'🏃 ')+escHtmlE(String(p.data.nombre||'Sesión').replace(/^.*·\s*/,''))+'</div><div style="color:var(--text-dim)">›</div></div>';}).join('')+'</div>';
+  }
+  box.innerHTML='<div class="hero">'+h+'</div>';
+}
 function renderSemana(){
+
   var monday=getMonday(new Date());
   monday.setDate(monday.getDate()+weekOffset*7);
   var days=[];
@@ -1013,19 +1124,7 @@ function renderSemana(){
   document.getElementById('week-range').textContent=monday.toLocaleDateString('es-ES',{day:'numeric',month:'short'})+' – '+sunday.toLocaleDateString('es-ES',{day:'numeric',month:'short'});
   var todayISO=fechaLocalISO();
 
-  // Resumen de próximas sesiones (siempre visible, independiente de la semana que estés mirando)
-  var prox=proximasSesiones(3);
-  var proxBox=document.getElementById('next-sessions');
-  if(!prox.length){proxBox.innerHTML='';}
-  else{
-    proxBox.innerHTML='<div class="next-card"><div class="next-h">📌 Próximas sesiones</div>'
-      +prox.map(function(p){
-        var d=new Date(p.fecha+'T12:00:00');
-        var icon=p.kind==='fuerza'?'💪':'🏃';
-        return '<div class="next-item"><div class="nd"><b>'+d.getDate()+'</b><span>'+d.toLocaleDateString('es-ES',{month:'short'})+'</span></div><div class="nn">'+icon+' '+p.nombre+'</div></div>';
-      }).join('')
-    +'</div>';
-  }
+  try{renderHero();}catch(e){console.warn('hero',e);}
 
   // Selector de días horizontal (estilo app)
   var stripWd=['LUN','MAR','MIÉ','JUE','VIE','SÁB','DOM'];
