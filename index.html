@@ -877,7 +877,7 @@ function aplicarCodigoAcceso(){
     <div class="sb-group">Sistema</div>
     <div class="tab" onclick="switchTab('ajustes',this)"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg><span>Ajustes</span></div>
   </nav>
-  <div class="sb-foot"><div id="auth-chip" style="display:none;font-size:12px;color:#cbd5e1;margin-bottom:10px;line-height:1.4"></div><div style="font-size:10px;color:#64748b;margin-bottom:6px">versión 111</div><div class="status-badge" id="status">⏳ Conectando...</div></div>
+  <div class="sb-foot"><div id="auth-chip" style="display:none;font-size:12px;color:#cbd5e1;margin-bottom:10px;line-height:1.4"></div><div style="font-size:10px;color:#64748b;margin-bottom:6px">versión 112</div><div class="status-badge" id="status">⏳ Conectando...</div></div>
 </aside>
 <div class="sb-backdrop" onclick="closeSidebar()"></div>
 <div class="main">
@@ -5287,7 +5287,7 @@ function renderProgramaList(){
     var owner=(AUTH.on&&AUTH.me&&authSoyAdmin()&&p.propietario&&p.propietario!==AUTH.me.email)?' <span style="font-weight:400;color:var(--text-muted);font-size:12px">· '+escapeHtml(authNombreDe(p.propietario))+'</span>':'';
     return '<div class="template-item pl-row'+(currentPrograma&&currentPrograma.id===p.id?' active':'')+'" onclick="selectPrograma('+i+')">'
       +'<div class="pl-av">'+av+'</div>'
-      +'<div class="pl-main"><div class="template-item-name">'+escapeHtml(p.name||'(sin nombre)')+owner+'</div><div class="template-item-meta">'+meta+'</div></div>'
+      +'<div class="pl-main"><div class="template-item-name">'+escapeHtml(p.name||'(sin nombre)')+owner+(p.soloLectura?' <span style="font-weight:500;font-size:11px;color:var(--text-muted);border:1px solid var(--border);border-radius:999px;padding:1px 7px;margin-left:4px">Solo lectura</span>':'')+'</div><div class="template-item-meta">'+meta+'</div></div>'
       +pill+'</div>';
   }).join('');
 }
