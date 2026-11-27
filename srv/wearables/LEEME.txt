@@ -1,0 +1,2 @@
+Paquete de configuración cifrado y firmado del servidor de relojes (Open Wearables).
+No contiene nada legible sin la clave del servidor.
