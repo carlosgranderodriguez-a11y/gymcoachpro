@@ -368,6 +368,17 @@ html[data-tema="claro"] .day-card.today .day-head{background:rgba(163,230,53,.22
 .tb-tema{min-width:38px;}
 .btn-p{padding:12px;background:var(--accent);color:#000;border:none;border-radius:10px;font-weight:700;font-size:14px;cursor:pointer;}
 .btn-p:disabled{opacity:.6;}
+.rl-card .rl-h{display:flex;justify-content:space-between;align-items:center;font-weight:700;font-size:15px;margin-bottom:6px}
+.rl-sub{font-size:12.5px;color:var(--text-dim);margin-bottom:10px;line-height:1.4}
+.rl-btns{display:flex;flex-wrap:wrap;gap:8px}
+.rl-con{background:var(--accent);color:#000;border:0;border-radius:10px;padding:10px 14px;font-weight:700;cursor:pointer}
+.rl-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px}
+.rl-k{background:var(--surface2,rgba(127,127,127,.08));border-radius:10px;padding:9px 10px;display:flex;flex-direction:column;gap:2px}
+.rl-k b{font-size:20px}.rl-k b small{font-size:11px;font-weight:500;color:var(--text-dim)}.rl-k span{font-size:11.5px;color:var(--text-dim)}
+.rl-d{font-size:11px!important;font-weight:700}
+.rl-hist{margin-top:10px;font-size:12px}.rl-hist div{display:grid;grid-template-columns:1.1fr 1fr .8fr .8fr;padding:5px 0;border-top:1px solid var(--border)}
+.rl-pie{margin-top:10px;font-size:11.5px;color:var(--text-dim)}.rl-pie a{color:var(--text-dim)}
+.rl-hint{font-size:11.5px;color:var(--accent);margin:-4px 0 10px}
 </style>
 </head>
 <body>
@@ -721,7 +732,7 @@ function enterApp(){
   document.getElementById('app').style.display='block';
   document.getElementById('who').textContent=ATLETA.split(' ')[0];
   if(!document.getElementById('f-fecha').value)document.getElementById('f-fecha').value=fechaLocalISO();
-  calc();loadData(false);loadAsignadas();
+  calc();loadData(false);loadAsignadas();relojRetorno();
 }
 
 // ── Carga de la semana ──
@@ -737,7 +748,7 @@ function semEstado(txt,tipo){
 function semCacheKey(){return 'gc_semana_v1_'+String(ATLETA||'').trim().toLowerCase();}
 function semCacheGuardar(){
   try{
-    var cfg={};Object.keys(CONFIG_ALL||{}).forEach(function(k){if(k==='bloques_ejercicio'||k==='tipos_actividad'||(k.indexOf('rm::')===0&&mismoAtleta(k.slice(4),ATLETA)))cfg[k]=CONFIG_ALL[k];});
+    var cfg={};Object.keys(CONFIG_ALL||{}).forEach(function(k){if(k==='bloques_ejercicio'||k==='tipos_actividad'||k==='relojes_activos'||(k.indexOf('rm::')===0&&mismoAtleta(k.slice(4),ATLETA)))cfg[k]=CONFIG_ALL[k];});
     localStorage.setItem(semCacheKey(),JSON.stringify({t:Date.now(),F:FUERZA_SESIONES,R:RES_SESIONES,G:REGISTROS,E:EJERCICIOS_DB,W:WELLNESS,P:PLAN_EXTERNO,V:EVENTOS,D:EV_DEPORTE,B:BLOQUES,A:ACT_TIPOS,C:cfg}));
   }catch(e){}
 }
@@ -1533,6 +1544,82 @@ function wellnessPromedios(n){
   return avg;
 }
 
+
+/* ── RELOJ (Open Wearables): sueño, HRV, FC en reposo y recuperación ── */
+var RELOJ={cargado:false,cargando:false,datos:[],con:[],err:''};
+var RELOJ_MARCAS={polar:'Polar',garmin:'Garmin',oura:'Oura',whoop:'Whoop',suunto:'Suunto'};
+// Marcas que se pueden conectar (config «relojes_activos», p. ej. ["polar"]). Vacío = la tarjeta no se muestra.
+function relojActivos(){var a=CONFIG_ALL&&CONFIG_ALL.relojes_activos;return Array.isArray(a)?a:[];}
+function relojVolver(){return location.origin+location.pathname;}
+async function relojCargar(forzar){
+  if(!ATLETA||RELOJ.cargando||(RELOJ.cargado&&!forzar))return;
+  RELOJ.cargando=true;
+  try{var r=await api({action:'getRelojes',atleta:ATLETA,dias:30,estado:1});
+    if(r&&r.ok){RELOJ.datos=r.datos||[];RELOJ.con=r.conexiones||[];RELOJ.err=r.avisoServidor||'';}else RELOJ.err=(r&&r.error)||'';
+  }catch(e){RELOJ.err='Sin conexión';}
+  RELOJ.cargando=false;RELOJ.cargado=true;
+  if(document.getElementById('page-wellness').classList.contains('active'))renderWellness();
+}
+function relojFmtSueno(m){m=Number(m)||0;if(!m)return '—';return Math.floor(m/60)+'h'+String(Math.round(m%60)).padStart(2,'0');}
+function relojMedia(k,n,excluirUlt){var l=RELOJ.datos.filter(function(d){return d[k]!=null&&d[k]!=='';});if(excluirUlt)l=l.slice(0,-1);l=l.slice(-(n||7));if(!l.length)return null;return l.reduce(function(a,d){return a+Number(d[k]);},0)/l.length;}
+function relojUltimo(){for(var i=RELOJ.datos.length-1;i>=0;i--){var d=RELOJ.datos[i];if(d.sueno_min||d.hrv_rmssd||d.fc_reposo)return d;}return null;}
+function relojDelta(k,v,inv){var m=relojMedia(k,7,true);if(v==null||v===''||m==null||!m)return '';var p=Math.round((v-m)/m*100);if(Math.abs(p)<3)return '<span class="rl-d">= media</span>';var bueno=inv?p<0:p>0;return '<span class="rl-d" style="color:'+(bueno?'var(--accent)':'var(--red)')+'">'+(p>0?'▲ ':'▼ ')+Math.abs(p)+'%</span>';}
+function relojCardHtml(){
+  var activas=RELOJ.con.filter(function(c){return c.estado==='active';});
+  var h='<div class="card rl-card"><div class="rl-h"><span>⌚ Mi reloj</span>';
+  if(activas.length)h+='<button class="mini" onclick="relojSincronizar()">↻ Actualizar</button>';
+  h+='</div>';
+  if(!RELOJ.cargado){return h+'<div class="rl-sub">Cargando…</div></div>';}
+  if(!activas.length){
+    h+='<div class="rl-sub">Conecta tu reloj y tu sueño, tu variabilidad cardiaca (HRV) y tu pulso en reposo llegarán solos cada mañana.</div><div class="rl-btns">';
+    relojActivos().forEach(function(m){h+='<button class="rl-con" onclick="relojConectar(\''+m+'\')">Conectar '+(RELOJ_MARCAS[m]||m)+'</button>';});
+    h+='</div>';
+    var exp=RELOJ.con.filter(function(c){return c.estado!=='active';});
+    if(exp.length)h+='<div class="rl-sub" style="color:var(--red)">La conexión con '+exp.map(function(c){return RELOJ_MARCAS[c.proveedor]||c.proveedor;}).join(', ')+' ha caducado: vuelve a conectarla.</div>';
+    return h+'</div>';
+  }
+  var u=relojUltimo();
+  if(!u){h+='<div class="rl-sub">Conectado con '+activas.map(function(c){return RELOJ_MARCAS[c.proveedor]||c.proveedor;}).join(', ')+'. Los datos aparecerán después de tu próxima noche con el reloj puesto.</div>';}
+  else{
+    var f=new Date(u.fecha+'T12:00:00').toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'short'});
+    h+='<div class="rl-sub">Noche del '+f+(u.fuente?' · '+(RELOJ_MARCAS[u.fuente]||u.fuente):'')+'</div><div class="rl-grid">'
+      +'<div class="rl-k"><b>'+relojFmtSueno(u.sueno_min)+'</b><span>😴 Sueño'+(u.eficiencia?' · '+Math.round(u.eficiencia)+'%':'')+'</span>'+relojDelta('sueno_min',u.sueno_min)+'</div>'
+      +'<div class="rl-k"><b>'+(u.hrv_rmssd!=null?Math.round(u.hrv_rmssd):'—')+'<small> ms</small></b><span>💓 HRV</span>'+relojDelta('hrv_rmssd',u.hrv_rmssd)+'</div>'
+      +'<div class="rl-k"><b>'+(u.fc_reposo!=null?Math.round(u.fc_reposo):'—')+'<small> ppm</small></b><span>❤️ FC reposo</span>'+relojDelta('fc_reposo',u.fc_reposo,true)+'</div>'
+      +(u.recuperacion!=null?'<div class="rl-k"><b>'+Math.round(u.recuperacion)+'</b><span>🔋 Recuperación</span>'+relojDelta('recuperacion',u.recuperacion)+'</div>':'')
+      +'</div>';
+    var ult=RELOJ.datos.slice(-7).reverse();
+    if(ult.length>1)h+='<div class="rl-hist">'+ult.map(function(d){return '<div><span>'+new Date(d.fecha+'T12:00:00').toLocaleDateString('es-ES',{weekday:'short',day:'numeric'})+'</span><span>😴 '+relojFmtSueno(d.sueno_min)+'</span><span>💓 '+(d.hrv_rmssd!=null?Math.round(d.hrv_rmssd):'—')+'</span><span>❤️ '+(d.fc_reposo!=null?Math.round(d.fc_reposo):'—')+'</span></div>';}).join('')+'</div>';
+  }
+  h+='<div class="rl-pie">'+activas.map(function(c){return (RELOJ_MARCAS[c.proveedor]||c.proveedor)+' conectado <a href="#" onclick="relojDesconectar(\''+c.proveedor+'\');return false;">desconectar</a>';}).join(' · ')+'</div>';
+  return h+'</div>';
+}
+async function relojConectar(m){
+  toast('Abriendo '+(RELOJ_MARCAS[m]||m)+'…');
+  try{var r=await apiPost({action:'relojConectar',atleta:ATLETA,proveedor:m,volver:relojVolver()});
+    if(r&&r.ok&&r.url){try{sessionStorage.setItem('gc_reloj_pend',m);}catch(e){}location.href=r.url;}
+    else toast((r&&r.error)||'No se pudo conectar','err');
+  }catch(e){toast('Sin conexión','err');}
+}
+async function relojSincronizar(silencio){
+  if(!silencio)toast('⏳ Pidiendo datos al reloj…');
+  try{var r=await apiPost({action:'relojSincronizar',atleta:ATLETA});if(!silencio&&!(r&&r.ok))toast((r&&r.error)||'No se pudo actualizar','err');}catch(e){if(!silencio)toast('Sin conexión','err');}
+  await relojCargar(true);
+}
+async function relojDesconectar(m){
+  if(!confirm('¿Desconectar '+(RELOJ_MARCAS[m]||m)+'? Dejarán de llegar tus datos.'))return;
+  try{await apiPost({action:'relojDesconectar',atleta:ATLETA,proveedor:m});}catch(e){}
+  await relojCargar(true);
+}
+// Vuelta desde Polar/Garmin: ?provider=polar&status=success
+function relojRetorno(){
+  var q=new URLSearchParams(location.search),prov=q.get('provider'),st=q.get('status');
+  if(!prov||!st)return;
+  history.replaceState(null,'',location.pathname);
+  var nom=RELOJ_MARCAS[prov]||prov;
+  if(st==='success'){toast('✅ '+nom+' conectado. Traemos tus datos…');var b=document.getElementById('nav-wellness');if(b)showPage('wellness',b);setTimeout(function(){relojSincronizar(true);},1500);}
+  else toast('No se pudo conectar '+nom+(q.get('message')?': '+q.get('message'):''),'err');
+}
 /* ── WELLNESS ── */
 var WELL_LABELS={sueno:'😴 Sueño',fatiga:'🔋 Fatiga',dolor:'🩹 Dolor muscular',estres:'🧠 Estrés',animo:'🙂 Ánimo'};
 function wellnessDeHoy(){
@@ -1542,6 +1629,7 @@ function wellnessDeHoy(){
 function renderWellness(){
   var hoy=wellnessDeHoy();
   var html='<div class="sec-h cond">Wellness de hoy</div>';
+  if(relojActivos().length){if(!RELOJ.cargado)relojCargar();html+=relojCardHtml();}
 
   var prom=wellnessPromedios(7);
   if(prom){
@@ -1557,6 +1645,7 @@ function renderWellness(){
     html+='<div class="well-slider"><div class="well-top"><span class="wl">'+WELL_LABELS[k]+'</span><span class="wv" id="wv-'+k+'">'+val+'</span></div>'
       +'<input type="range" min="1" max="5" value="'+val+'" id="w-'+k+'" oninput="document.getElementById(\'wv-'+k+'\').textContent=this.value">'
       +'<div class="well-hint"><span>Bajo</span><span>Alto</span></div></div>';
+    if(k==='sueno'){var ru=relojUltimo();if(ru&&ru.fecha>=fechaLocalISO(new Date(Date.now()-36e5*30))&&ru.sueno_min)html+='<div class="rl-hint">⌚ Tu reloj: '+relojFmtSueno(ru.sueno_min)+(ru.eficiencia?' · eficiencia '+Math.round(ru.eficiencia)+'%':'')+'</div>';}
   });
   html+='<div class="g"><label class="lab">Notas (opcional)</label><textarea id="w-notas" class="inp" rows="2" placeholder="Molestias, sensaciones...">'+(hoy?(hoy.notas||''):'')+'</textarea></div>';
   html+='<button class="save" onclick="guardarWellnessHoy()">💾 Guardar wellness de hoy</button>';

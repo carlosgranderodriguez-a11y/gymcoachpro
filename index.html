@@ -948,7 +948,7 @@ function aplicarCodigoAcceso(){
     <div class="sb-group">Sistema</div>
     <div class="tab" onclick="switchTab('ajustes',this)"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg><span>Ajustes</span></div>
   </nav>
-  <div class="sb-foot"><div id="auth-chip" style="display:none;font-size:12px;color:#cbd5e1;margin-bottom:10px;line-height:1.4"></div><div style="font-size:10px;color:#64748b;margin-bottom:6px">versión 114</div><div class="status-badge" id="status">⏳ Conectando...</div></div>
+  <div class="sb-foot"><div id="auth-chip" style="display:none;font-size:12px;color:#cbd5e1;margin-bottom:10px;line-height:1.4"></div><div style="font-size:10px;color:#64748b;margin-bottom:6px">versión 117</div><div class="status-badge" id="status">⏳ Conectando...</div></div>
 </aside>
 <div class="sb-backdrop" onclick="closeSidebar()"></div>
 <div class="main">
@@ -1582,6 +1582,7 @@ function aplicarCodigoAcceso(){
     <div id="pa-pnl-wel" class="pa-pnl">
       <div class="pa-st">Wellness</div>
       <div class="pa-ss">Autorregistro diario del atleta (escala 1–5) · solo lectura desde el panel del entrenador</div>
+      <div class="pa-card pa-mb" id="pa-reloj"><div class="pa-ct">⌚ Reloj</div><div class="pa-empty">Cargando…</div></div>
       <div class="pa-card pa-mb"><div class="pa-ct">Tendencia</div><div class="pa-cw"><canvas id="pa-wel-trend"></canvas></div></div>
       <div class="pa-card">
         <div class="pa-ct">Histórico</div>
@@ -3903,7 +3904,8 @@ async function panelBandeja(forzar){
   var atls=[];ses.forEach(function(s){if(s.atleta&&atls.indexOf(s.atleta)<0)atls.push(s.atleta);});
   var cola=atls.slice();
   var pW=(BDJ.well&&!forzar)?Promise.resolve(BDJ.well):api({action:'getWellness'}).then(function(r){BDJ.well=(r&&r.ok)?(r.items||[]):[];return BDJ.well;}).catch(function(){return [];});
-  await Promise.all([0,1,2,3].map(async function(){while(cola.length){await infRegistros(cola.shift(),forzar);}}).concat([pW]));
+  var pR=api({action:'getRelojes',dias:10}).then(function(r){var g={};((r&&r.ok&&r.datos)||[]).forEach(function(x){(g[x.atleta]=g[x.atleta]||[]).push(x);});BDJ.reloj=Object.keys(g).map(function(a){return {a:a,d:g[a]};});}).catch(function(){BDJ.reloj=[];});
+  await Promise.all([0,1,2,3].map(async function(){while(cola.length){await infRegistros(cola.shift(),forzar);}}).concat([pW,pR]));
   var it=[],atlNom=function(n){return String(n||'').trim();};
   // 1) Sesiones registradas (últimos 7 días)
   var sinReg={};
@@ -3930,6 +3932,16 @@ async function panelBandeja(forzar){
     var acc=[{t:'👤 Ver perfil',f:"openAtletaPerfil('"+String(w.atleta).replace(/'/g,"\\'")+"')"}];
     if(m.length)it.push({id:'well:'+w.id,p:n('dolor')>=4?1:2,ic:'🫀',t:'Wellness en rojo',a:w.atleta,f:w.fecha,det:m.join(' · ')+(w.notas?' · «'+w.notas+'»':''),acc:acc});
     else if(w.notas)it.push({id:'welln:'+w.id,p:BDJ_DOLOR.test(w.notas)?1:3,ic:'📝',t:'Nota en el wellness',a:w.atleta,f:w.fecha,det:'«'+w.notas+'»',acc:acc});
+  });
+  // 2b) Reloj: HRV baja, FC en reposo alta o poco sueño (última noche, últimos 2 días)
+  (BDJ.reloj||[]).forEach(function(g){
+    var D=g.d,u=D[D.length-1];if(!u||u.fecha<d(-2))return;var prev=D.slice(0,-1),m=[],p=3;
+    var mh=rlMedia(prev,'hrv_rmssd',7),mf=rlMedia(prev,'fc_reposo',7);
+    if(u.hrv_rmssd!=null&&mh&&prev.length>=3&&u.hrv_rmssd<mh*0.85){m.push('HRV '+Math.round(u.hrv_rmssd)+' ms ('+Math.round((u.hrv_rmssd/mh-1)*100)+'% vs su media)');p=2;}
+    if(u.fc_reposo!=null&&mf&&prev.length>=3&&u.fc_reposo>=mf+5){m.push('FC reposo '+Math.round(u.fc_reposo)+' (+'+Math.round(u.fc_reposo-mf)+' ppm)');p=2;}
+    if(u.sueno_min&&u.sueno_min<360)m.push('durmió '+rlSueno(u.sueno_min));
+    if(m.length>=2)p=1;
+    if(m.length)it.push({id:'reloj:'+g.a+':'+u.fecha,p:p,ic:'⌚',t:'Reloj: recuperación baja',a:g.a,f:u.fecha,det:m.join(' · '),acc:[{t:'👤 Ver perfil',f:"openAtletaPerfil('"+String(g.a).replace(/'/g,"\\'")+"')"}]});
   });
   // 3) Programación que se acaba / atletas sin nada programado
   bdjActivos().forEach(function(a){
@@ -6929,6 +6941,7 @@ async function openAtletaPerfil(nombre){
   var tempItems=(rt&&rt.ok)?(rt.items||[]):[];
   paRenderResumen(nombre,f,dep,wellItems,tempItems);
   paRenderWellness(wellItems);
+  paRenderReloj(nombre);
   if(paTabActiva==='pla')paRenderPlan(nombre);
   if(paTabActiva==='evo')paRenderEvo(nombre);
 }
@@ -7359,6 +7372,28 @@ function paRenderWellness(wellItems){
   }
 }
 
+
+// ── Reloj del atleta (Open Wearables → hoja Relojes) ──
+var RL_MARCAS={polar:'Polar',garmin:'Garmin',oura:'Oura',whoop:'Whoop',suunto:'Suunto'};
+function rlSueno(m){m=Number(m)||0;return m?Math.floor(m/60)+'h'+String(Math.round(m%60)).padStart(2,'0'):'—';}
+function rlMedia(l,k,n){l=l.filter(function(d){return d[k]!=null&&d[k]!=='';}).slice(-(n||7));return l.length?l.reduce(function(a,d){return a+Number(d[k]);},0)/l.length:null;}
+async function paRenderReloj(nombre){
+  var el=document.getElementById('pa-reloj');if(!el)return;
+  var r;try{r=await api({action:'getRelojes',atleta:nombre,dias:60,estado:1});}catch(e){r=null;}
+  if(paAtletaActual!==nombre)return;
+  if(!r||!r.ok){el.innerHTML='<div class="pa-ct">⌚ Reloj</div><div class="pa-empty">'+(r&&/no reconocida/i.test(r.error||'')?'Falta desplegar la nueva versión del servidor (Relojes.gs).':'No se pudo cargar.')+'</div>';return;}
+  var con=r.conexiones||[],act=con.filter(function(c){return c.estado==='active';}),D=r.datos||[];
+  var h='<div class="pa-ct">⌚ Reloj <span style="font-weight:500;color:var(--text-muted);font-size:12px">'+(act.length?act.map(function(c){return (RL_MARCAS[c.proveedor]||c.proveedor)+' conectado';}).join(' · '):con.length?'conexión caducada':'sin reloj conectado')+'</span></div>';
+  if(!D.length){el.innerHTML=h+'<div class="pa-empty">'+(act.length?'Conectado. Los datos llegarán tras su próxima noche con el reloj.':'El atleta puede conectar su reloj desde su app → Wellness → «⌚ Mi reloj».')+'</div>';return;}
+  var u=D[D.length-1],prev=D.slice(0,-1);
+  var kpi=function(t,v,k,inv,fmt){var m=rlMedia(prev,k,7),d='';if(v!=null&&v!==''&&m){var p=Math.round((v-m)/m*100);d=Math.abs(p)<3?'= media 7 d':((p>0?'▲ ':'▼ ')+Math.abs(p)+'% vs 7 d');d='<div style="font-size:11px;font-weight:700;color:'+(Math.abs(p)<3?'var(--text-muted)':((inv?p<0:p>0)?'#16a34a':'#dc2626'))+'">'+d+'</div>';}
+    return '<div style="flex:1;min-width:110px;background:var(--bg-soft,rgba(127,127,127,.07));border-radius:10px;padding:9px 11px"><div style="font-size:11.5px;color:var(--text-muted)">'+t+'</div><div style="font-size:20px;font-weight:700">'+(v==null||v===''?'—':(fmt?fmt(v):Math.round(v)))+'</div>'+d+'</div>';};
+  h+='<div style="font-size:12px;color:var(--text-muted);margin:-2px 0 8px">Última noche: '+infFecha(u.fecha)+'</div><div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">'
+    +kpi('😴 Sueño',u.sueno_min,'sueno_min',false,rlSueno)+kpi('💓 HRV (ms)',u.hrv_rmssd,'hrv_rmssd')+kpi('❤️ FC reposo',u.fc_reposo,'fc_reposo',true)+(u.recuperacion!=null?kpi('🔋 Recuperación',u.recuperacion,'recuperacion'):'')+'</div>';
+  h+='<div style="overflow-x:auto"><table class="pa-tbl" style="min-width:460px"><thead><tr><th>Noche</th><th>Sueño</th><th>Eficiencia</th><th>HRV</th><th>FC reposo</th><th>Recup.</th></tr></thead><tbody>'
+    +D.slice().reverse().slice(0,21).map(function(d){var c=function(v,s){return v==null||v===''?'—':Math.round(v)+(s||'');};return '<tr><td>'+d.fecha+'</td><td>'+rlSueno(d.sueno_min)+'</td><td>'+c(d.eficiencia,'%')+'</td><td>'+c(d.hrv_rmssd)+'</td><td>'+c(d.fc_reposo)+'</td><td>'+c(d.recuperacion)+'</td></tr>';}).join('')+'</tbody></table></div>';
+  el.innerHTML=h;
+}
 function cerrarPerfilAtleta(){
   perfilAtletaActivo=null;
   document.getElementById('cal-filter-atleta').value='';
