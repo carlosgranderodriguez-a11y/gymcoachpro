@@ -581,18 +581,26 @@ input:focus,select:focus,textarea:focus{border-color:#8aa0d6 !important;box-shad
 .cal-leyenda span{display:inline-flex;align-items:center;gap:6px;}
 .cal-leyenda i.dot{width:9px;height:9px;border-radius:50%;display:inline-block;}
 .cal-day{min-height:96px;}
-.cal-chip{display:flex;align-items:center;gap:5px;width:100%;min-height:22px;padding:2px 7px;border-radius:999px;border:0;font:600 11px Inter,system-ui,sans-serif;line-height:1.2;text-align:left;cursor:pointer;box-sizing:border-box;}
+.cal-layout.mes{grid-template-columns:minmax(0,1fr);}
+.cal-layout.mes .cal-grid{gap:8px;}
+.cal-layout.mes .cal-day{min-height:120px;padding:8px 7px 7px;gap:5px;}
+.cal-chip{display:flex;align-items:flex-start;gap:7px;width:100%;padding:6px 9px;border-radius:9px;border:0;font:600 13px Inter,system-ui,sans-serif;line-height:1.25;text-align:left;cursor:pointer;box-sizing:border-box;}
+.cal-chip .tx{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px;}
+.cal-chip .sub{font-size:11.5px;font-weight:500;opacity:.85;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+.cal-layout.mes .cal-chip .nm{white-space:normal;overflow:visible;}
+.cal-chip .dots{display:flex;gap:3px;padding-top:4px;flex:none;}
 .cal-chip:hover{filter:brightness(.95);box-shadow:0 0 0 1.5px currentColor inset;}
 .cal-chip .nm{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .cal-chip .ini{display:none;}
-.cal-chip i.dot{width:7px;height:7px;border-radius:50%;flex:none;display:inline-block;}
+.cal-chip i.dot{width:8px;height:8px;border-radius:50%;flex:none;display:inline-block;}
 .cal-chip.f{background:#e6f6ec;color:#146c3b;}
 .cal-chip.r{background:#e8f0fe;color:#1c4fb8;}
 .cal-chip.fr{background:linear-gradient(90deg,#e6f6ec 50%,#e8f0fe 50%);color:#14161a;}
+.cal-chip.fr .sub{opacity:.75;}
 .cal-chip.pe{background:#f1f2f4;color:#4b5260;font-weight:500;}
 .dot.f{background:#1fa35b;}.dot.r{background:#3b6fe0;}.dot.pe{background:#9aa1ad;}
 .cal-more{font-size:11px;color:var(--text-muted);padding-left:6px;font-weight:600;}
-@media(max-width:700px){.cal-chip{padding:2px 4px;justify-content:center;}.cal-chip .nm{display:none;}.cal-chip .ini{display:inline;}.cal-chip i.dot{display:none;}.cal-day{min-height:72px;}}
+@media(max-width:700px){.cal-chip{padding:3px 4px;justify-content:center;border-radius:999px;font-size:11px;}.cal-chip .tx,.cal-chip .dots{display:none;}.cal-chip .ini{display:inline;}.cal-layout.mes .cal-day{min-height:72px;padding:6px 3px;}}
 .ccd-h{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:14px;}
 .ccd-h h2{margin:0;font-size:20px;font-weight:700;}
 .ccd-h .fecha{font-size:13px;color:var(--text-muted);margin-top:2px;}
@@ -7425,7 +7433,7 @@ function renderPlantillasShelf(){
 function renderCalMes(){
   var filterAtleta=document.getElementById('cal-filter-atleta').value;
   var months=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
-  var html='<div class="cal-layout">'
+  var html='<div class="cal-layout mes">'
     +'<div class="cal-wrap">'
     +'<div class="cal-nav">'
       +'<button class="cal-nav-btn" onclick="calNav(-1)">‹</button>'
@@ -7450,10 +7458,10 @@ function renderCalMes(){
     var planDelDia=(DB.planExterno||[]).filter(function(p){return p.fecha===ds&&atletaPasaFiltroCalendario(p.atleta);});
     // Un chip por atleta: verde = fuerza, azul = resistencia, mitad y mitad = ambas
     var porAtleta={},ordenA=[];
-    function _add(nombre,t){var k=String(nombre||'').trim();if(!k)return;if(!porAtleta[k]){porAtleta[k]={f:0,r:0,pe:0};ordenA.push(k);}porAtleta[k][t]++;}
-    sesDelDia.forEach(function(s){_add(s.atleta,'f');});
-    resDelDia.forEach(function(r){_add(r.atleta,'r');});
-    planDelDia.forEach(function(pp){_add(pp.atleta,'pe');});
+    function _add(nombre,t,txt){var k=String(nombre||'').trim();if(!k)return;if(!porAtleta[k]){porAtleta[k]={f:0,r:0,pe:0,txt:[]};ordenA.push(k);}porAtleta[k][t]++;if(txt)porAtleta[k].txt.push(txt);}
+    sesDelDia.forEach(function(s){_add(s.atleta,'f',s.nombre||'Fuerza');});
+    resDelDia.forEach(function(r){_add(r.atleta,'r',r.nombre||r.disciplina||'Resistencia');});
+    planDelDia.forEach(function(pp){_add(pp.atleta,'pe','Plan externo'+(pp.disciplina?' · '+pp.disciplina:''));});
     var total=sesDelDia.length+resDelDia.length;
     var hasSes=total>0||planDelDia.length>0;
     var el=document.createElement('div');
@@ -7462,15 +7470,15 @@ function renderCalMes(){
     var evtHtml=vis.map(function(nom){
       var c=porAtleta[nom],cls=(c.f&&c.r)?'fr':(c.f?'f':(c.r?'r':'pe'));
       var dots=(c.f?'<i class="dot f"></i>':'')+(c.r?'<i class="dot r"></i>':'')+(!c.f&&!c.r?'<i class="dot pe"></i>':'');
-      var tip=nom+' · '+[c.f?(c.f+' fuerza'):'',c.r?(c.r+' resistencia'):'',c.pe?(c.pe+' plan externo'):''].filter(Boolean).join(', ');
-      return '<button type="button" class="cal-chip '+cls+'" title="'+escAttr(tip)+'" onclick="event.stopPropagation();calChipAbrir(\''+ds+'\',decodeURIComponent(\''+encodeURIComponent(nom).replace(/'/g,'%27')+'\'))">'+dots+'<span class="nm">'+escapeHtml(calNombreCorto(nom))+'</span><span class="ini">'+escapeHtml(iniciales(nom))+'</span></button>';
+      var tip=nom+' — '+c.txt.join(' + ')+' · '+[c.f?(c.f+' fuerza'):'',c.r?(c.r+' resistencia'):'',c.pe?(c.pe+' plan externo'):''].filter(Boolean).join(', ');
+      return '<button type="button" class="cal-chip '+cls+'" title="'+escAttr(tip)+'" onclick="event.stopPropagation();calChipAbrir(\''+ds+'\',decodeURIComponent(\''+encodeURIComponent(nom).replace(/'/g,'%27')+'\'))">'+'<span class="dots">'+dots+'</span><span class="tx"><span class="nm">'+escapeHtml(nom)+'</span><span class="sub">'+escapeHtml(c.txt.join(' + '))+'</span></span><span class="ini">'+escapeHtml(iniciales(nom))+'</span></button>';
     }).join('')+(rest>0?'<span class="cal-more">+'+rest+' más</span>':'');
     el.innerHTML='<span class="cal-day-num">'+d+'</span>'+evtHtml;
     (function(date,cell){
       cell.ondragover=function(e){if(dragSesId||dragResId||dragPlantillaId){e.preventDefault();cell.classList.add('cal-day-drop');}};
       cell.ondragleave=function(){cell.classList.remove('cal-day-drop');};
       cell.ondrop=function(e){cell.classList.remove('cal-day-drop');if(dragSesId){e.preventDefault();moveSesionToDate(dragSesId,date);}else if(dragResId){e.preventDefault();moveResistenciaToDate(dragResId,date);}else if(dragPlantillaId){e.preventDefault();assignPlantillaToDate(dragPlantillaId,date);}};
-      cell.onclick=function(){selectedDate=date;renderCalendar();renderAssignPanel();};
+      cell.onclick=function(){selectedDate=date;renderCalendar();renderAssignPanel();var ap=document.getElementById('assign-panel');if(ap&&ap.scrollIntoView)ap.scrollIntoView({behavior:'smooth',block:'start'});};
     })(ds,el);
     grid.appendChild(el);
   }
