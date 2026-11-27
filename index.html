@@ -575,6 +575,37 @@ input:focus,select:focus,textarea:focus{border-color:#8aa0d6 !important;box-shad
 #programa-list .template-empty{padding:14px 0;color:var(--text-muted);font-size:13px;}
 
 
+
+/* ── Calendario · vista mes: chips por atleta ── */
+.cal-leyenda{display:flex;flex-wrap:wrap;gap:14px;font-size:12px;color:var(--text-dim);margin:0 0 10px;}
+.cal-leyenda span{display:inline-flex;align-items:center;gap:6px;}
+.cal-leyenda i.dot{width:9px;height:9px;border-radius:50%;display:inline-block;}
+.cal-day{min-height:96px;}
+.cal-chip{display:flex;align-items:center;gap:5px;width:100%;min-height:22px;padding:2px 7px;border-radius:999px;border:0;font:600 11px Inter,system-ui,sans-serif;line-height:1.2;text-align:left;cursor:pointer;box-sizing:border-box;}
+.cal-chip:hover{filter:brightness(.95);box-shadow:0 0 0 1.5px currentColor inset;}
+.cal-chip .nm{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.cal-chip .ini{display:none;}
+.cal-chip i.dot{width:7px;height:7px;border-radius:50%;flex:none;display:inline-block;}
+.cal-chip.f{background:#e6f6ec;color:#146c3b;}
+.cal-chip.r{background:#e8f0fe;color:#1c4fb8;}
+.cal-chip.fr{background:linear-gradient(90deg,#e6f6ec 50%,#e8f0fe 50%);color:#14161a;}
+.cal-chip.pe{background:#f1f2f4;color:#4b5260;font-weight:500;}
+.dot.f{background:#1fa35b;}.dot.r{background:#3b6fe0;}.dot.pe{background:#9aa1ad;}
+.cal-more{font-size:11px;color:var(--text-muted);padding-left:6px;font-weight:600;}
+@media(max-width:700px){.cal-chip{padding:2px 4px;justify-content:center;}.cal-chip .nm{display:none;}.cal-chip .ini{display:inline;}.cal-chip i.dot{display:none;}.cal-day{min-height:72px;}}
+.ccd-h{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:14px;}
+.ccd-h h2{margin:0;font-size:20px;font-weight:700;}
+.ccd-h .fecha{font-size:13px;color:var(--text-muted);margin-top:2px;}
+.ccd-x{width:36px;height:36px;border:0;border-radius:8px;background:var(--surface2);color:var(--text-dim);cursor:pointer;display:flex;align-items:center;justify-content:center;flex:none;}
+.ccd-item{border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:10px;}
+.ccd-tag{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:3px 9px;border-radius:999px;}
+.ccd-tag.f{background:#e6f6ec;color:#146c3b;}.ccd-tag.r{background:#e8f0fe;color:#1c4fb8;}.ccd-tag.pe{background:#f1f2f4;color:#4b5260;}
+.ccd-nom{font-size:15px;font-weight:700;margin:8px 0 2px;}
+.ccd-meta{font-size:12.5px;color:var(--text-muted);margin-bottom:8px;}
+.ccd-ex{list-style:none;margin:0 0 10px;padding:0;font-size:13px;}
+.ccd-ex li{display:flex;justify-content:space-between;gap:10px;padding:5px 0;border-bottom:1px dashed var(--border);}
+.ccd-ex li b{font-weight:600;white-space:nowrap;}
+.ccd-txt{font-size:13px;white-space:pre-wrap;margin:0 0 10px;color:var(--text-dim);}
 /* ── Iconos de línea (sustituyen a los emoticonos) ── */
 i[class^=gi-]{display:inline-block;width:1.1em;height:1.1em;vertical-align:-0.2em;background-color:currentColor;-webkit-mask:var(--gi) center/contain no-repeat;mask:var(--gi) center/contain no-repeat;flex:none;font-style:normal;}
 i.gi-clip{--gi:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='8' y='3' width='8' height='4' rx='1'/%3E%3Cpath d='M8 5H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2'/%3E%3C/svg%3E");}
@@ -909,7 +940,7 @@ function aplicarCodigoAcceso(){
     <div class="sb-group">Sistema</div>
     <div class="tab" onclick="switchTab('ajustes',this)"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg><span>Ajustes</span></div>
   </nav>
-  <div class="sb-foot"><div id="auth-chip" style="display:none;font-size:12px;color:#cbd5e1;margin-bottom:10px;line-height:1.4"></div><div style="font-size:10px;color:#64748b;margin-bottom:6px">versión 113</div><div class="status-badge" id="status">⏳ Conectando...</div></div>
+  <div class="sb-foot"><div id="auth-chip" style="display:none;font-size:12px;color:#cbd5e1;margin-bottom:10px;line-height:1.4"></div><div style="font-size:10px;color:#64748b;margin-bottom:6px">versión 114</div><div class="status-badge" id="status">⏳ Conectando...</div></div>
 </aside>
 <div class="sb-backdrop" onclick="closeSidebar()"></div>
 <div class="main">
@@ -1007,8 +1038,8 @@ function aplicarCodigoAcceso(){
       <div class="section-title">Calendario de entrenamientos</div>
       <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
         <div style="display:flex;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:2px;">
-          <button class="btn btn-sm" id="cal-view-mes" onclick="setCalView('mes')" style="background:var(--accent);color:#000;">📅 Mes</button>
-          <button class="btn btn-sm" id="cal-view-sem" onclick="setCalView('sem')" style="background:transparent;color:var(--text-dim);">📊 Semana</button>
+          <button class="btn btn-sm" id="cal-view-mes" onclick="setCalView('mes')" style="background:var(--accent);color:#000;"><i class=gi-cal></i> Mes</button>
+          <button class="btn btn-sm" id="cal-view-sem" onclick="setCalView('sem')" style="background:transparent;color:var(--text-dim);"><i class=gi-plans></i> Semana</button>
         </div>
         <select id="cal-filter-equipo" onchange="onCalFilterEquipoChange()" style="padding:9px 12px;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;outline:none;">
           <option value="">Todos los equipos</option>
@@ -7401,6 +7432,7 @@ function renderCalMes(){
       +'<div class="cal-month" id="cal-month-title">'+months[calMonth]+' '+calYear+'</div>'
       +'<button class="cal-nav-btn" onclick="calNav(1)">›</button>'
     +'</div>'
+    +'<div class="cal-leyenda" aria-hidden="true"><span><i class="dot f"></i>Fuerza</span><span><i class="dot r"></i>Resistencia</span><span><i class="dot pe"></i>Plan externo</span><span style="color:var(--text-muted)">Pulsa un nombre para ver qué entrena</span></div>'
     +'<div class="cal-grid" id="cal-grid"></div>'
     +'</div>'
     +'<div class="assign-panel" id="assign-panel"><div class="no-day">Pulsa un día para crear<br>o editar un entrenamiento</div></div>'
@@ -7416,18 +7448,23 @@ function renderCalMes(){
     var sesDelDia=DB.sesiones.filter(function(s){return s.fecha===ds&&atletaPasaFiltroCalendario(s.atleta);});
     var resDelDia=(DB.resistencia||[]).filter(function(r){return r.tipo==='sesion'&&r.fecha===ds&&atletaPasaFiltroCalendario(r.atleta);});
     var planDelDia=(DB.planExterno||[]).filter(function(p){return p.fecha===ds&&atletaPasaFiltroCalendario(p.atleta);});
-    var eventos=sesDelDia.map(function(s){return {tipo:'fuerza',nombre:s.atleta.split(' ')[0]+' · '+(s.nombre||'Fuerza')};})
-      .concat(resDelDia.map(function(r){return {tipo:'resistencia',nombre:r.atleta.split(' ')[0]+' · '+(r.nombre||'Resistencia')};}));
-    var total=eventos.length;
-    var hasSes=total>0;
+    // Un chip por atleta: verde = fuerza, azul = resistencia, mitad y mitad = ambas
+    var porAtleta={},ordenA=[];
+    function _add(nombre,t){var k=String(nombre||'').trim();if(!k)return;if(!porAtleta[k]){porAtleta[k]={f:0,r:0,pe:0};ordenA.push(k);}porAtleta[k][t]++;}
+    sesDelDia.forEach(function(s){_add(s.atleta,'f');});
+    resDelDia.forEach(function(r){_add(r.atleta,'r');});
+    planDelDia.forEach(function(pp){_add(pp.atleta,'pe');});
+    var total=sesDelDia.length+resDelDia.length;
+    var hasSes=total>0||planDelDia.length>0;
     var el=document.createElement('div');
     el.className='cal-day'+(hasSes?' has-session':'')+(ds===today?' today':'')+(ds===selectedDate?' selected':'');
-    var visibles=eventos.slice(0,3);
-    var restantes=total-visibles.length;
-    var evtHtml=visibles.map(function(ev){
-      return '<span class="cal-evt '+ev.tipo+'">'+(ev.tipo==='fuerza'?'💪':'🏃')+' '+ev.nombre+'</span>';
-    }).join('')+(restantes>0?'<span class="cal-evt-more">+'+restantes+' más</span>':'')
-      +(planDelDia.length?'<span class="cal-evt plan-externo">📋 '+planDelDia.length+' plan externo'+(planDelDia.length>1?'es':'')+'</span>':'');
+    var MAXC=4,vis=ordenA.slice(0,MAXC),rest=ordenA.length-vis.length;
+    var evtHtml=vis.map(function(nom){
+      var c=porAtleta[nom],cls=(c.f&&c.r)?'fr':(c.f?'f':(c.r?'r':'pe'));
+      var dots=(c.f?'<i class="dot f"></i>':'')+(c.r?'<i class="dot r"></i>':'')+(!c.f&&!c.r?'<i class="dot pe"></i>':'');
+      var tip=nom+' · '+[c.f?(c.f+' fuerza'):'',c.r?(c.r+' resistencia'):'',c.pe?(c.pe+' plan externo'):''].filter(Boolean).join(', ');
+      return '<button type="button" class="cal-chip '+cls+'" title="'+escAttr(tip)+'" onclick="event.stopPropagation();calChipAbrir(\''+ds+'\',decodeURIComponent(\''+encodeURIComponent(nom).replace(/'/g,'%27')+'\'))">'+dots+'<span class="nm">'+escapeHtml(calNombreCorto(nom))+'</span><span class="ini">'+escapeHtml(iniciales(nom))+'</span></button>';
+    }).join('')+(rest>0?'<span class="cal-more">+'+rest+' más</span>':'');
     el.innerHTML='<span class="cal-day-num">'+d+'</span>'+evtHtml;
     (function(date,cell){
       cell.ondragover=function(e){if(dragSesId||dragResId||dragPlantillaId){e.preventDefault();cell.classList.add('cal-day-drop');}};
@@ -7438,6 +7475,52 @@ function renderCalMes(){
     grid.appendChild(el);
   }
   renderAssignPanel();
+}
+
+// Nombre corto para los chips: «Nombre I.» (el nombre completo va en el detalle y al pasar el ratón)
+function calNombreCorto(n){var p=String(n||'').trim().split(/\s+/);return p.length>1?p[0]+' '+p[1].charAt(0)+'.':p[0];}
+// ── Calendario · detalle de lo que entrena un atleta un día (desde los chips del mes) ──
+function calChipCerrar(){var m=document.getElementById('modal-calchip');if(m)m.classList.remove('open');}
+function calChipAbrir(ds,atleta){
+  var m=document.getElementById('modal-calchip');
+  if(!m){m=document.createElement('div');m.className='modal-overlay';m.id='modal-calchip';m.onclick=function(e){if(e.target===m)calChipCerrar();};m.innerHTML='<div class="modal" role="dialog" aria-modal="true" aria-labelledby="ccd-tit"></div>';document.body.appendChild(m);}
+  var mismo=function(x){return typeof mismoAtleta==='function'?mismoAtleta(x,atleta):String(x||'').trim()===atleta;};
+  var ses=DB.sesiones.filter(function(s){return s.fecha===ds&&mismo(s.atleta);});
+  var res=(DB.resistencia||[]).filter(function(r){return r.tipo==='sesion'&&r.fecha===ds&&mismo(r.atleta);});
+  var pext=(DB.planExterno||[]).filter(function(p){return p.fecha===ds&&mismo(p.atleta);});
+  var fecha=new Date(ds+'T12:00:00').toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'long'});
+  var h='<div class="ccd-h"><div><h2 id="ccd-tit">'+escapeHtml(atleta)+'</h2><div class="fecha">'+escapeHtml(fecha.charAt(0).toUpperCase()+fecha.slice(1))+'</div></div><button type="button" class="ccd-x" aria-label="Cerrar" onclick="calChipCerrar()"><i class=gi-x></i></button></div>';
+  var pv=function(ex,id){var pr=(ex.params||[]).find(function(q){return q.id===id;});return pr&&pr.val!==''&&pr.val!=null?String(pr.val):'';};
+  ses.forEach(function(s){
+    var exs=s.ejercicios||[];
+    var lista=exs.slice(0,10).map(function(ex){
+      var nom=(DB.ejercicios&&DB.ejercicios[ex.id]&&DB.ejercicios[ex.id].nombre)||ex.nombre||ex.id||'Ejercicio';
+      var se=pv(ex,'series')||(ex.sets!=null?String(ex.sets):''),re=pv(ex,'reps')||ex.reps||'',kg=pv(ex,'kg')||ex.load||'';
+      var dosis=(se&&re?se+'×'+re:(se||re))+(kg?' · '+kg+(String(kg).match(/kg|%/)?'':' kg'):'');
+      return '<li><span>'+escapeHtml(nom)+'</span><b>'+escapeHtml(dosis)+'</b></li>';
+    }).join('');
+    var carga='';try{carga=calcSessionLoad(s)+' AU';}catch(e){}
+    h+='<div class="ccd-item"><span class="ccd-tag f"><i class=gi-dumb></i>Fuerza</span><div class="ccd-nom">'+escapeHtml(s.nombre||'Sesión de fuerza')+'</div>'
+      +'<div class="ccd-meta">'+exs.length+(exs.length===1?' ejercicio':' ejercicios')+(carga?' · '+carga:'')+'</div>'
+      +(lista?'<ul class="ccd-ex">'+lista+'</ul>':'')+(exs.length>10?'<div class="ccd-meta">y '+(exs.length-10)+' más…</div>':'')
+      +'<button type="button" class="btn btn-secondary btn-sm" onclick="calChipCerrar();editSesion(\''+s.id+'\')"><i class=gi-pen></i> Abrir / editar</button></div>';
+  });
+  res.forEach(function(r){
+    var carga='';try{carga=calcResistenciaLoad(r)+' AU';}catch(e){}
+    var meta=[r.disciplina||'',r.duracion_min?r.duracion_min+' min':'',carga].filter(Boolean).join(' · ');
+    h+='<div class="ccd-item"><span class="ccd-tag r"><i class=gi-run></i>Resistencia</span><div class="ccd-nom">'+escapeHtml(r.nombre||'Sesión de resistencia')+'</div>'
+      +(meta?'<div class="ccd-meta">'+escapeHtml(meta)+'</div>':'')
+      +(r.descripcion?'<p class="ccd-txt">'+escapeHtml(String(r.descripcion).slice(0,400))+'</p>':'')
+      +'<button type="button" class="btn btn-secondary btn-sm" onclick="calChipCerrar();editResistencia(\''+r.id+'\')"><i class=gi-pen></i> Abrir / editar</button></div>';
+  });
+  pext.forEach(function(p){
+    h+='<div class="ccd-item"><span class="ccd-tag pe"><i class=gi-clip></i>Plan externo</span>'+(p.disciplina?'<div class="ccd-nom">'+escapeHtml(p.disciplina)+'</div>':'')
+      +(p.texto?'<p class="ccd-txt">'+escapeHtml(String(p.texto).slice(0,400))+'</p>':'')
+      +'<button type="button" class="btn btn-secondary btn-sm" onclick="calChipCerrar();openEditPlanExterno(\''+p.id+'\')"><i class=gi-pen></i> Abrir</button></div>';
+  });
+  if(!ses.length&&!res.length&&!pext.length)h+='<div class="ccd-meta">No hay nada programado este día.</div>';
+  m.querySelector('.modal').innerHTML=h;
+  m.classList.add('open');
 }
 
 function calNav(dir){
